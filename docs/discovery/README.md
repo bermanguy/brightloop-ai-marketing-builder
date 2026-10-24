@@ -2,6 +2,14 @@
 
 Interviews with Brightloop's three marketers, held in the assignment's chat app (20 messages each, one sign-in throughout).
 
+## The marketers
+
+| Marketer | Role (from chat profile) |
+| --- | --- |
+| Maya | Head of Growth |
+| Daniel | Paid ads manager |
+| Noa | PMM / content lead |
+
 ## Files
 
 - `maya.md`, `daniel.md`, `noa.md` — one transcript per marketer, pasted verbatim. Nothing is paraphrased or edited.
