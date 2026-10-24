@@ -1,0 +1,22 @@
+# Discovery
+
+Interviews with Brightloop's three marketers, held in the assignment's chat app (20 messages each, one sign-in throughout).
+
+## Files
+
+- `maya.md`, `daniel.md`, `noa.md` — one transcript per marketer, pasted verbatim. Nothing is paraphrased or edited.
+- `synthesis.md` — scoring of the candidate problems and the selection, with a quote behind every score.
+
+## Transcript format
+
+Each exchange records the message number (out of 20), our question and the marketer's reply, word for word:
+
+```
+### 1/20 — 2026-10-25
+**Us:** ...
+**Maya:** ...
+```
+
+## Round-1 plan
+
+The interview plan (questions, purpose of each, and the comparison criteria) is the working doc "Brightloop — Round 1 Discovery Plan". The decision log records changes to it.
