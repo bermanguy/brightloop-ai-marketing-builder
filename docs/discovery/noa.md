@@ -24,3 +24,7 @@ Verbatim.
 **Us:** Tell me about the last launch or piece of content you put out: what was it, and how did you decide what it should say?
 
 **App:** "The reply couldn't finish. This question hasn't used your allowance." (Retry button shown.)
+
+**Noa (after Base44's second fix, ~15:00):** Could you narrow that to one part of the marketing or content work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*

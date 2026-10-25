@@ -36,3 +36,7 @@ Verbatim.
 **Us:** Tell me about the last growth experiment you ran: what did you test, and what did you change because of the result?
 
 **App:** "The reply couldn't finish. This question hasn't used your allowance." (Retry button shown.)
+
+**Maya (after Base44's second fix, ~15:00):** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*

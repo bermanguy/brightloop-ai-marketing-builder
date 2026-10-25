@@ -36,3 +36,10 @@ Verbatim.
 **Us:** Tell me about the last ad campaign you launched or changed: which channel, and what made you change it?
 
 **Daniel:** I work in Meta and LinkedIn, and every brief goes in Notion. A brief that isn't in Notion doesn't exist.
+
+### 3/26 — 2026-10-25
+*(Budget for Daniel is now 26: Base44 approved 6 extra questions for him.)*
+
+**Us:** Walk me through the last brief you put in Notion: where did the idea come from, and what was in it?
+
+**Daniel:** Ideas aren't the bottleneck; approvals are. I have 30 ideas in a doc, and four got approved last month. Briefs come back from Maya two or three times when they lack a rationale and an expected CPA.
