@@ -1,4 +1,4 @@
-# Spec — Competitor pricing watch for Maya
+# Spec — Competitor pricing and packaging watch for Maya
 
 Status: draft, 2026-10-25. Decision: D9. Requirements quote Maya verbatim; anything not from her is marked *[assumption]* or *[decision]*.
 
