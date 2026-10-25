@@ -165,3 +165,8 @@ Verbatim.
 **Us:** What happened the last time a competitor's pricing claim turned out to be false?
 
 **Maya:** Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it.
+
+### 5/25 (repeat of 1/25) — 2026-10-25 ~15:57
+**Us:** What happened the last time a competitor quietly changed what a plan included?
+
+**Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
