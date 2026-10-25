@@ -151,6 +151,25 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Trade-offs accepted.** Without a key, the fallback text is plainer. The free tier has a cold start of about a minute.
 
+## D14 — MVP tracks each pricing page's default view only · 2026-10-25 · [Claude → Guy]
+
+**Decision.** The MVP records what each pricing page shows on first load, with the billing period of every price taken from the page's own words (pricing check 2, `docs/pricing-pages.md`):
+- Lovable: monthly view, default credit tier (100 credits). Needs Playwright.
+- Bolt: yearly view. `httpx`.
+- Replit: yearly view. `httpx` (Replit blocks headless browsers).
+- v0: its single price view. `httpx`.
+
+Toggles and dropdowns are not clicked.
+
+**Why (Guy).** Have something that works for Thursday. The other views add parsing complexity; build them if time allows, otherwise present them as next steps.
+
+**Post-MVP milestones.**
+1. Both billing periods: click the Monthly/Yearly toggles on Lovable and Bolt. Replit's monthly price is only a struck-through number with no "monthly" wording, so it would be shown as unverified.
+2. Lovable's full credit ladder: every option in the Pro and Business credit dropdowns (about 44 prices per run).
+3. Layout-change handling: flag a page as "changed, needs a look" when plans vanish, the price count drops sharply, or a toggle can't be found, and keep the last good prices.
+
+**Evidence and assumption.** Maya acts on "what a plan contains even if its price stays the same" (`docs/discovery/maya.md`); the default tier's credits are tracked. Whether she cares about non-default tiers is unknown. *[assumption]* To check with her on real output.
+
 ---
 
 ## Open questions
