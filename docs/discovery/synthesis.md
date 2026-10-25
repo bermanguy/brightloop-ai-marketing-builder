@@ -1,12 +1,13 @@
-# Discovery synthesis — 2026-10-25, updated 15:50
+# Discovery synthesis — 2026-10-25, updated 15:55
 
 Draft scores by Claude, to be reviewed and changed by Guy. Every score cites the quote it rests on. Scale: 1 (weak) to 3 (strong).
 
 ## What each marketer told us (verbatim)
 
-**Maya — Head of Growth** (3/25 used; 12 further probes all returned free clarifications)
+**Maya — Head of Growth** (4/25 used)
 - "I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem."
 - "I'm Head of Growth. I need more signups, honestly anything that moves trial starts."
+- "Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it."
 
 **Noa — PMM / content lead** (5/25 used)
 - "Tell me what competitors ship; I need to know before Twitter does."
@@ -32,18 +33,22 @@ Each marketer owns one signal type in the test contract, and each one's pain mat
 
 | Criterion | Maya | Noa | Daniel |
 | --- | --- | --- | --- |
-| Pain | 2 — clear rule of what she acts on, no incident or cost given | 3 — recurring duplicate work, plus a near-miss: almost reacting publicly to a false v0 rumour | 3 — "four got approved last month", briefs bounce "two or three times" |
+| Pain | 3 — an AI summary wrongly reported a 30% price cut, "leadership reacted, and it was wrong" | 3 — recurring duplicate work, plus a near-miss: almost reacting publicly to a false v0 rumour | 3 — "four got approved last month", briefs bounce "two or three times" |
 | Business impact | 3 — tied to her metric: "signups… trial starts" | 2 — avoiding public mistakes and reacting fast; no metric stated | 2 — approval throughput; no metric stated |
-| Evidence strength | 2 — two facts; 12 more probes found nothing | 3 — three distinct facts, including a concrete incident | 3 — three distinct facts, including an incident |
+| Evidence strength | 3 — three distinct facts, including a concrete incident | 3 — three distinct facts, including a concrete incident | 3 — three distinct facts, including an incident |
 | Public-data fit | 3 — competitor pricing pages are public. Risk: some may be JavaScript-rendered and need a headless browser | 2 — changelogs, blogs and Hacker News are easy; Reddit is limited; X is paid | 1 — expected CPA needs Brightloop's private ad data |
 | Contract fit | 3 — `pricing` | 3 — `launch`; merging reports into one item maps directly onto `source_ids` holding several ids | 2 — `ad`, but his core pain is approvals |
 | Buildable in ~12h | 3 — scheduled fetch + snapshot comparison + change classification | 2 — several sources plus cross-source matching | 1 — blocked on private data |
 | Demoable | 3 — a real price or plan change | 3 — one launch merged from several real sources, with a rumour held back | 1 — cannot show a real expected CPA |
-| **Total** | **19** | **18** | **13** |
+| **Total** | **21** | **18** | **13** |
 
 ## Requirements each marketer stated
 
-**Maya:** act on price changes **and** on plan-content changes even when the price is unchanged; ignore feature launches.
+**Maya:**
+1. Act on price changes **and** on plan-content changes even when the price is unchanged.
+2. Ignore feature launches.
+3. "No link, no number": every number needs a source link next to it.
+4. What matters is signups and trial starts.
 
 **Noa:**
 1. Merge reports of the same launch from different sources into one item.

@@ -160,3 +160,8 @@ Verbatim.
 **Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
+
+### 4/25 — 2026-10-25 ~15:53
+**Us:** What happened the last time a competitor's pricing claim turned out to be false?
+
+**Maya:** Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it.
