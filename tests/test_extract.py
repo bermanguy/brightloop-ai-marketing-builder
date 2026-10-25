@@ -106,5 +106,8 @@ def test_a_plan_with_an_invented_value_is_rejected():
     text = "Pro\n$25 / month"
     invented = {"name": "Pro", "price": "$20", "list_price": None, "billing": "/ month", "includes": [], "quotes": ["Pro", "$25 / month"]}
     assert unquoted(invented, text) == ["$20"]
-    misquoted = dict(invented, price="$25", quotes=["Pro", "$25 per month"])
+    misquoted = dict(invented, price="$25", billing="per month", quotes=["Pro", "$25 per month"])
     assert unquoted(misquoted, text) == ["$25 per month"]
+    # Billing wording and what's included must sit in the quotes too.
+    unbacked = dict(invented, price="$25", billing="billed annually", includes=["500 credits"])
+    assert unquoted(unbacked, text) == ["500 credits", "billed annually"]

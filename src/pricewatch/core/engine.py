@@ -27,8 +27,11 @@ SKIP_REASONS = {
 SECRET_KEY_NAMES = re.compile(r"key|token|secret|password|credential", re.IGNORECASE)
 
 
-def process(cases, started_at=None):
-    """Turn a cases dict (the cases.json shape) into the result dict."""
+def process(cases, started_at=None, cost_usd=0.0):
+    """Turn a cases dict (the cases.json shape) into the result dict.
+
+    cost_usd is what the live source spent on AI calls before this (0 in test mode).
+    """
     started_at = started_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     errors = []
     items, skipped = [], []
@@ -72,7 +75,7 @@ def process(cases, started_at=None):
         "built_for": BUILT_FOR,
         "items": items,
         "skipped": skipped,
-        "run": {"started_at": started_at, "cost_usd": 0.0, "errors": errors},
+        "run": {"started_at": started_at, "cost_usd": cost_usd, "errors": errors},
     }
     return _redact(result, _secret_values(cases))
 

@@ -103,11 +103,15 @@ def extract_plans(text):
 def unquoted(plan, text):
     """Quotes of a plan that aren't word for word in the page text. Empty means the plan checks out.
 
-    The plain reader passes by construction; this is the guard the AI reader must pass too.
+    Every value (name, prices, billing, what's included) must sit inside the
+    plan's quotes. The plain reader passes by construction; this is the guard
+    the AI reader must pass too.
     """
     missing = [quote for quote in plan["quotes"] if quote not in text]
-    quoted = " ".join(plan["quotes"])
-    for value in (plan["name"], plan["price"], plan["list_price"]):
+    quoted = "\n".join(plan["quotes"])
+    values = [plan["name"], plan["price"], plan["list_price"], *plan["includes"]]
+    values += (plan["billing"] or "").split("; ")
+    for value in values:
         if value and value not in quoted:
             missing.append(value)
     return missing
