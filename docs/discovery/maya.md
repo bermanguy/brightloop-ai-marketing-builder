@@ -238,3 +238,33 @@ Verbatim.
 ---
 
 **Stopped here (17:54):** two repeats in a row. Maya's three facts are treated as complete. 17 messages remain for validating the spec.
+
+---
+
+## Extra round modelled on Daniel's and Noa's successful questions (18:33)
+
+### 9/25 (repeat of 1/25) — 2026-10-25 ~18:33
+**Us:** Walk me through the last time you responded to a competitor's pricing change, step by step.
+
+**Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
+
+### 10/25 (repeat of 3/25) — 2026-10-25 ~18:33
+**Us:** Which tools does your team use today to track competitors' pricing?
+
+**Maya:** I'm Head of Growth. I need more signups, honestly anything that moves trial starts.
+
+### (not counted) — 2026-10-25 ~18:33
+**Us:** What happened the last time you sent one of Daniel's briefs back?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~18:33
+**Us:** Tell me about the last competitor pricing change you acted on: which competitor, and what did you change
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+**Stopped (18:35):** no new facts. Maya's three facts are final. 15 messages remain.
