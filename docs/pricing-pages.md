@@ -44,9 +44,11 @@ Monday's first task (see `CLAUDE.md`): for each competitor's pricing page, can a
 - **Lovable never reaches "network idle"** (it keeps a connection open); waiting for `networkidle` timed out at 45 s. Waiting for the DOM plus a few seconds, or for a price element, works.
 - **Struck-through prices** appear on all four pages (Replit, v0, Lovable yearly, Bolt yearly totals). Plain text extraction loses the strike-through, so "$30 $90" reads like two prices for one thing.
 
-**Implications (proposals for Guy, not decisions)**
+**Outcome.** Guy chose to track each page's default view only for the MVP; both billing periods, Lovable's full credit ladder and layout-change handling are post-MVP milestones. See D14 in `DECISIONS.md`.
 
-1. Bolt, Replit and v0 can use `httpx`. Lovable needs Playwright (Chromium is already in this container; Render would need it installed).
-2. Track one billing period per page as the default view (Lovable monthly, Bolt yearly, Replit yearly, v0 monthly) and record that period on every price. Clicking toggles adds browser work to three pages and Replit blocks the browser anyway. A toggle default changing is itself a packaging signal worth reporting.
-3. For Lovable, track only the default credit tier (100 credits) unless Maya says the tier ladder matters.
-4. Quotes must keep strike-through context (e.g. "Originally $25 per month"); extraction should treat a struck price as a list/previous price, never as the plan's price.
+**Notes for the build**
+
+- Lovable: wait for the DOM plus a price element, not `networkidle`.
+- Record the billing period of every price from the page's wording ("/ month", "billed annually").
+- Quotes must keep strike-through context (e.g. "Originally $25 per month"); extraction treats a struck price as a list/previous price, never as the plan's price.
+- Which billing view a page shows first is itself a packaging signal worth reporting.

@@ -47,7 +47,7 @@ TEST:  cases.json ────────────────────�
 | --- | --- | --- |
 | Language | **Python 3.12** | Good for fetching and parsing pages, and for tests |
 | Web app | **FastAPI**, plain server-rendered HTML | Small; no front-end build step; no UI polish needed |
-| Fetching | `httpx`; **Playwright** only if a page needs a browser | Start simple |
+| Fetching | `httpx` for Bolt, Replit and v0; **Playwright** for Lovable only (pricing check 2, D14) | Lovable's plans are rendered by JavaScript; the other three are in the server's HTML |
 | Storage | **Postgres** (Neon free tier) in production; **SQLite** locally and for the keyless proof | Snapshots and the run log must survive restarts |
 | Hosting | **Render** web service (free tier) | Public URL, deploys from GitHub. Sleeps when idle, so the first request after a pause is a real cold start |
 | Schedule | **GitHub Actions** cron every 6 hours calls the app's protected `/run` endpoint | Keeps the schedule in the repo and wakes the sleeping app. "Check now" calls the same endpoint |
@@ -92,6 +92,6 @@ Accounts the session can't create: **Render** and **Neon**, both free. An **LLM 
 
 ## Risks
 
-1. **Pages need a browser** → Playwright adds weight to the build and the Render deploy. Checked first thing Monday.
-2. **A site blocks automated requests** → the table shows that page as failed (D12). Fall back to fewer competitors if needed; logged.
+1. **Pages need a browser** → checked 2026-10-25: only Lovable does (D14). Playwright adds weight to the build and the Render deploy.
+2. **A site blocks automated requests** (Replit already blocks headless browsers after a few loads, so it is fetched with `httpx` only) → the table shows that page as failed (D12). Fall back to fewer competitors if needed; logged.
 3. **Free-tier cold start** (~30–60 s) → acceptable, and it shows the cold start the recording asks for.
