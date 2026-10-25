@@ -170,6 +170,16 @@ Toggles and dropdowns are not clicked.
 
 **Evidence and assumption.** Maya acts on "what a plan contains even if its price stays the same" (`docs/discovery/maya.md`); the default tier's credits are tracked. Whether she cares about non-default tiers is unknown. *[assumption]* To check with her on real output.
 
+## D15 — Small rules in the core test interface · 2026-10-25 · [Claude → Guy]
+
+**Decision.** Made while building `./run` (PR #1) and approved by Guy afterwards:
+1. A competitor's own social account (e.g. `x.com/@replit`) counts as a third party: confidence 0.4, unverified.
+2. The `cta` field is added to each item only when the input sets `output.cta_required_per_item` (closes spec open question 4).
+3. Each pricing signal becomes its own item; claims about the same change are not merged.
+4. Items are sorted newest first.
+
+**Why (Claude's recommendation).** (1) R5 believes a price only from the competitor's own website, and a social post isn't the pricing page. (2) The flag is part of the input contract, so it is honoured when set. (3) and (4) keep the core simple and predictable for the hidden test cases.
+
 ---
 
 ## Open questions

@@ -63,4 +63,6 @@ pip install -e ".[live]" && playwright install chromium
 python -m pricewatch.sources.fetch            # saves to data/pages/<time>/
 ```
 
-Bolt, Replit and v0 are fetched over plain HTTP; Lovable is rendered in headless Chromium because its plans are built by JavaScript. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Reading plans from the text and comparing runs come next.
+Bolt, Replit and v0 are fetched over plain HTTP; Lovable is rendered in headless Chromium because its plans are built by JavaScript. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Crossed-out prices (`<del>`, or a `line-through` class) are kept as `~~$90~~`.
+
+`pricewatch.sources.extract.read_page` then reads each plan's name, price, crossed-out list price, billing wording and what's included. Every value is a line of the page, so it is its own word-for-word quote; a value whose quote isn't on the page is rejected, and a page with no readable plans is marked failed. It's tested on the real pages saved in `fixtures/pages/2026-10-25/`. Comparing runs comes next.
