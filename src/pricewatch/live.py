@@ -5,10 +5,10 @@
 Each run saves a snapshot (data/snapshots/<time>.json): every page's plans,
 or why it couldn't be read. The next run compares each page with the last
 snapshot in which that page was read by the same reader, so a page that failed
-once is compared again as soon as it's back. The AI and plain readers word
-billing and "includes" slightly differently, so comparing across readers would
-report changes that never happened (5 on the saved pages). Snapshots are JSON files for now; the database
-replaces them at deploy.
+once is compared again as soon as it's back. The AI and plain readers pick
+slightly different lines for a plan, so comparing across readers would report
+changes that never happened (15 on the recorded pages). Snapshots are JSON
+files for now; the database replaces them at deploy.
 """
 
 import json
@@ -57,12 +57,17 @@ def save_snapshot(snapshots_dir, taken_at, pages):
     return path
 
 
-def run_live(snapshots_dir=SNAPSHOTS, pages_dir=None, use_ai=True, started_at=None):
-    """Return (result, snapshot path). result has the same shape as ./run's output."""
-    started_at = started_at or now_utc()
+def collect(pages_dir=None, use_ai=True):
+    """Fetch (or load) the pages and read their plans. Return (readings, cost in USD)."""
     pages = load_pages(pages_dir) if pages_dir else fetch.fetch_all()
-    read, cost = ai_extract.read_pages(pages, ai_extract.make_client() if use_ai else None)
+    return ai_extract.read_pages(pages, ai_extract.make_client() if use_ai else None)
 
+
+def compare_and_report(read, cost, snapshots_dir, started_at):
+    """Compare readings with the last snapshot, save them as a snapshot, run the core.
+
+    Return (result, snapshot path, the signals the comparison produced).
+    """
     good = last_good_pages(snapshots_dir)
     previous = {page["competitor"]: good.get((page["competitor"], page["reader"])) for page in read}
     previous = {competitor: page for competitor, page in previous.items() if page}
@@ -83,5 +88,12 @@ def run_live(snapshots_dir=SNAPSHOTS, pages_dir=None, use_ai=True, started_at=No
         {"competitor": p["competitor"], "url": p["url"], "ok": p["ok"], "reader": p["reader"], "plans": len(p["plans"])}
         for p in read
     ]
-    return result, snapshot
+    return result, snapshot, signals
 
+
+def run_live(snapshots_dir=SNAPSHOTS, pages_dir=None, use_ai=True, started_at=None):
+    """Return (result, snapshot path). result has the same shape as ./run's output."""
+    started_at = started_at or now_utc()
+    read, cost = collect(pages_dir, use_ai)
+    result, snapshot, _ = compare_and_report(read, cost, snapshots_dir, started_at)
+    return result, snapshot

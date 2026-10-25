@@ -7,8 +7,13 @@ from pricewatch.sources import compare, extract
 from test_extract import PAGES, saved
 
 
-def reading(competitor, at="2026-10-25T06:00:00Z", reader="plain"):
-    page = extract.read_page(saved(competitor))
+def reading(competitor, at="2026-10-25T06:00:00Z", reader="plain", changes=()):
+    """A plain reading of a saved page, optionally after editing its text: [(old, new)]."""
+    page = saved(competitor)
+    for old, new in changes:
+        assert old in page["text"]
+        page["text"] = page["text"].replace(old, new, 1)
+    page = extract.read_page(page)
     page.update(fetched_at=at, reader=reader, ai_error=None, cost_usd=0.0)
     return page
 
@@ -23,8 +28,7 @@ def test_the_same_page_twice_is_no_change():
 
 
 def test_a_price_change_is_one_signal_quoting_before_and_after():
-    before, after = reading("lovable"), reading("lovable", "2026-10-25T12:00:00Z")
-    plan(after, "Pro")["price"] = "$30"
+    before, after = reading("lovable"), reading("lovable", "2026-10-25T12:00:00Z", changes=[("$25", "$30")])
     [signal] = compare.compare_page(before, after)
     assert signal["type"] == "pricing" and signal["source"] == "https://lovable.dev/pricing"
     assert signal["ts"] == "2026-10-25T12:00:00Z"
@@ -34,13 +38,28 @@ def test_a_price_change_is_one_signal_quoting_before_and_after():
 
 def test_a_change_in_what_a_plan_includes_counts_even_at_the_same_price():
     # R2: "what a plan contains even if its price stays the same"
-    before, after = reading("bolt"), reading("bolt", "2026-10-25T12:00:00Z")
-    pro = plan(after, "Pro")
-    pro["includes"] = [line.replace("10M tokens", "15M tokens") for line in pro["includes"]]
+    before = reading("bolt")
+    after = reading("bolt", "2026-10-25T12:00:00Z", changes=[("10M tokens/month", "15M tokens/month")])
     [signal] = compare.compare_page(before, after)
-    assert signal["id"].startswith("live-bolt-pro-includes-")
+    assert signal["id"].startswith("live-bolt-pro-details-")
     assert '"15M tokens/month, rollover included"' in signal["text"]
     assert '"10M tokens/month, rollover included"' in signal["text"]
+
+
+def test_the_same_lines_filed_under_other_fields_are_no_change():
+    # Seen in two real AI readings a minute apart of Lovable's unchanged page.
+    before, after = reading("lovable"), reading("lovable", "2026-10-25T12:00:00Z")
+    enterprise = plan(after, "Enterprise")
+    enterprise["billing"], enterprise["includes"] = "Volume based pricing", enterprise["includes"][1:]
+    assert compare.compare_page(before, after) == []
+
+
+def test_a_billing_change_at_the_same_price_is_a_details_change():
+    before = reading("replit")
+    after = reading("replit", "2026-10-25T12:00:00Z", changes=[("$18 / month, billed annually", "$18 / month, billed monthly")])
+    [signal] = compare.compare_page(before, after)
+    assert "live-replit-core-details-" in signal["id"]
+    assert "billed monthly" in signal["text"] and "billed annually" in signal["text"]
 
 
 def test_plans_that_appear_or_disappear():

@@ -25,3 +25,5 @@ jobs:
         run: |
           ./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output live.json
           python -c "import json; r = json.load(open('live.json')); print(r['run']); assert r['run']['errors'] == []"
+      - name: Keyless proof on recorded real runs
+        run: ./proof

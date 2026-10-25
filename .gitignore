@@ -28,3 +28,4 @@ result.json
 # Pages fetched by local live runs
 /data/
 live.json
+proof-result.json
