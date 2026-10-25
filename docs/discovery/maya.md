@@ -68,3 +68,15 @@ Verbatim.
 **Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** Which competitor pricing pages do you keep an eye on?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### 1/25 — 2026-10-25 ~15:22
+**Us:** What did you do the last time a competitor raised their price?
+
+**Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.

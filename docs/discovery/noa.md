@@ -47,3 +47,15 @@ Verbatim.
 **Us:** What content do you produce every week?
 
 **Noa:** I'm PMM and content lead. Tell me what competitors ship; I need to know before Twitter does.
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** How do you find out today when a competitor ships something?
+
+**Noa:** Could you narrow that to one part of the marketing or content work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### 2/25 — 2026-10-25 ~15:22
+**Us:** Tell me about the last time you heard about a competitor launch too late. What did it cost?
+
+**Noa:** The same launch reaches me three or four times from different sources at different times, and I have to work out that it's one thing. Time zones make it worse: the US posts on Saturday night, and it's Sunday morning for me.

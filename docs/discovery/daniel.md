@@ -64,3 +64,31 @@ Verbatim.
 **Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** Which competitor pricing pages do you keep an eye on?
+
+**Daniel:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** What did you do the last time a competitor raised their price?
+
+**Daniel:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** Do you use competitor ads as the rationale in a brief?
+
+**Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:22
+**Us:** What kind of evidence does Maya accept as a rationale?
+
+**Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
