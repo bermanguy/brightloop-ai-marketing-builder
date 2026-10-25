@@ -65,7 +65,7 @@ Noa's and Daniel's needs; anything in the sample's `nice_to_have` (multi-languag
 
 ## Open questions
 
-1. **Deadline:** 29 or 31 October.
+1. ~~Deadline~~ Resolved: **Thursday 29 October 2026** (Guy, 2026-10-25).
 2. **Pricing pages:** whether each page can be read as plain HTML or needs a headless browser. To check first, from the environment the app will run in.
 3. **Launches that change plan contents** (R3): skip, or treat as packaging changes?
 4. **`cta` field:** honour the input flag or not.

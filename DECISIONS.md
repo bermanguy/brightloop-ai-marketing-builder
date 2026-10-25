@@ -101,4 +101,4 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 ## Open questions
 
-- **Deadline date.** Planned as 31 October 2026, which is a Saturday; Thursday is 29 October. To confirm against the assignment email.
+- ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
