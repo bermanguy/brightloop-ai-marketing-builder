@@ -24,3 +24,6 @@ result.json
 .idea/
 .vscode/
 *.egg-info/
+
+# Pages fetched by local live runs
+/data/
