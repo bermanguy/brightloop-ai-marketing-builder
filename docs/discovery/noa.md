@@ -35,3 +35,15 @@ Verbatim.
 **Noa:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** How do you check copy against the brand voice before it goes out?
+
+**Noa:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### 1/25 — 2026-10-25 ~15:15
+**Us:** What content do you produce every week?
+
+**Noa:** I'm PMM and content lead. Tell me what competitors ship; I need to know before Twitter does.

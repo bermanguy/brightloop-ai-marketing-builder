@@ -47,3 +47,24 @@ Verbatim.
 **Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** How do you decide how to split budget between Meta and LinkedIn?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** What do you report on every week, and to whom?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** When a competitor changes their pricing, what do you do?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*

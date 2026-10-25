@@ -50,3 +50,17 @@ Verbatim.
 **Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** How do you work out the expected CPA for a brief?
+
+**Daniel:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:15
+**Us:** Where does the rationale in a brief usually come from?
+
+**Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
