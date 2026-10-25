@@ -4,7 +4,7 @@ Draft scores by Claude, to be reviewed and changed by Guy. Every score cites the
 
 ## What each marketer told us (verbatim)
 
-**Maya — Head of Growth** (6/25 used; 2 of those were repeats)
+**Maya — Head of Growth** (8/25 used; 4 of those were repeats)
 - "I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem."
 - "I'm Head of Growth. I need more signups, honestly anything that moves trial starts."
 - "Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it."
@@ -43,6 +43,8 @@ Each marketer owns one signal type in the test contract, and each one's pain mat
 | **Total** | **21** | **18** | **13** |
 
 ## Requirements each marketer stated
+
+*Inferences from which question triggered which answer (weak evidence, not quotes):* a question about leadership triggered Maya's incident, suggesting her pricing decisions are seen by leadership. A question about credits and projects per plan triggered her packaging fact, suggesting those count as "what a plan contains".
 
 **Maya:**
 1. Act on price changes **and** on plan-content changes even when the price is unchanged.

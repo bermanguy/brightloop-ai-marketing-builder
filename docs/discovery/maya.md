@@ -203,3 +203,38 @@ Verbatim.
 **Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~17:53
+**Us:** If you got this note on Monday morning: 'Lovable Pro went from $20 to $25/month, source: lovable.dev/pricing, checked 23 Oct.' What would you do with it?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### 7/25 (repeat of 4/25) — 2026-10-25 ~17:53
+**Us:** What happened the last time leadership asked you about a competitor's pricing?
+
+**Maya:** Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it.
+
+### (not counted) — 2026-10-25 ~17:53
+**Us:** What happened the last time Brightloop changed its own pricing or offer because of a competitor?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~17:53
+**Us:** What happened the last time a competitor changed its pricing over a weekend?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### 8/25 (repeat of 1/25) — 2026-10-25 ~17:53
+**Us:** What happened the last time a competitor changed how many credits or projects a plan includes?
+
+**Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
+
+---
+
+**Stopped here (17:54):** two repeats in a row. Maya's three facts are treated as complete. 17 messages remain for validating the spec.
