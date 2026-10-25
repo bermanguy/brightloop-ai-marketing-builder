@@ -16,6 +16,8 @@ Maya, Head of Growth, owns signups and trial starts. Competitors' pricing and pa
 
 A page she opens on Monday morning listing what changed in competitors' pricing since the last check. Each entry says what happened, what to do about it, how confident the tool is, and the source link. For example: "Lovable raised Pro from $20 to $25/month. Update our comparison page and push our price in this week's campaign. Confidence: high. Source: lovable.dev/pricing." Unconfirmed claims appear too, labelled unverified with a "don't act yet" action.
 
+A second view shows **each competitor's current plans and prices**, so the app is also a reference for the whole pricing picture (D12).
+
 ## What it does
 
 1. **Collects** competitors' public pricing pages **every 6 hours**, plus a **"Check now" button** for an on-demand run *[decision D11]*. Competitors are the ones the brief names: Lovable, Bolt, Replit, v0. Codex and Claude Code are left out of the first version *[decision]*.
@@ -23,6 +25,10 @@ A page she opens on Monday morning listing what changed in competitors' pricing 
 3. **Compares** each run with the previous snapshot and turns every difference into a `pricing` signal.
 4. **Decides**, using the same core logic as test mode, what Maya should do about each signal: an action, the reason, a confidence, and the source link behind every number.
 5. **Shows** the result in the live app and keeps a log of every run.
+6. **Current pricing view** *[decision D12, built after steps 1–5 work]*. One table per competitor from the latest snapshot: each plan's price, billing period and what's included, **written as it appears on the competitor's page**, plus the source link and when it was last checked.
+   - No conversion between competitors' units (credits, tokens, messages): that would mean inventing exchange rates, which breaks R4.
+   - No history charts or analytics in this version.
+   - If a page couldn't be fetched or read, the table says so with the time ("couldn't read this page at…"). It never shows older data as if it were current.
 
 ## Rules, derived from what Maya said
 
@@ -62,6 +68,7 @@ The required wrapper (`built_for`, `items[]`, `skipped[]`, `run`), plus extra it
 7. A live run fetches at least one real pricing page, stores the snapshot, and produces output in the same shape.
 8. A fresh clone runs the proof command with no keys and produces the output from recorded data.
 9. Each run writes a log entry: start time, sources fetched, errors, cost.
+10. The current pricing view shows every plan from the latest snapshot with its source link and check time, and marks a page that failed on the last run as failed, not current.
 
 ## Out of scope for this version
 

@@ -115,6 +115,20 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Known risk.** Pricing pages can flicker. If real runs show false changes, report a change only after it appears on two consecutive checks. Not built until evidence calls for it.
 
+## D12 — Add a current pricing view per competitor · 2026-10-25 · [Guy]
+
+**Decision.** Besides the list of changes, the app shows each competitor's current plans and prices from the latest snapshot, with a source link and check time on every row. Built after the core change list works.
+
+**Why.**
+- Pricing changes are rare, so the change list will often be empty. A current-state view shows live data on a quiet day, including in the screen recording.
+- It puts each change in context.
+- It costs little: every run already stores this data.
+- It gives Maya a sourced reference for leadership questions, in line with "no link, no number".
+
+**Scope limits.** Values are shown as written on each page, with no conversion between competitors' units: that would mean inventing exchange rates. No history or analytics (the sample's `nice_to_have` lists "analytics dashboard"). Failed or unreadable pages are shown as failed, never as current.
+
+**Evidence.** Maya didn't ask for this directly; it's an inference from her role and her incident. *[assumption]*
+
 ---
 
 ## Open questions
