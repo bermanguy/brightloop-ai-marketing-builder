@@ -1,0 +1,22 @@
+name: Live run every 6 hours
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the app and start a run
+        env:
+          PRICEWATCH_URL: ${{ secrets.PRICEWATCH_URL }}
+          RUN_TOKEN: ${{ secrets.RUN_TOKEN }}
+        run: |
+          # The free Render instance sleeps; the first request wakes it (about a minute).
+          curl -sS --retry 5 --retry-delay 20 --retry-all-errors --max-time 120 "$PRICEWATCH_URL/health"
+          curl -sS --fail-with-body --max-time 600 -X POST -H "Authorization: Bearer $RUN_TOKEN" "$PRICEWATCH_URL/run"

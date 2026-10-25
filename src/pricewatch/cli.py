@@ -18,7 +18,8 @@ def main(argv=None):
     source.add_argument("--input", help="cases.json")
     source.add_argument("--live", action="store_true", help="fetch the pricing pages and compare with the last snapshot")
     parser.add_argument("--output", required=True, help="where to write result.json")
-    parser.add_argument("--snapshots", default="data/snapshots", help="live: where snapshots are kept")
+    parser.add_argument("--db", help="live: DATABASE_URL or SQLite file for snapshots and the run log "
+                        "(default: $DATABASE_URL, else data/pricewatch.db)")
     parser.add_argument("--pages", help="live: read pages saved by the fetcher from this directory instead of fetching")
     parser.add_argument("--no-ai", action="store_true", help="live: read pages with the plain reader even if a key is set")
     args = parser.parse_args(argv)
@@ -26,9 +27,9 @@ def main(argv=None):
     error = None
     if args.live:
         from .live import run_live
+        from .store import Store
 
-        result, snapshot = run_live(args.snapshots, args.pages, use_ai=not args.no_ai)
-        print(f"snapshot saved to {snapshot}")
+        result = run_live(Store(args.db), args.pages, use_ai=not args.no_ai)
     else:
         cases, error = read_cases(args.input)
         result = process(cases)

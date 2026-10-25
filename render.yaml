@@ -1,0 +1,14 @@
+# Render Blueprint: New > Blueprint, pick this repo. Secrets are entered in Render, never here.
+services:
+  - type: web
+    name: pricewatch
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL      # Neon connection string
+        sync: false
+      - key: ANTHROPIC_API_KEY # the AI reader; without it the plain reader runs
+        sync: false
+      - key: RUN_TOKEN         # protects POST /run (Check now and the schedule)
+        sync: false
