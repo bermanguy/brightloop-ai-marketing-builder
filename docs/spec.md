@@ -28,7 +28,7 @@ Maya, Head of Growth, owns signups and trial starts. Competitors' pricing and pa
 | R2 | A change to what a plan includes becomes an item **even if the price is unchanged**. | "what a plan contains even if its price stays the same" |
 | R3 | Feature launches are skipped, with the reason given. *[open: a launch that changes what a plan includes, e.g. "now on every plan", may count as packaging; see Open questions]* | "Feature launches I mostly ignore" |
 | R4 | **No link, no number.** Every number in an item's `action` or `why` must appear, with its URL, in that item's sources. The system never computes, rounds or invents a figure that isn't in a source. | "no link, no number" |
-| R5 | A competitor's own pricing page outranks third-party and sponsored claims. An unverified claim (e.g. a sponsored post saying "free forever") is not presented as fact and gets low confidence or is skipped. *[assumption, consistent with R4 and her incident]* | the 30% incident |
+| R5 | **Believe a price only if it comes from the competitor's own website.** Example: `pr-401`, "Lovable Pro $20→$25" from lovable.dev/pricing, becomes an item. `pr-402`, "Bolt is now free forever" from a sponsored post on another site, is skipped as "not confirmed on Bolt's own pricing page". Ads, blogs, Reddit and AI summaries count as unconfirmed. *[assumption, from her incident; not her words]* | the 30% incident |
 | R6 | Each action is phrased in terms of signups and trial starts where possible. *[assumption]* | "anything that moves trial starts" |
 
 ## Rules from the brief and the test contract
