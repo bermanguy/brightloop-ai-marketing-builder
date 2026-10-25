@@ -78,6 +78,25 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Outcome (2026-10-25, 12:16).** Base44 confirmed it was a bug, fixed it, restored the 9 messages and added 5 per marketer (25 each). Discovery resumes with the original approach (D6).
 
+## D9 — Build for Maya: competitor pricing and packaging changes · 2026-10-25 · [Guy]
+
+**Decision.** `built_for: "maya"`. The product tracks competitors' pricing and packaging changes for Brightloop's Head of Growth.
+
+**Priority rule I applied.** Impact on business and marketing metrics (revenue, signups, trial starts) comes before frequency of use.
+
+**Evidence (Maya, verbatim).**
+- "I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem."
+- "I need more signups, honestly anything that moves trial starts."
+- "Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it."
+
+**Alternatives considered.**
+- **Noa (competitor launches):** strong evidence, including a near-miss on a false v0 rumour, and her needs match the sample's launch traps closely. Not chosen because her value is efficiency, speed and brand protection, with no stated metric and an indirect link to revenue. Her key sources (X, Reddit) are also paid or restricted.
+- **Daniel (ad briefs):** his core need, an expected CPA, depends on Brightloop's private ad-account data, which fails the brief's "real, live, public data" rule.
+
+**Trade-offs accepted.** Pricing changes are less frequent than launches, so the tool will produce fewer items. Each item carries more weight, and must be sourced.
+
+**Process note.** Scores and the full transcripts are in `docs/discovery/synthesis.md`. Each marketer appeared to hold three prepared facts; Maya's were confirmed complete after repeated probing (8/25 messages used, 17 kept for validation).
+
 ---
 
 ## Open questions

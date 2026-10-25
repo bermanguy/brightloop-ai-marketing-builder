@@ -72,6 +72,6 @@ Noa's requirements line up one-to-one with the sample's launch traps: `sg-301`/`
 - Questions outside a marketer's prepared facts return a free clarification.
 - Questions on a covered topic sometimes repeat an earlier answer, and a repeat costs a message. Maya 2/25 and Noa 3/25 were repeats. This suggests each marketer's prepared facts are close to exhausted.
 
-## Open
+## Decision
 
-Selection between Maya and Noa: Guy's decision.
+**Maya** (Guy, 2026-10-25 17:56). See D9 in `DECISIONS.md`.
