@@ -21,3 +21,7 @@ jobs:
         run: |
           ./run --input fixtures/sample-cases.json --output result.json
           cat result.json
+      - name: One live run from the saved pages, with no keys
+        run: |
+          ./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output live.json
+          python -c "import json; r = json.load(open('live.json')); print(r['run']); assert r['run']['errors'] == []"

@@ -79,7 +79,7 @@ def test_without_a_key_uses_the_plain_reader(monkeypatch):
     monkeypatch.delenv("PRICEWATCH_ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     page = saved("v0")
-    results, cost = ai_extract.read_pages([page])
+    results, cost = ai_extract.read_pages([page], ai_extract.make_client())
     assert results[0]["reader"] == "plain" and results[0]["ai_error"] is None
     assert results[0]["plans"] == extract.read_page(page)["plans"]
     assert cost == 0.0
@@ -107,7 +107,7 @@ def test_cost_reaches_the_run_summary():
 @pytest.mark.skipif(not (os.environ.get("PRICEWATCH_LIVE_AI") and ai_extract.api_key()), reason="live AI test is opt-in")
 @pytest.mark.parametrize("competitor", EXPECTED)
 def test_live_ai_reads_the_same_prices_as_by_hand(competitor):
-    result = ai_extract.read_page(saved(competitor))
+    result = ai_extract.read_page(saved(competitor), ai_extract.make_client())
     assert result["reader"] == "ai", result["ai_error"]
     got = [(p["name"], p["price"], p["list_price"]) for p in result["plans"]]
     assert got == [plan[:3] for plan in EXPECTED[competitor]]

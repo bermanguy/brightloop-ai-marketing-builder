@@ -1,4 +1,8 @@
-"""Command line: ./run --input cases.json --output result.json"""
+"""Command line.
+
+    ./run --input cases.json --output result.json    the brief's test interface
+    ./run --live --output result.json                one live run (fetch, read, compare, core)
+"""
 
 import argparse
 import json
@@ -10,14 +14,26 @@ from .sources.file import read_cases
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="run", description="Turn competitor signals into Maya's items.")
-    parser.add_argument("--input", required=True, help="cases.json")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--input", help="cases.json")
+    source.add_argument("--live", action="store_true", help="fetch the pricing pages and compare with the last snapshot")
     parser.add_argument("--output", required=True, help="where to write result.json")
+    parser.add_argument("--snapshots", default="data/snapshots", help="live: where snapshots are kept")
+    parser.add_argument("--pages", help="live: read pages saved by the fetcher from this directory instead of fetching")
+    parser.add_argument("--no-ai", action="store_true", help="live: read pages with the plain reader even if a key is set")
     args = parser.parse_args(argv)
 
-    cases, error = read_cases(args.input)
-    result = process(cases)
-    if error:
-        result["run"]["errors"].insert(0, error)
+    error = None
+    if args.live:
+        from .live import run_live
+
+        result, snapshot = run_live(args.snapshots, args.pages, use_ai=not args.no_ai)
+        print(f"snapshot saved to {snapshot}")
+    else:
+        cases, error = read_cases(args.input)
+        result = process(cases)
+        if error:
+            result["run"]["errors"].insert(0, error)
 
     with open(args.output, "w", encoding="utf-8") as handle:
         json.dump(result, handle, indent=2, ensure_ascii=False)
@@ -25,7 +41,7 @@ def main(argv=None):
 
     print(
         f"{len(result['items'])} items, {len(result['skipped'])} skipped, "
-        f"{len(result['run']['errors'])} errors -> {args.output}"
+        f"{len(result['run']['errors'])} errors, ${result['run']['cost_usd']:.4f} -> {args.output}"
     )
     return 1 if error else 0
 
