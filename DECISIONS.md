@@ -97,6 +97,14 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Process note.** Scores and the full transcripts are in `docs/discovery/synthesis.md`. Each marketer appeared to hold three prepared facts; Maya's were confirmed complete after repeated probing (8/25 messages used, 17 kept for validation).
 
+## D10 — Flag unverified pricing claims instead of skipping them · 2026-10-25 · [Guy]
+
+**Decision.** A pricing claim not found on the competitor's own website (a sponsored post, blog, Reddit, an AI summary) is shown to Maya as an item labelled **unverified**, with low confidence and a "don't act yet" action. It is not skipped.
+
+**Why.** Maya's incident happened because a false number was treated as fact, not because she saw it. A clearly labelled unverified item keeps her informed without inviting the same mistake.
+
+**Alternative considered.** Skip unverified claims with a reason. Rejected: she would lose sight of claims circulating in the market, which leadership may hear about anyway.
+
 ---
 
 ## Open questions

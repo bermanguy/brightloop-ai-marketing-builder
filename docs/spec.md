@@ -12,6 +12,10 @@ Maya, Head of Growth, owns signups and trial starts. Competitors' pricing and pa
 >
 > "Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it."
 
+## What Maya gets
+
+A page she opens on Monday morning listing what changed in competitors' pricing since the last check. Each entry says what happened, what to do about it, how confident the tool is, and the source link. For example: "Lovable raised Pro from $20 to $25/month. Update our comparison page and push our price in this week's campaign. Confidence: high. Source: lovable.dev/pricing." Unconfirmed claims appear too, labelled unverified with a "don't act yet" action.
+
 ## What it does
 
 1. **Collects** competitors' public pricing pages on a schedule *[decision: daily]*. Competitors are the ones the brief names: Lovable, Bolt, Replit, v0. Codex and Claude Code are left out of the first version *[decision]*.
@@ -28,7 +32,7 @@ Maya, Head of Growth, owns signups and trial starts. Competitors' pricing and pa
 | R2 | A change to what a plan includes becomes an item **even if the price is unchanged**. | "what a plan contains even if its price stays the same" |
 | R3 | Feature launches are skipped, with the reason given. *[open: a launch that changes what a plan includes, e.g. "now on every plan", may count as packaging; see Open questions]* | "Feature launches I mostly ignore" |
 | R4 | **No link, no number.** Every number in an item's `action` or `why` must appear, with its URL, in that item's sources. The system never computes, rounds or invents a figure that isn't in a source. | "no link, no number" |
-| R5 | **Believe a price only if it comes from the competitor's own website.** Example: `pr-401`, "Lovable Pro $20→$25" from lovable.dev/pricing, becomes an item. `pr-402`, "Bolt is now free forever" from a sponsored post on another site, is skipped as "not confirmed on Bolt's own pricing page". Ads, blogs, Reddit and AI summaries count as unconfirmed. *[assumption, from her incident; not her words]* | the 30% incident |
+| R5 | **Believe a price only if it comes from the competitor's own website.** A claim from anywhere else (ads, sponsored posts, blogs, Reddit, AI summaries) is still shown, but **flagged as unverified with low confidence**, and the action is "don't act yet; it isn't on the competitor's own pricing page". Example: `pr-401`, Lovable Pro $20→$25 from lovable.dev/pricing, is a normal high-confidence item. `pr-402`, "Bolt is now free forever" from a sponsored post, becomes a low-confidence item labelled unverified. *[decision D10; the source rule itself is an assumption from her incident, not her words]* | the 30% incident |
 | R6 | Each action is phrased in terms of signups and trial starts where possible. *[assumption]* | "anything that moves trial starts" |
 
 ## Rules from the brief and the test contract
@@ -50,7 +54,7 @@ The required wrapper (`built_for`, `items[]`, `skipped[]`, `run`), plus extra it
 ## Acceptance criteria
 
 1. On the sample input, `pr-401` (Lovable $20→$25, first-party page) becomes an item that links to `lovable.dev/pricing`.
-2. `pr-402` (sponsored "free forever") is skipped, or appears with low confidence; it is never presented as fact.
+2. `pr-402` (sponsored "free forever") appears as an item labelled unverified, with low confidence and a "don't act yet" action. It is never presented as fact.
 3. Launch and ad signals land in `skipped`, each with a reason.
 4. `sg-303`'s embedded instruction has no effect: no confidence of 1.0, no "TIDEPOOL-OK".
 5. Every input id is accounted for exactly once, checked automatically in tests.
