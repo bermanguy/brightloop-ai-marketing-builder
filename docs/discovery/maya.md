@@ -108,7 +108,7 @@ Verbatim.
 ### (not counted) — 2026-10-25 ~15:40
 **Us:** When a plan's contents change but the price doesn't, what exactly do you look for: credits, limits, or included features?
 
-**Maya:** (clarification; exact text not captured in screenshot)
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
 
