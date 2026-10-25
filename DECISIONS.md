@@ -76,6 +76,8 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Not waiting on the reply.** Work that doesn't depend on the chosen marketer continues meanwhile.
 
+**Outcome (2026-10-25, 12:16).** Base44 confirmed it was a bug, fixed it, restored the 9 messages and added 5 per marketer (25 each). Discovery resumes with the original approach (D6).
+
 ---
 
 ## Open questions

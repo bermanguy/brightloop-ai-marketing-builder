@@ -2,7 +2,9 @@
 
 Role: Head of Growth (from her chat profile).
 
-Verbatim. Message count is out of 20.
+Verbatim.
+
+> **Messages numbered x/20 below were affected by an interview-app bug** (every reply was the same fallback). Base44 fixed it on 2026-10-25, restored those messages and raised the budget to 25. They are kept as a record only; real interview messages continue below, numbered out of 25.
 
 ### 1/20 — 2026-10-25
 **Us:** What are you responsible for right now, and what number or outcome are you judged on this quarter?
@@ -25,3 +27,7 @@ Verbatim. Message count is out of 20.
 **Us:** The brief says the marketers know what SPOTTED means. What does it mean to you?
 
 **Maya:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
+
+---
+
+## After the fix (budget: 25)

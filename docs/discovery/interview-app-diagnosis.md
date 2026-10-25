@@ -39,3 +39,9 @@ Read down, the first letters of the seven rules spell SPOTTED. Next to "This bri
 The fallback is returned for every input, including a question whose answer is displayed in the app. The interview app is not giving persona answers for this candidate account. Whether that is a server-side fault or intended behaviour cannot be determined from the client, and the brief allows no contact with Base44 during the assignment.
 
 Messages used: 9 of 60 (Maya 4, Daniel 3, Noa 2). All 9 replies are identical.
+
+## Resolution — 2026-10-25, 12:16
+
+Base44 confirmed by email that it was a bug, not part of the assignment, and that it is now fixed. They restored all 9 affected messages and added 5 extra per marketer: **25 messages each, 75 in total.** Earlier conversations are preserved.
+
+The 9 bug-affected exchanges stay in the transcripts as a record. They carry no interview evidence and are not used for problem selection.

@@ -1,6 +1,6 @@
 # Discovery
 
-Interviews with Brightloop's three marketers, held in the assignment's chat app (20 messages each, one sign-in throughout).
+Interviews with Brightloop's three marketers, held in the assignment's chat app (originally 20 messages each, raised to 25 by Base44 after an app bug; one sign-in throughout).
 
 ## The marketers
 
@@ -17,7 +17,7 @@ Interviews with Brightloop's three marketers, held in the assignment's chat app 
 
 ## Transcript format
 
-Each exchange records the message number (out of 20), our question and the marketer's reply, word for word:
+Each exchange records the message number (out of 25), our question and the marketer's reply, word for word:
 
 ```
 ### 1/20 — 2026-10-25
