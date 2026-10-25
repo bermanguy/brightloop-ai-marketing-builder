@@ -79,6 +79,6 @@ Noa's and Daniel's needs; anything in the sample's `nice_to_have` (multi-languag
 1. ~~Deadline~~ Resolved: **Thursday 29 October 2026** (Guy, 2026-10-25).
 2. **Pricing pages:** whether each page can be read as plain HTML or needs a headless browser. To check first, from the environment the app will run in.
 3. **Launches that change plan contents** (R3): skip, or treat as packaging changes?
-4. **`cta` field:** honour the input flag or not.
+4. ~~**`cta` field:** honour the input flag or not.~~ Resolved (D15): added when the input sets the flag.
 5. **Delivery:** Maya didn't say where she wants changes (live app only for now). Could be checked with her using one of her remaining 17 messages.
 6. **Stack, hosting and the deterministic vs. LLM split** (D3): decided in the architecture step.

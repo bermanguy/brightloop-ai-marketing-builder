@@ -40,11 +40,13 @@ def now_utc():
 class _TextExtractor(HTMLParser):
     """Visible text of a page, one block per line. Scripts, styles and hidden templates are dropped.
 
-    Struck-through text (<del>, <s>) is wrapped in ~~ so a crossed-out list
-    price can't be read as the plan's price: v0's "$30 ~~$90~~", not "$30$90".
+    Struck-through text (<del>, <s>, or a CSS "line-through" class as on Replit)
+    is wrapped in ~~ so a crossed-out list price can't be read as the plan's
+    price: v0's "$30 ~~$90~~", not "$30$90".
     """
 
     STRUCK = {"del", "s", "strike"}
+    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
     SKIP = {"script", "style", "noscript", "template", "svg", "head"}
     BLOCK = {
         "p", "div", "section", "article", "header", "footer", "main", "nav", "aside", "li", "ul", "ol",
@@ -55,22 +57,35 @@ class _TextExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts = []
         self.skipping = 0
+        self.struck_open = []  # tag names of open struck-through elements
 
     def handle_starttag(self, tag, attrs):
         if tag in self.SKIP:
             self.skipping += 1
-        elif tag in self.STRUCK:
-            self.parts.append(" ~~")
         elif tag in self.BLOCK:
             self.parts.append("\n")
+        if tag not in self.VOID and self._is_struck(tag, attrs):
+            self.struck_open.append(tag)
+            self.parts.append(" ~~")
+        elif self.struck_open and tag == self.struck_open[-1]:
+            self.struck_open.append(tag + "/plain")  # same tag nested inside: not a closer
 
     def handle_endtag(self, tag):
         if tag in self.SKIP:
             self.skipping = max(0, self.skipping - 1)
-        elif tag in self.STRUCK:
-            self.parts.append("~~ ")
         elif tag in self.BLOCK:
             self.parts.append("\n")
+        if self.struck_open and self.struck_open[-1] == tag + "/plain":
+            self.struck_open.pop()
+        elif self.struck_open and self.struck_open[-1] == tag:
+            self.struck_open.pop()
+            self.parts.append("~~ ")
+
+    def _is_struck(self, tag, attrs):
+        if tag in self.STRUCK:
+            return True
+        classes = dict(attrs).get("class") or ""
+        return "line-through" in classes.split()
 
     def handle_data(self, data):
         if not self.skipping:

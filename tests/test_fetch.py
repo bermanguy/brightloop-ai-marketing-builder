@@ -76,3 +76,8 @@ def test_save_pages(tmp_path, monkeypatch):
     assert (tmp_path / "v0.html").read_text() == PRICING_HTML
     meta = json.loads((tmp_path / "v0.json").read_text())
     assert "html" not in meta and meta["ok"] and "$30" in meta["text"]
+
+
+def test_css_line_through_counts_as_struck():
+    html = '<p><span class="opacity-75 line-through">$20</span> $18 / month</p><p><del><span>$9</span>0</del></p>'
+    assert fetch.visible_text(html).split("\n") == ["~~$20~~ $18 / month", "~~$90~~"]
