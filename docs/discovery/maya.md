@@ -13,3 +13,10 @@ Verbatim. Message count is out of 20.
 **Us:** Fair. Tell me about the last piece of work you shipped: what it was, and what you did step by step to get it out.
 
 **Maya:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
+
+### 3/20 — 2026-10-25
+**Us:** Hi Noa, can you describe one recurring task you personally handle at Brightloop, and walk me through what you actually do?
+
+*(Note: this message was meant for Noa and was sent to Maya by mistake.)*
+
+**Maya:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
