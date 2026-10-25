@@ -59,3 +59,15 @@ Verbatim.
 **Us:** Tell me about the last time you heard about a competitor launch too late. What did it cost?
 
 **Noa:** The same launch reaches me three or four times from different sources at different times, and I have to work out that it's one thing. Time zones make it worse: the US posts on Saturday night, and it's Sunday morning for me.
+
+### (not counted) — 2026-10-25 ~15:27
+**Us:** Once you've worked out it's one launch, what do you do with it?
+
+**Noa:** Could you narrow that to one part of the marketing or content work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### 3/25 (repeat of 1/25) — 2026-10-25 ~15:27
+**Us:** Where do you want to hear about a competitor launch: Slack, email or Notion?
+
+**Noa:** I'm PMM and content lead. Tell me what competitors ship; I need to know before Twitter does.

@@ -80,3 +80,13 @@ Verbatim.
 **Us:** What did you do the last time a competitor raised their price?
 
 **Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
+
+### 2/25 (repeat of 1/25) — 2026-10-25 ~15:27
+**Us:** When you spot a competitor's packaging change, what's the first thing you do with it?
+
+**Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
+
+### 3/25 — 2026-10-25 ~15:27
+**Us:** Where do you want to hear about a pricing change: Slack, email or Notion?
+
+**Maya:** I'm Head of Growth. I need more signups, honestly anything that moves trial starts.
