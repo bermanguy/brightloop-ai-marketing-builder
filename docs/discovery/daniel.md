@@ -43,3 +43,10 @@ Verbatim.
 **Us:** Walk me through the last brief you put in Notion: where did the idea come from, and what was in it?
 
 **Daniel:** Ideas aren't the bottleneck; approvals are. I have 30 ideas in a doc, and four got approved last month. Briefs come back from Maya two or three times when they lack a rationale and an expected CPA.
+
+### (not counted) — 2026-10-25 ~15:08
+**Us:** When Maya sends a brief back for a missing rationale or expected CPA, what do you have to go and find, and where do you get it?
+
+**Daniel:** Could you narrow that to one part of the brief or paid-ad work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*

@@ -40,3 +40,10 @@ Verbatim.
 **Maya (after Base44's second fix, ~15:00):** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:08
+**Us:** When one of Daniel's ad briefs reaches you, what do you check before you approve it or send it back?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*

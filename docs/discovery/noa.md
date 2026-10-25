@@ -28,3 +28,10 @@ Verbatim.
 **Noa (after Base44's second fix, ~15:00):** Could you narrow that to one part of the marketing or content work? I don't want to guess at details I can't reliably describe.
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:08
+**Us:** Think of the last launch announcement you wrote. What did you have to find out before you could write it?
+
+**Noa:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
