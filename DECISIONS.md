@@ -62,6 +62,20 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Alternative considered.** Keep notes in chat and create the repo after problem selection. Cheaper today, but loses the dated trail.
 
+## D8 — Contact Base44 about the interview app, despite "no contact" · 2026-10-25 · [Guy]
+
+**Context.** All 9 interview messages (Maya 4, Daniel 3, Noa 2) returned the identical line "I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did." That includes a control question whose answer is printed in the app (Daniel's job title). Browser checks showed no client-side errors. Details: `docs/discovery/interview-app-diagnosis.md`.
+
+**Decision.** I replied to the assignment email with screenshots, asking only whether the app is behaving as intended for my account. I didn't ask anything about what to build, the traps or SPOTTED. I also tried to reach them by phone.
+
+**Why.** The brief says there's no contact during the assignment. I read that as "don't ask for help with the assignment", not "don't report a broken tool". A user-research tool that answers nothing would otherwise force a product choice without users.
+
+**Alternatives considered.**
+- Keep rewording questions: rejected after the control question proved the reply is independent of the input.
+- Infer the marketers from real Base44 employees' public LinkedIn posts: rejected. The marketers are presented as fictional; it would mean profiling real people, and it couldn't fix a fallback that fires even on a displayed fact.
+
+**Not waiting on the reply.** Work that doesn't depend on the chosen marketer continues meanwhile.
+
 ---
 
 ## Open questions
