@@ -20,3 +20,8 @@ Verbatim. Message count is out of 20.
 *(Note: this message was meant for Noa and was sent to Maya by mistake.)*
 
 **Maya:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
+
+### 4/20 — 2026-10-25
+**Us:** The brief says the marketers know what SPOTTED means. What does it mean to you?
+
+**Maya:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
