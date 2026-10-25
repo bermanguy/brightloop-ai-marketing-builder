@@ -71,3 +71,20 @@ Verbatim.
 **Us:** Where do you want to hear about a competitor launch: Slack, email or Notion?
 
 **Noa:** I'm PMM and content lead. Tell me what competitors ship; I need to know before Twitter does.
+
+### 4/25 (repeat of 2/25) — 2026-10-25 ~15:45
+**Us:** What did you do the last time two sources reported the same launch differently?
+
+**Noa:** The same launch reaches me three or four times from different sources at different times, and I have to work out that it's one thing. Time zones make it worse: the US posts on Saturday night, and it's Sunday morning for me.
+
+### 5/25 — 2026-10-25 ~15:45
+**Us:** What happened the last time a competitor launch turned out to be a rumour?
+
+**Noa:** Last month I almost posted a reaction to a Reddit thread claiming v0 was shutting down. It was false. If it's a rumour, I don't want to see it, or at least don't label it huge.
+
+### (not counted) — 2026-10-25 ~15:45
+**Us:** Which sources do you trust most for competitor launches?
+
+**Noa:** Could you narrow that to one part of the marketing or content work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*

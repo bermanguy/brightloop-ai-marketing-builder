@@ -146,3 +146,17 @@ Verbatim.
 **Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
 
 *(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:45
+**Us:** What happened to trial starts the last time a competitor cut their price?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:45
+**Us:** What did you do the last time a competitor ran a discount or a free-plan promotion?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
