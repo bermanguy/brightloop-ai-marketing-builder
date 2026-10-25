@@ -1,6 +1,6 @@
 # Architecture — proposed
 
-Status: **proposal, awaiting Guy's approval.** 2026-10-25. Implements `docs/spec.md`.
+Status: **approved by Guy, 2026-10-25** (D13). Implements `docs/spec.md`.
 
 ## One idea holds it together
 
@@ -18,19 +18,28 @@ TEST:  cases.json ────────────────────�
 
 ## Where AI is used, and where it isn't
 
-Maya was burned by an AI summary that invented a number. So AI never decides a number, a confidence or what gets skipped.
+**AI understands and advises; rules score and check.**
 
-| Step | How | Why |
+| Job | How | Guardrail |
 | --- | --- | --- |
-| Relevance, skip reasons, id accounting | Plain code | Must be exact and testable |
-| Confidence | Plain code, from the source type (competitor's own page vs. anything else) | So no text inside a signal can change it (D1) |
-| Comparing snapshots | Plain code | Exact |
-| `action` and `why` text | Plain-code templates with the exact numbers from the source | Runs with no keys; can't invent figures |
-| Reading plans from a pricing page | **Depends on Monday's page check.** Clean HTML → a small parser per site. Messy HTML → an LLM that must quote the page text for every value; any value whose quote isn't found word for word in the page is rejected | Keeps "no link, no number" true even if an LLM is involved |
+| Reading plans and prices from a pricing page | **AI** | Every value must come with a quote from the page; a value whose quote isn't found word for word in the page is rejected |
+| Deciding whether a page change matters (e.g. "Pro now includes 150 credits instead of 100" vs. "Get started → Start building") | **AI** | Only judges significance; never sets confidence |
+| Writing `action` and `why` with Brightloop context | **AI** | Code checks every number in the text appears in the item's sources; if not, it falls back to the template |
+| Confidence | **Rule**, from where the claim came from | No signal text is read, so hidden instructions can't move it |
+| "Unverified" label | **Rule** (not the competitor's own site) | Same |
+| What gets skipped (launch and ad signals) | **Rule**, from the signal type | Same |
+| Every input id appears exactly once | **Rule** (counting) | Tested |
 
-The test-file path (what reviewers run) is plain code end to end, so it works on a fresh clone with **no keys**. An LLM, if used at all, sits only in the live source; its extracted results are stored with each snapshot, so recorded runs replay without keys. `run.cost_usd` reports actual LLM spend (0 when none is used).
+**Confidence rule (first version):**
 
-Optional later: an LLM to reword `action` text, with a check that it adds no new numbers. Not in the first version.
+| Where the claim came from | Confidence | Label |
+| --- | --- | --- |
+| The competitor's own pricing page | 0.9 | — |
+| The competitor's own site, another page | 0.6 | — |
+| News or other third party | 0.4 | unverified |
+| Sponsored post, ad, Reddit, anonymous | 0.2 | unverified |
+
+**No keys:** without an API key (a reviewer's fresh clone), the same pipeline uses plain-code fallbacks: templates for the text, and treating every material field change as significant. The output is less polished but correct. Recorded live runs store the AI's results, so the keyless proof replays real AI-quality output. `run.cost_usd` reports actual spend (expected: a few cents a day).
 
 ## Stack
 
@@ -79,7 +88,7 @@ run, proof, record   entry-point scripts
 
 ## What Guy needs to set up
 
-Accounts the session can't create: **Render** and **Neon**, both free. Optional: an LLM API key, only if Monday's check shows the pages need one. All secrets go in environment variables, never in the repo.
+Accounts the session can't create: **Render** and **Neon**, both free. An **LLM API key** (Anthropic or OpenAI) for the live app. All secrets go in environment variables, never in the repo.
 
 ## Risks
 

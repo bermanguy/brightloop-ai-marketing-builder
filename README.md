@@ -9,7 +9,7 @@ Home assignment for the AI Marketing Builder role at Base44.
 | Path | Contents |
 | --- | --- |
 | `docs/spec.md` | What we're building, its rules and acceptance criteria |
-| `docs/architecture.md` | How it is built (proposed) |
+| `docs/architecture.md` | How it is built (approved) |
 | `DECISIONS.md` | Decision log: what was decided, why, alternatives, and who decided |
 | `docs/discovery/` | Verbatim interview transcripts with the Brightloop marketers, plus the synthesis |
 | `reference/` | The original assignment brief, kept unmodified as reference |

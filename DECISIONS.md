@@ -129,6 +129,28 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Evidence.** Maya didn't ask for this directly; it's an inference from her role and her incident. *[assumption]*
 
+## D13 — Architecture: one shared core, Python on Render + Neon, AI for understanding, rules for scoring · 2026-10-25 · [Claude → Guy]
+
+**Decision.** As in `docs/architecture.md`:
+- Live and test modes feed one shared core.
+- Python + FastAPI, hosted on Render (free), with Postgres on Neon (free).
+- A GitHub Actions schedule every 6 hours, plus the "Check now" button.
+- **AI** reads pricing pages, judges whether a change matters, and writes recommendations.
+- **Rules** set confidence, the unverified label and skips, and check that every input id appears exactly once.
+
+**Why.**
+- The brief requires one logic for live and test modes, with only the input source changing.
+- Rules can't be manipulated by text inside signals, and they work without keys.
+- AI is used where understanding helps: messy pages, telling noise from real changes, and specific advice. Each use has a check that stops it from inventing numbers (Maya's incident).
+
+**Alternatives considered.**
+- AI only for reading pages: safer, but recommendations would be generic and page noise would reach Maya.
+- AI for everything, including confidence: open to prompt injection, and it can't run without keys.
+- Base44 front end: couldn't confirm all code would stay in the repo.
+- Render's own cron and database: not free (cron), or deleted after 30 days (database).
+
+**Trade-offs accepted.** Without a key, the fallback text is plainer. The free tier has a cold start of about a minute.
+
 ---
 
 ## Open questions
