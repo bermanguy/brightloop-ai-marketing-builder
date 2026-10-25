@@ -19,3 +19,8 @@ Verbatim.
 ---
 
 ## After the fix (budget: 25)
+
+### (not counted) — 2026-10-25 12:20
+**Us:** Tell me about the last launch or piece of content you put out: what was it, and how did you decide what it should say?
+
+**App:** "The reply couldn't finish. This question hasn't used your allowance." (Retry button shown.)

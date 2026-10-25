@@ -24,3 +24,10 @@ Verbatim.
 ---
 
 ## After the fix (budget: 25)
+
+### 1/25 — 2026-10-25
+**Us:** Tell me about the last growth experiment you ran: what did you test, and what did you change because of the result?
+
+*(Note: this was the opener drafted for Maya; it was sent to Daniel by mistake. He answered from his own work.)*
+
+**Daniel:** I was given a tool that scored ads with predicted CTR. It ranked a two-day-old ad as the best one, and that ad died a week later. I don't trust predicted anything.

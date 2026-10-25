@@ -31,3 +31,8 @@ Verbatim.
 ---
 
 ## After the fix (budget: 25)
+
+### (not counted) — 2026-10-25 12:20
+**Us:** Tell me about the last growth experiment you ran: what did you test, and what did you change because of the result?
+
+**App:** "The reply couldn't finish. This question hasn't used your allowance." (Retry button shown.)
