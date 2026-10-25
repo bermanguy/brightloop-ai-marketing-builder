@@ -119,13 +119,12 @@ def _fallback(page, reason, cost):
     return result
 
 
-def read_page(page, client=None):
-    """Add plans to a fetched page (fetch.fetch_page), with the AI when a key is set."""
+def read_page(page, client):
+    """Add plans to a fetched page (fetch.fetch_page). client: from make_client(); None reads without AI."""
     if not page.get("ok"):
         result = extract.read_page(page)
         result.update(reader=None, ai_error=None, cost_usd=0.0)
         return result
-    client = client or make_client()
     if client is None:
         return _fallback(page, None, 0.0)
 
@@ -147,8 +146,7 @@ def read_page(page, client=None):
     return result
 
 
-def read_pages(pages, client=None):
+def read_pages(pages, client):
     """Read every page; return (results, total cost in USD) for run.cost_usd."""
-    client = client or make_client()
     results = [read_page(page, client) for page in pages]
     return results, round(sum(result["cost_usd"] for result in results), 6)

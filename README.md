@@ -54,7 +54,7 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 
 Credential-like values in the input (e.g. `config.demo_key`) are replaced with `[redacted]` wherever they would appear in the output.
 
-## Live fetch (in progress)
+## Live run (in progress)
 
 Downloads the four pricing pages as they look on first load (D14) and saves the raw HTML plus the visible text:
 
@@ -69,4 +69,19 @@ Bolt, Replit and v0 are fetched over plain HTTP; Lovable is rendered in headless
 
 `pricewatch.sources.ai_extract.read_page` does the same job with Claude (`claude-opus-5-5`, low effort), returning plans in the same shape. The page text is sent as data, and every plan the AI returns must pass the same word-for-word check; a plan that fails it is dropped. With no key, or when the call fails or no plan checks out, it falls back to the plain reader. Each result says which reader ran (`reader`) and what it cost (`cost_usd`); `read_pages` returns the total for `run.cost_usd`. On the saved pages it reads the same names and prices as the hand check, for about $0.12 for all four pages.
 
-The key is read from `PRICEWATCH_ANTHROPIC_API_KEY`, or `ANTHROPIC_API_KEY` if that isn't set. `PRICEWATCH_LIVE_AI=1 pytest -k live` runs the real-call test (it spends about $0.12); plain `pytest` never calls the API. Comparing runs comes next.
+The key is read from `PRICEWATCH_ANTHROPIC_API_KEY`, or `ANTHROPIC_API_KEY` if that isn't set. `PRICEWATCH_LIVE_AI=1 pytest -k live` runs the real-call test (it spends about $0.12); plain `pytest` never calls the API.
+
+### One live run
+
+```
+./run --live --output result.json                 # fetch, read, compare with the last snapshot, run the core
+./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output result.json   # from saved pages, no key
+```
+
+Each run saves a snapshot to `data/snapshots/<time>.json` (every page's plans, or why it couldn't be read) and compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price, list price or billing wording (R1), one for a changed list of what's included even at the same price (R2), and one for a plan added or removed.
+
+- A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
+- AI and plain readings aren't compared with each other: the two readers word billing and "includes" slightly differently, which would report 5 changes that never happened on the saved pages.
+- `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
+
+Snapshots are JSON files for now; the database replaces them at deploy.
