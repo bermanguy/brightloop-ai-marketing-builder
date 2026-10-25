@@ -18,7 +18,7 @@ A page she opens on Monday morning listing what changed in competitors' pricing 
 
 ## What it does
 
-1. **Collects** competitors' public pricing pages on a schedule *[decision: daily]*. Competitors are the ones the brief names: Lovable, Bolt, Replit, v0. Codex and Claude Code are left out of the first version *[decision]*.
+1. **Collects** competitors' public pricing pages **every 6 hours**, plus a **"Check now" button** for an on-demand run *[decision D11]*. Competitors are the ones the brief names: Lovable, Bolt, Replit, v0. Codex and Claude Code are left out of the first version *[decision]*.
 2. **Records** each plan's price, billing period and what the plan includes (credits, messages, projects, limits, included features). Every value is stored with its source URL and the exact page text it came from.
 3. **Compares** each run with the previous snapshot and turns every difference into a `pricing` signal.
 4. **Decides**, using the same core logic as test mode, what Maya should do about each signal: an action, the reason, a confidence, and the source link behind every number.

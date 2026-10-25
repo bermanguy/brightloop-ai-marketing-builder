@@ -105,6 +105,16 @@ Entries are written when the decision is made, not reconstructed afterwards.
 
 **Alternative considered.** Skip unverified claims with a reason. Rejected: she would lose sight of claims circulating in the market, which leadership may hear about anyway.
 
+## D11 — Check every 6 hours, plus a "Check now" button · 2026-10-25 · [Claude → Guy]
+
+**Decision.** Scheduled runs every 6 hours, and a button in the app that triggers a run on demand.
+
+**Why.** What Maya does with a pricing change (comparison pages, campaigns, briefing leadership) takes days, and her incident was about accuracy, not speed. So near-real-time isn't needed. Every 6 hours costs almost nothing, though: four pages, a few requests a day. The button lets her check when leadership asks, and lets the screen recording show a real run from a cold start.
+
+**Alternatives considered.** Daily only: enough for her pace, but no way to refresh on demand. Hourly or faster: more exposure to page flicker (A/B tests, promo banners) with no benefit for her decisions.
+
+**Known risk.** Pricing pages can flicker. If real runs show false changes, report a change only after it appears on two consecutive checks. Not built until evidence calls for it.
+
 ---
 
 ## Open questions
