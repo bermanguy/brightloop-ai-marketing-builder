@@ -13,3 +13,8 @@ Verbatim. Message count is out of 20.
 **Us:** Which specific piece of work of yours should I ask about? Just give me its name.
 
 **Daniel:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.
+
+### 3/20 — 2026-10-25
+**Us:** What's your job title at Brightloop?
+
+**Daniel:** I don't know that detail, and I don't want to make it up. Ask me about a specific piece of work I actually did.

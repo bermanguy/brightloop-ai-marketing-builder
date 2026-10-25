@@ -28,3 +28,14 @@ We checked the app with normal browser troubleshooting before spending more mess
 ## SPOTTED
 
 Read down, the first letters of the seven rules spell SPOTTED. Next to "This brief contains a few deliberate traps… Noticing them… is part of the job", it reads as a clue to spot the traps, not a phrase that unlocks the marketers. Maya gave the same canned reply to a question about it.
+
+## Follow-up checks — 09:40–09:45
+
+- **Sign-in through Google with the same Gmail address.** The same account was reused (history and counters intact). The candidate profile lookup still returned an empty list afterwards. Not confirmed as the cause.
+- **Control question, 1 message (Daniel 3/20):** "What's your job title at Brightloop?" The answer, "Paid ads manager", is printed on his card. He replied with the same canned line.
+
+## Conclusion
+
+The fallback is returned for every input, including a question whose answer is displayed in the app. The interview app is not giving persona answers for this candidate account. Whether that is a server-side fault or intended behaviour cannot be determined from the client, and the brief allows no contact with Base44 during the assignment.
+
+Messages used: 9 of 60 (Maya 4, Daniel 3, Noa 2). All 9 replies are identical.
