@@ -31,3 +31,8 @@ Verbatim.
 *(Note: this was the opener drafted for Maya; it was sent to Daniel by mistake. He answered from his own work.)*
 
 **Daniel:** I was given a tool that scored ads with predicted CTR. It ranked a two-day-old ad as the best one, and that ad died a week later. I don't trust predicted anything.
+
+### 2/25 — 2026-10-25
+**Us:** Tell me about the last ad campaign you launched or changed: which channel, and what made you change it?
+
+**Daniel:** I work in Meta and LinkedIn, and every brief goes in Notion. A brief that isn't in Notion doesn't exist.
