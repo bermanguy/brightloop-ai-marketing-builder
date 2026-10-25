@@ -2,7 +2,7 @@
 
 Home assignment for the AI Marketing Builder role at Base44.
 
-**Status:** core test interface built (`./run`); live fetching, the app and the keyless proof come next. Building for Maya (Head of Growth): a watch on competitors' pricing and packaging changes, where every number links to its source. See `docs/spec.md`.
+**Status:** test interface (`./run`), live run (`./run --live`) and keyless proof (`./proof`) built; the web app and deploy come next. Building for Maya (Head of Growth): a watch on competitors' pricing and packaging changes, where every number links to its source. See `docs/spec.md`.
 
 ## Repository layout
 
@@ -54,6 +54,21 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 
 Credential-like values in the input (e.g. `config.demo_key`) are replaced with `[redacted]` wherever they would appear in the output.
 
+## Keyless proof
+
+```
+./proof
+```
+
+No keys, no network, standard library only. It checks two things and exits 1 if any check fails:
+
+1. The brief's sample (`fixtures/sample-cases.json`) through the test interface: `pr-401` is an item linking to `lovable.dev/pricing`; `pr-402` is unverified, low confidence, "don't act yet"; launches and ads are skipped with a reason; `sg-303`'s injected instruction has no effect; `config.demo_key` isn't echoed; every id is accounted for once; every number is in its item's sources.
+2. Every recorded real run in `fixtures/recorded/` replayed in order through the live pipeline (compare with the previous run, then the core). Each recorded plan must still be quoted word for word from its recorded page text; failed pages must be reported; ids and numbers are checked as above.
+
+The last replayed result is written to `proof-result.json`.
+
+`./record` makes those recordings: one real run (fetch, then read with the AI when a key is set) saved as `fixtures/recorded/<time>.json`, holding each page's visible text, the plans read from it and what the reading cost. The two committed recordings are real AI runs of 2026-10-25, a minute apart ($0.12 each); no pricing changed between them, so the replay shows 0 changes. Real changes will show up as recordings accumulate; planted changes are covered by `tests/test_compare.py`.
+
 ## Live run (in progress)
 
 Downloads the four pricing pages as they look on first load (D14) and saves the raw HTML plus the visible text:
@@ -78,10 +93,10 @@ The key is read from `PRICEWATCH_ANTHROPIC_API_KEY`, or `ANTHROPIC_API_KEY` if t
 ./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output result.json   # from saved pages, no key
 ```
 
-Each run saves a snapshot to `data/snapshots/<time>.json` (every page's plans, or why it couldn't be read) and compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price, list price or billing wording (R1), one for a changed list of what's included even at the same price (R2), and one for a plan added or removed.
+Each run saves a snapshot to `data/snapshots/<time>.json` (every page's plans, or why it couldn't be read) and compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price or list price (R1), one for any other change to the plan's lines on the page (billing wording, what's included) even at the same price (R2), and one for a plan added or removed. The plan's lines are its quotes, not the reader's billing/includes fields: in two real AI readings a minute apart, the AI filed the same Lovable line under billing once and under includes once, while the lines themselves only change when the page does.
 
 - A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
-- AI and plain readings aren't compared with each other: the two readers word billing and "includes" slightly differently, which would report 5 changes that never happened on the saved pages.
+- AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
 - `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
 
 Snapshots are JSON files for now; the database replaces them at deploy.

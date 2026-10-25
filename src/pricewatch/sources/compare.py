@@ -5,18 +5,24 @@ treats it exactly like one: its source is the competitor's pricing page, its
 text quotes the page as written, before and after.
 
 Rules, not AI (D13):
-- A changed price, list price or billing wording is one signal per plan (R1).
-- A changed list of what a plan includes is one signal per plan, even when the
-  price is the same (R2).
+- A changed price or list price is one signal per plan (R1).
+- Any other change to the plan's lines on the page (billing wording, what it
+  includes) is one signal per plan, even when the price is the same (R2).
 - A plan that appears or disappears is one signal.
 - Only pages read successfully in both snapshots are compared. A failed page
   never reads as "every plan removed" (D12); the caller reports it instead.
+
+"The plan's lines" are its quotes: the page lines the reader says the plan's
+values came from. They're compared instead of the reader's billing/includes
+fields because the AI files the same line under either field from one run to
+the next (seen on Lovable's "Volume based pricingUnlimited users"), while the
+lines themselves only change when the page does.
 """
 
 import re
 
-PRICE_FIELDS = ("price", "list_price", "billing")
-MAX_LINES = 4  # included lines quoted per signal; the rest are counted
+PRICE_FIELDS = ("price", "list_price")
+MAX_LINES = 4  # changed lines quoted per signal; the rest are counted
 
 
 def _slug(value):
@@ -67,19 +73,23 @@ def compare_page(before, after):
             signals.append(_signal(after, name, "added", f"New plan on the pricing page: {name}, {_price_words(plan)}."))
             continue
         was = old[name]
+        old_lines, new_lines = was["quotes"], plan["quotes"]
         if any(was.get(field) != plan.get(field) for field in PRICE_FIELDS):
             signals.append(
                 _signal(after, name, "price", f"{name} plan now shows {_price_words(plan)}; it showed {_price_words(was)} {since}.")
             )
-        added = [line for line in plan["includes"] if line not in was["includes"]]
-        removed = [line for line in was["includes"] if line not in plan["includes"]]
+            # The price lines are covered by that signal, so they aren't a detail change too.
+            old_lines = [line for line in old_lines if not (was["price"] and was["price"] in line)]
+            new_lines = [line for line in new_lines if not (plan["price"] and plan["price"] in line)]
+        added = [line for line in new_lines if line not in old_lines]
+        removed = [line for line in old_lines if line not in new_lines]
         if added or removed:
             changes = []
             if added:
-                changes.append(f"now lists {_lines(added)}")
+                changes.append(f"now shows {_lines(added)}")
             if removed:
-                changes.append(f"no longer lists {_lines(removed)}")
-            signals.append(_signal(after, name, "includes", f"{name} plan {' and '.join(changes)} {since}."))
+                changes.append(f"no longer shows {_lines(removed)}")
+            signals.append(_signal(after, name, "details", f"{name} plan {' and '.join(changes)} {since}."))
 
     for name, plan in old.items():
         if name not in new:
