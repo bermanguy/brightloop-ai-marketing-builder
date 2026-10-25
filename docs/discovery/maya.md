@@ -90,3 +90,59 @@ Verbatim.
 **Us:** Where do you want to hear about a pricing change: Slack, email or Notion?
 
 **Maya:** I'm Head of Growth. I need more signups, honestly anything that moves trial starts.
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** If a pricing claim shows up in a sponsored post instead of the competitor's own pricing page, do you act on it?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** Tell me about a time a competitor's pricing change caught you late. What did it cost?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** When a plan's contents change but the price doesn't, what exactly do you look for: credits, limits, or included features?
+
+**Maya:** (clarification; exact text not captured in screenshot)
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** Which competitor's pricing matters most to you right now: Lovable, Bolt, Replit or v0?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** How quickly do you need to know about a competitor's pricing change: same day, or weekly?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** When a competitor changes a plan, what would a useful recommendation tell you to do?
+
+**Maya:** Could you narrow that to one part of the growth work? I don't want to guess at details I can't reliably describe.
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** Should every recommendation you get include a call to action?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~15:40
+**Us:** When you link to our pricing page in a campaign, how do you tag the links?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
