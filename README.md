@@ -53,3 +53,14 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 | `cta` | A short call to action, present when the input sets `output.cta_required_per_item`. |
 
 Credential-like values in the input (e.g. `config.demo_key`) are replaced with `[redacted]` wherever they would appear in the output.
+
+## Live fetch (in progress)
+
+Downloads the four pricing pages as they look on first load (D14) and saves the raw HTML plus the visible text:
+
+```
+pip install -e ".[live]" && playwright install chromium
+python -m pricewatch.sources.fetch            # saves to data/pages/<time>/
+```
+
+Bolt, Replit and v0 are fetched over plain HTTP; Lovable is rendered in headless Chromium because its plans are built by JavaScript. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Reading plans from the text and comparing runs come next.
