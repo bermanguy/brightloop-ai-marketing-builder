@@ -4,7 +4,7 @@ Draft scores by Claude, to be reviewed and changed by Guy. Every score cites the
 
 ## What each marketer told us (verbatim)
 
-**Maya — Head of Growth** (4/25 used)
+**Maya — Head of Growth** (6/25 used; 2 of those were repeats)
 - "I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem."
 - "I'm Head of Growth. I need more signups, honestly anything that moves trial starts."
 - "Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it."
@@ -64,6 +64,8 @@ Noa's requirements line up one-to-one with the sample's launch traps: `sg-301`/`
 - Maya and Noa: no hard stops.
 
 ## Observations about the interview app
+
+- **Each marketer appears to hold exactly three prepared facts.** All three have now given three distinct facts; further questions return either a free clarification or a paid repeat. Maya: about 20 probes after her third fact found nothing new.
 
 - Questions outside a marketer's prepared facts return a free clarification.
 - Questions on a covered topic sometimes repeat an earlier answer, and a repeat costs a message. Maya 2/25 and Noa 3/25 were repeats. This suggests each marketer's prepared facts are close to exhausted.

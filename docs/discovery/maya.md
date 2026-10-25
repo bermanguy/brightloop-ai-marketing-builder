@@ -170,3 +170,36 @@ Verbatim.
 **Us:** What happened the last time a competitor quietly changed what a plan included?
 
 **Maya:** I act on competitors' pricing and packaging changes, including what a plan contains even if its price stays the same. Feature launches I mostly ignore; features are product's problem.
+
+### (not counted) — 2026-10-25 ~16:00
+**Us:** What happened the last time something you sent out used hype words like 'game-changing'?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~16:00
+**Us:** What happened the last time a report you got didn't say what to do next?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### 6/25 (repeat of 4/25) — 2026-10-25 ~16:00
+**Us:** What happened the last time two sources disagreed about a competitor's price?
+
+**Maya:** Last quarter an AI summary said a competitor had cut prices 30%, leadership reacted, and it was wrong. Since then, no link, no number: I need a source link next to any number before I trust it.
+
+### (not counted) — 2026-10-25 ~16:00
+**Us:** What happened the last time a competitor's change reached you a week late?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
+
+### (not counted) — 2026-10-25 ~16:00
+**Us:** What happened the last time campaign traffic showed up untagged in your analytics?
+
+**Maya:** I don't have a reliable account of that specific example. Could you ask about a different piece of my work?
+
+*(App note: "This clarification didn't use a question.")*
