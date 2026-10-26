@@ -128,8 +128,8 @@ def runs():
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
         rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
-    form = ("<form method='post' action='/run'><input type='password' name='token' placeholder='Run token' required> "
-            "<button>Check now</button></form>")
+    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about a minute'\">"
+            "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
     table = f"<table><tr><th>Started</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))
 
