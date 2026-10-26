@@ -2,7 +2,7 @@
 
 Home assignment for the AI Marketing Builder role at Base44.
 
-**Status:** test interface (`./run`), live run (`./run --live`) and keyless proof (`./proof`) built; the web app and deploy come next. Building for Maya (Head of Growth): a watch on competitors' pricing and packaging changes, where every number links to its source. See `docs/spec.md`.
+**Status:** test interface (`./run`), live run (`./run --live`), keyless proof (`./proof`) and the web app built; deploying to Render + Neon. Building for Maya (Head of Growth): a watch on competitors' pricing and packaging changes, where every number links to its source. See `docs/spec.md`.
 
 ## Repository layout
 
@@ -90,13 +90,33 @@ The key is read from `PRICEWATCH_ANTHROPIC_API_KEY`, or `ANTHROPIC_API_KEY` if t
 
 ```
 ./run --live --output result.json                 # fetch, read, compare with the last snapshot, run the core
-./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output result.json   # from saved pages, no key
+./run --live --pages fixtures/pages/2026-10-25 --no-ai --db /tmp/try.db --output result.json   # from saved pages, no key
 ```
 
-Each run saves a snapshot to `data/snapshots/<time>.json` (every page's plans, or why it couldn't be read) and compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price or list price (R1), one for any other change to the plan's lines on the page (billing wording, what's included) even at the same price (R2), and one for a plan added or removed. The plan's lines are its quotes, not the reader's billing/includes fields: in two real AI readings a minute apart, the AI filed the same Lovable line under billing once and under includes once, while the lines themselves only change when the page does.
+Each run saves a snapshot to the store (every page's plans, or why it couldn't be read) and logs its result. The store is Postgres when `DATABASE_URL` is set, otherwise SQLite at `data/pricewatch.db` (`--db` overrides). Each run compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price or list price (R1), one for any other change to the plan's lines on the page (billing wording, what's included) even at the same price (R2), and one for a plan added or removed. The plan's lines are its quotes, not the reader's billing/includes fields: in two real AI readings a minute apart, the AI filed the same Lovable line under billing once and under includes once, while the lines themselves only change when the page does.
 
 - A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
 - AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
 - `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
 
-Snapshots are JSON files for now; the database replaces them at deploy.
+## Web app
+
+```
+pip install -e ".[live,web]"
+uvicorn pricewatch.web:app        # http://localhost:8000
+```
+
+- **Changes** (`/`): the items from recent runs, newest first, with action, why, confidence, the unverified label and source links.
+- **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page, with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
+- **Run log** (`/runs`): start time, pages read or failed, changes found, errors and cost per run, plus the **Check now** button.
+- **Test upload** (`/test`): upload a cases.json, get result.json back from the same core as `./run`.
+
+`POST /run` starts a live run. It needs `RUN_TOKEN`, sent as `Authorization: Bearer …` or typed into Check now; with no `RUN_TOKEN` set, runs are switched off.
+
+## Deploy (Render + Neon)
+
+The app runs on Render's free plan from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. `.github/workflows/schedule.yml` wakes the app and starts a run every 6 hours.
+
+1. Neon: create a project and copy its connection string.
+2. Render: New > Blueprint, pick this repo (`render.yaml`), and fill in `DATABASE_URL` (Neon), `ANTHROPIC_API_KEY` and `RUN_TOKEN` (any long random string).
+3. GitHub: Settings > Secrets and variables > Actions, add `PRICEWATCH_URL` (the Render URL, no trailing slash) and `RUN_TOKEN` (the same value).

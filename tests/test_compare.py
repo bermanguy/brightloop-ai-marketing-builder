@@ -3,6 +3,7 @@
 import json
 
 from pricewatch.live import run_live
+from pricewatch.store import Store
 from pricewatch.sources import compare, extract
 from test_extract import PAGES, saved
 
@@ -95,8 +96,7 @@ def write_pages(directory, at, changes=None, failed=()):
 
 def live(tmp_path, name, at, changes=None, failed=()):
     pages = write_pages(tmp_path / name, at, changes, failed)
-    result, _ = run_live(tmp_path / "snapshots", pages, use_ai=False, started_at=at)
-    return result
+    return run_live(Store(str(tmp_path / "db.sqlite")), pages, use_ai=False, started_at=at)
 
 
 def test_first_run_saves_a_snapshot_and_reports_nothing_changed(tmp_path):
@@ -104,7 +104,9 @@ def test_first_run_saves_a_snapshot_and_reports_nothing_changed(tmp_path):
     assert result["items"] == [] and result["run"]["errors"] == []
     assert len(result["run"]["notes"]) == 4
     assert [p["plans"] for p in result["run"]["pages"]] == [4, 4, 3, 4]
-    assert (tmp_path / "snapshots" / "2026-10-25T060000Z.json").exists()
+    store = Store(str(tmp_path / "db.sqlite"))
+    assert [s["taken_at"] for s in store.snapshots()] == ["2026-10-25T06:00:00Z"]
+    assert store.runs()[0] == result
 
 
 def test_a_planted_price_change_becomes_one_high_confidence_item(tmp_path):
@@ -129,12 +131,8 @@ def test_a_page_that_fails_is_reported_then_compared_again_when_back(tmp_path):
 
 
 def test_readings_by_different_readers_are_not_compared(tmp_path):
-    live(tmp_path, "run1", "2026-10-25T06:00:00Z")
-    snapshot = tmp_path / "snapshots" / "2026-10-25T060000Z.json"
-    data = json.loads(snapshot.read_text())
-    for page in data["pages"]:
-        page["reader"] = "ai"
-    snapshot.write_text(json.dumps(data))
+    pages = [dict(reading(c), reader="ai") for c in ("lovable", "bolt", "replit", "v0")]
+    Store(str(tmp_path / "db.sqlite")).save_snapshot("2026-10-25T06:00:00Z", pages)
     result = live(tmp_path, "run2", "2026-10-25T12:00:00Z", {"lovable": [("$25", "$30")]})
     assert result["items"] == []
     assert len(result["run"]["notes"]) == 4

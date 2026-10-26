@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,web]"
       - run: pytest -v
       - name: Run the brief's test interface on the sample, with no keys
         run: |
@@ -23,7 +23,7 @@ jobs:
           cat result.json
       - name: One live run from the saved pages, with no keys
         run: |
-          ./run --live --pages fixtures/pages/2026-10-25 --no-ai --snapshots /tmp/snaps --output live.json
+          ./run --live --pages fixtures/pages/2026-10-25 --no-ai --db /tmp/ci.db --output live.json
           python -c "import json; r = json.load(open('live.json')); print(r['run']); assert r['run']['errors'] == []"
       - name: Keyless proof on recorded real runs
         run: ./proof

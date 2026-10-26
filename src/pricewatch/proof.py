@@ -20,6 +20,7 @@ from pathlib import Path
 from .core import process
 from .core.text import unsupported_numbers
 from .live import compare_and_report
+from .store import Store
 from .sources.extract import unquoted
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,7 +74,8 @@ def prove_recorded(check):
     print(f"Recorded real runs ({len(runs)} in {RECORDED.relative_to(ROOT)})")
     check(len(runs) >= 2, "at least two recorded runs, so one is compared with another")
     result = None
-    with tempfile.TemporaryDirectory() as snapshots:
+    with tempfile.TemporaryDirectory() as tmp:
+        store = Store(str(Path(tmp) / "proof.db"))
         for path in runs:
             run = json.loads(path.read_text(encoding="utf-8"))
             pages = run["pages"]
@@ -81,7 +83,7 @@ def prove_recorded(check):
             bad = [p["competitor"] for p in pages for plan in p["plans"] if unquoted(plan, p["text"])]
             check(not bad, "every recorded plan is quoted word for word from its recorded page" + (f" (not: {bad})" if bad else ""))
             # Replaying spends nothing: cost 0, readings as recorded.
-            result, _, signals = compare_and_report(pages, 0.0, snapshots, run["recorded_at"])
+            result, signals = compare_and_report(pages, 0.0, store, run["recorded_at"])
             failed = [p["competitor"] for p in pages if not p["ok"]]
             check(all(any(e.startswith(f"{c}:") for e in result["run"]["errors"]) for c in failed),
                   f"failed pages are reported, not compared ({', '.join(failed) or 'none failed'})")
