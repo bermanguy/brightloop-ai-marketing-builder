@@ -3,7 +3,7 @@ services:
   - type: web
     name: pricewatch
     runtime: docker
-    plan: free
+    plan: starter  # $7/month, always awake (D22); the free plan sleeps after 15 idle minutes
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL      # Neon connection string
