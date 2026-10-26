@@ -134,7 +134,7 @@ Entries are written when the decision is made, not reconstructed afterwards.
 **Decision.** As in `docs/architecture.md`:
 - Live and test modes feed one shared core.
 - Python + FastAPI, hosted on Render (free), with Postgres on Neon (free).
-- A GitHub Actions schedule every 6 hours, plus the "Check now" button.
+- A GitHub Actions schedule every 6 hours, plus the "Check now" button (hourly trigger since D21).
 - **AI** reads pricing pages, judges whether a change matters, and writes recommendations.
 - **Rules** set confidence, the unverified label and skips, and check that every input id appears exactly once.
 
@@ -179,6 +179,51 @@ Toggles and dropdowns are not clicked.
 4. Items are sorted newest first.
 
 **Why (Claude's recommendation).** (1) R5 believes a price only from the competitor's own website, and a social post isn't the pricing page. (2) The flag is part of the input contract, so it is honoured when set. (3) and (4) keep the core simple and predictable for the hidden test cases.
+
+## D16 — The AI reads the pricing pages, and every value must be quoted from the page · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Built in PR #4, merged by Guy, and confirmed for this log on 2026-10-26:
+- Claude Opus 5.5 (`claude-opus-5-5`, low effort, structured output) reads each fetched page's text and returns its plans in the same shape as the plain reader.
+- Every value it returns (name, price, list price, billing, includes) must appear inside the plan's quotes, and every quote must be on the page word for word. A plan that fails this check is dropped.
+- Without a key, or when the call fails or no plan passes the check, the page falls back to the plain reader. Each page records which reader ran and what it cost; the run's total is `run.cost_usd`.
+
+**Why (Claude's recommendation).** The AI copes with layouts the plain reader can't, but Maya's incident was a wrong number, so the AI is never trusted on its own word: the quote check is a rule, not AI (D13).
+
+**Measured.** About $0.12 per run (four pages), so about $0.50 a day at four runs a day.
+
+## D17 — The API key is read from `PRICEWATCH_ANTHROPIC_API_KEY` · 2026-10-26 · [Guy]
+
+**Decision.** The code reads `PRICEWATCH_ANTHROPIC_API_KEY`, falling back to `ANTHROPIC_API_KEY` (the name set on Render).
+
+## D18 — Runs are compared by the page lines a plan was read from · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Built in PR #5–#6, merged by Guy, and confirmed for this log on 2026-10-26. Two readings of a page are compared by each plan's price and list price, and by the lines of the page the plan was read from (its quotes), not by the reader's `billing` and `includes` fields.
+
+**Why (Claude's recommendation).** Two real AI readings of Lovable's unchanged page, a minute apart, filed the same line under `billing` once and `includes` the next, which would have been reported as 2 changes. The lines themselves only change when the page does.
+
+## D19 — AI readings and plain readings are never compared with each other · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Built in PR #6, merged by Guy, and confirmed for this log on 2026-10-26. Each page is compared with the last good reading made by the same reader.
+
+**Why (Claude's recommendation).** The two readers pick slightly different lines for a plan. Comparing across them reported 15 changes on the same recorded pages.
+
+**Consequence.** After the reader switches (a key added or removed, or an AI failure), that page's first reading is a new baseline, reported as "nothing to compare with yet".
+
+## D20 — A page that now opens on the other billing period is not a price change · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Chosen by Guy from three options and merged in PR #9. When a plan's price changes *and* its lines switch between "billed monthly" and "billed annually", it is one item saying the page now opens on the other billing period, "not necessarily a price change". The same price with the other period stays a details change, since that is a real change in terms. A price change and other changed lines of the same plan give one item, not two.
+
+**Why (Claude's recommendation).** The first real comparison (2026-10-26) reported 4 items for Bolt that read like a price rise ($18 to $25 for Pro). Bolt's prices hadn't changed: its Monthly/Yearly toggle now opens on Monthly (5 fetches, all Monthly; the struck yearly list price, $300, is 12 × $25). Under D14 we only read the default view.
+
+**Alternatives considered.** Only merging the duplicate items (still reads as a price rise). Tracking both billing periods (D14's first post-MVP milestone; about half a day, and Bolt would need the browser).
+
+## D21 — The schedule triggers every hour; the app keeps runs 6 hours apart · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Chosen by Guy from three options and merged in PR #9. The GitHub workflow calls `POST /run?unless_ran_within_hours=5.5` every hour, and the app skips the call when its last run is newer. Check now always runs. Runs stay 6 hours apart, as in D11.
+
+**Why (Claude's recommendation).** GitHub dropped the 18:17 UTC scheduled run on 2026-10-26 (and started the first one 37 minutes late). With a 6-hour trigger, one dropped run leaves Maya 12 hours without a check; with an hourly trigger it costs an hour.
+
+**Alternatives considered.** Waiting to see whether drops repeat. An external cron service (another account, and its setup isn't in the repo).
 
 ---
 
