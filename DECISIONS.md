@@ -233,6 +233,18 @@ Toggles and dropdowns are not clicked.
 
 **Supersedes.** D13's accepted trade-off of a free-tier cold start of about a minute.
 
+## D23 — Capture everything on each pricing page, not only its default view · 2026-10-26 · [Guy]
+
+**Decision.** Goes beyond D14's MVP, doing its first two post-MVP milestones and more:
+- Every billing view: the browser clicks each side of Lovable's and Bolt's Monthly/Yearly toggle. Each view is read and compared on its own, and which view the page opens on is recorded (a change in it is one signal).
+- Lovable's credit ladder: every option of the Pro and Business credit dropdowns, as written (44 prices per run).
+- Tables of limits and prices (Bolt's plan comparison, v0's per-model token rates), read by the AI. A row is kept only if its label and values are consecutive lines of the page, in column order.
+- Replit stays on plain HTTP (it blocks headless browsers); its monthly price is the struck-through one beside the yearly price.
+
+**Why (Guy).** Cover all plans, packages, credits, limits and everything on each pricing page, so the product is impressive and shows clear, real impact and potential for Base44's marketing team.
+
+**Cost.** About $0.24 per run with the AI (6 page views, measured 2026-10-26), up from $0.12.
+
 ---
 
 ## Open questions

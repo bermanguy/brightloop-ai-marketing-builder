@@ -13,7 +13,8 @@ import sqlite3
 from pathlib import Path
 
 DEFAULT_SQLITE = Path("data") / "pricewatch.db"
-PAGE_FIELDS = ("competitor", "url", "method", "fetched_at", "ok", "status", "error", "reader", "ai_error", "cost_usd", "plans")
+PAGE_FIELDS = ("competitor", "view", "view_index", "opens_on", "url", "method", "fetched_at", "ok", "status", "error",
+               "reader", "ai_error", "cost_usd", "plans", "tables")
 
 
 class Store:
@@ -57,11 +58,11 @@ class Store:
         return self._newest("snapshots", limit)
 
     def last_good_pages(self):
-        """{(competitor, reader): page} from the newest snapshot in which each page was read by that reader."""
+        """{(competitor, view, reader): page} from the newest snapshot in which each page (or view) was read by that reader."""
         found = {}
         for snapshot in self.snapshots():
             for page in snapshot["pages"]:
-                key = (page["competitor"], page["reader"])
+                key = (page["competitor"], page.get("view"), page["reader"])
                 if page.get("ok") and key not in found:
                     found[key] = page
         return found

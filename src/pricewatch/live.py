@@ -23,7 +23,7 @@ def now_utc():
 
 
 def load_pages(directory):
-    """Pages saved by fetch.save_pages (<competitor>.json), instead of fetching."""
+    """Pages saved by fetch.save_pages (<competitor>[-<view>].json), instead of fetching."""
     pages = []
     for path in sorted(Path(directory).glob("*.json")):
         page = json.loads(path.read_text(encoding="utf-8"))
@@ -45,23 +45,25 @@ def compare_and_report(read, cost, store, started_at):
     Return (result, the signals the comparison produced).
     """
     good = store.last_good_pages()
-    previous = {page["competitor"]: good.get((page["competitor"], page["reader"])) for page in read}
-    previous = {competitor: page for competitor, page in previous.items() if page}
-    signals = compare.compare(previous, {page["competitor"]: page for page in read})
+    label = fetch.label
+    previous = {label(page): good.get((page["competitor"], page.get("view"), page["reader"])) for page in read}
+    previous = {name: page for name, page in previous.items() if page}
+    signals = compare.compare(previous, {label(page): page for page in read})
     store.save_snapshot(started_at, read)
 
     result = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=cost)
     result["run"]["notes"] = []
     for page in read:
         if not page["ok"]:
-            result["run"]["errors"].append(f"{page['competitor']}: couldn't read {page['url']} ({page['error']}); not compared.")
+            result["run"]["errors"].append(f"{label(page)}: couldn't read {page['url']} ({page['error']}); not compared.")
             continue
         if page["ai_error"]:
-            result["run"]["errors"].append(f"{page['competitor']}: AI reader: {page['ai_error']}.")
-        if page["competitor"] not in previous:
-            result["run"]["notes"].append(f"{page['competitor']}: first good reading, nothing to compare with yet (reader: {page['reader']}).")
+            result["run"]["errors"].append(f"{label(page)}: AI reader: {page['ai_error']}.")
+        if label(page) not in previous:
+            result["run"]["notes"].append(f"{label(page)}: first good reading, nothing to compare with yet (reader: {page['reader']}).")
     result["run"]["pages"] = [
-        {"competitor": p["competitor"], "url": p["url"], "ok": p["ok"], "reader": p["reader"], "plans": len(p["plans"])}
+        {"competitor": p["competitor"], "view": p.get("view"), "url": p["url"], "ok": p["ok"], "reader": p["reader"],
+         "plans": len(p["plans"]), "tables": len(p.get("tables") or [])}
         for p in read
     ]
     store.save_run(result)

@@ -1,0 +1,1283 @@
+{
+  "recorded_at": "2026-10-26T20:28:29Z",
+  "cost_usd": 0.239116,
+  "pages": [
+    {
+      "competitor": "Bolt",
+      "view": "Monthly",
+      "view_index": 0,
+      "opens_on": "Monthly",
+      "url": "https://bolt.new/pricing",
+      "method": "browser",
+      "fetched_at": "2026-10-26T20:28:38Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.05788,
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "list_price": null,
+          "billing": "/month; Free forever, no card required",
+          "includes": [
+            "Try Bolt with daily limits. No credit card.",
+            "1M tokens/month to try Bolt",
+            "Public and private projects",
+            "Bolt branding on websites",
+            "Unlimited databases",
+            "Website hosting"
+          ],
+          "quotes": [
+            "Free",
+            "$0/month",
+            "Free forever, no card required",
+            "Try Bolt with daily limits. No credit card.",
+            "1M tokens/month to try Bolt",
+            "Public and private projects",
+            "Bolt branding on websites",
+            "Unlimited databases",
+            "Website hosting"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "$25",
+          "list_price": null,
+          "billing": "/month; Billed monthly",
+          "includes": [
+            "Everything in Free, plus real app capacity and your own domain.",
+            "Your own domain, no Bolt branding",
+            "10M tokens/month, rollover included",
+            "Expanded database capacity",
+            "Choice of database provider",
+            "Access to the newest AI models",
+            "Connectors and MCPs",
+            "SEO boosting"
+          ],
+          "quotes": [
+            "MOST POPULARPro",
+            "$25*/month",
+            "Billed monthly",
+            "Everything in Free, plus real app capacity and your own domain.",
+            "Your own domain, no Bolt branding",
+            "10M tokens/month, rollover included",
+            "Expanded database capacity",
+            "Choice of database provider",
+            "Access to the newest AI models",
+            "Connectors and MCPs",
+            "SEO boosting"
+          ]
+        },
+        {
+          "name": "Teams",
+          "price": "$30",
+          "list_price": null,
+          "billing": "/month; Per member, billed monthly",
+          "includes": [
+            "Everything in Pro, plus shared capacity and team controls for collaboration.",
+            "Best for small teams.",
+            "Centralized billing",
+            "Team-level access management",
+            "Granular admin controls & user provisioning",
+            "Share with your organization",
+            "Private NPM registries support",
+            "Design System knowledge with per-package prompts",
+            "Priority support"
+          ],
+          "quotes": [
+            "Teams",
+            "$30*/month",
+            "Per member, billed monthly",
+            "Everything in Pro, plus shared capacity and team controls for collaboration.",
+            "Best for small teams.",
+            "Centralized billing",
+            "Team-level access management",
+            "Granular admin controls & user provisioning",
+            "Share with your organization",
+            "Private NPM registries support",
+            "Design System knowledge with per-package prompts",
+            "Priority support"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "list_price": null,
+          "billing": "Custom annual contract, billed by consumption",
+          "includes": [
+            "Everything in Teams, built for scale, security, and compliance.",
+            "Get advanced security, compliance, and 24/7 support. Customized to your team's exact needs.",
+            "SOC 2 Type II, SSO, and data governance",
+            "Unlimited tokens, priced by consumption",
+            "Dedicated infrastructure and account manager",
+            "Data governance & retention policies",
+            "Flexible procurement, MSA, and 24/7 support"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Custom",
+            "Custom annual contract, billed by consumption",
+            "Everything in Teams, built for scale, security, and compliance.",
+            "Get advanced security, compliance, and 24/7 support. Customized to your team's exact needs.",
+            "SOC 2 Type II, SSO, and data governance",
+            "Unlimited tokens, priced by consumption",
+            "Dedicated infrastructure and account manager",
+            "Data governance & retention policies",
+            "Flexible procurement, MSA, and 24/7 support"
+          ]
+        }
+      ],
+      "tables": [
+        {
+          "title": "Pro plan comparison",
+          "columns": [
+            "Free",
+            "Pro",
+            "Teams",
+            "Enterprise"
+          ],
+          "rows": [
+            {
+              "label": "Monthly AI Tokens",
+              "values": [
+                "1M",
+                "Starts at 10M",
+                "Starts at 10M per member",
+                "Custom"
+              ]
+            },
+            {
+              "label": "Daily Token Limit",
+              "values": [
+                "300K",
+                "No Limit",
+                "No Limit",
+                "No Limit"
+              ]
+            },
+            {
+              "label": "Unused Tokens roll over",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "File Upload Limit",
+              "values": [
+                "10MB",
+                "100MB",
+                "100MB",
+                "Custom"
+              ]
+            },
+            {
+              "label": "Web Requests / Month",
+              "values": [
+                "333K",
+                "1M",
+                "Up to 1M",
+                "Custom"
+              ]
+            },
+            {
+              "label": "Access to Best & Newest AI Models",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Public & Private Projects",
+              "values": [
+                "Included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Bolt Branding removed",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Custom Domains",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Private Sharing",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Website Hosting",
+              "values": [
+                "Included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "SEO Boost for Published Sites",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Team Templates",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Centralized Billing",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Team-Level Access Management",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Granular Admin Controls",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Org-Wide Sharing",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Connectors & MCPs",
+              "values": [
+                "—Not included",
+                "Included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Private NPM Registries",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Design System Knowledge",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Single Sign-On (SSO)",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "Included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Audit Logs",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "SOC 2, GDPR, ISO 27001",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Advanced Security Reviews",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Dedicated Infrastructure",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Data Governance & Retention",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Dedicated Account Manager",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Flexible Billing, Procurement & MSA",
+              "values": [
+                "—Not included",
+                "—Not included",
+                "—Not included",
+                "Included"
+              ]
+            },
+            {
+              "label": "Support",
+              "values": [
+                "Community",
+                "Email",
+                "Priority",
+                "24/7 Priority"
+              ]
+            }
+          ]
+        }
+      ],
+      "text": "Back\nSolutions\nResources\nCareers\nPricing\nSign in\nGet Started\nSolutions\nResources\nCareers\nPricing\nAI for Small Business →\nCustom apps for your business, built in an afternoon — no code, no developer, no $100K project.\nTop Use Cases\nAI App Builder\nAI Website Builder\nSaaS Dev\nPrototyping\nAll Use Cases\nBusiness Type\nEntrepreneurs\nSmall Business\nAgencies\nEnterprise\nAll Solutions\nBolt Templates →\nProduction-ready starting points — dashboards, storefronts, portfolios, and more. Fork one and make it yours.\nSupport\nCommunity\nHelp Center\nSecurity & Trust\nBuild and Learn\nBlog\nTemplates\nGet Started\nSign in\nPricing\nStart for free. No credit card required.\nYearlySave up to 28%\nMonthly\nFree\n$0/month\nFree forever, no card required\nStart Free\nTry Bolt with daily limits. No credit card.\n1M tokens/month to try Bolt\nPublic and private projects\nBolt branding on websites\nUnlimited databases\nWebsite hosting\nMOST POPULARPro\n$25*/month\nBilled monthly\nGet Pro\nEverything in Free, plus real app capacity and your own domain.\nYour own domain, no Bolt branding\n10M tokens/month, rollover included\nExpanded database capacity\nChoice of database provider\nAccess to the newest AI models\nConnectors and MCPs\nSEO boosting\nTeams\n$30*/month\nPer member, billed monthly\nStart a Team\nEverything in Pro, plus shared capacity and team controls for collaboration.\nBest for small teams.\nCentralized billing\nTeam-level access management\nGranular admin controls & user provisioning\nShare with your organization\nPrivate NPM registries support\nDesign System knowledge with per-package prompts\nPriority support\nEnterprise\nCustom\nCustom annual contract, billed by consumption\nBook a Demo\nEverything in Teams, built for scale, security, and compliance.\nGet advanced security, compliance, and 24/7 support. Customized to your team's exact needs.\nSOC 2 Type II, SSO, and data governance\nUnlimited tokens, priced by consumption\nDedicated infrastructure and account manager\nData governance & retention policies\nFlexible procurement, MSA, and 24/7 support\n*Plus applicable taxes\nTrusted by teams shipping with AI\nTrusted by Accenture, Shopify, Google, Cloudflare, AWS, Microsoft, Salesforce, Meta\nSecurity and compliance\nEnterprise-grade security and compliance certifications\nLearn More\nFree\nPro\nTeams\nEnterprise\nPro plan comparison\nCompare\nFree\nStart Free\nPro\nGet Pro\nTeams\nStart a Team\nEnterprise\nBook a Demo\nUsage & Tokens\nMonthly AI Tokens\n1M\nStarts at 10M\nStarts at 10M per member\nCustom\nDaily Token Limit\n300K\nNo Limit\nNo Limit\nNo Limit\nUnused Tokens roll over\n—Not included\nIncluded\nIncluded\nIncluded\nFile Upload Limit\n10MB\n100MB\n100MB\nCustom\nWeb Requests / Month\n333K\n1M\nUp to 1M\nCustom\nAccess to Best & Newest AI Models\n—Not included\nIncluded\nIncluded\nIncluded\nProjects & Hosting\nPublic & Private Projects\nIncluded\nIncluded\nIncluded\nIncluded\nBolt Branding removed\n—Not included\nIncluded\nIncluded\nIncluded\nCustom Domains\n—Not included\nIncluded\nIncluded\nIncluded\nPrivate Sharing\n—Not included\nIncluded\nIncluded\nIncluded\nWebsite Hosting\nIncluded\nIncluded\nIncluded\nIncluded\nSEO Boost for Published Sites\n—Not included\nIncluded\nIncluded\nIncluded\nTeam Templates\n—Not included\n—Not included\nIncluded\nIncluded\nCollaboration\nCentralized Billing\n—Not included\n—Not included\nIncluded\nIncluded\nTeam-Level Access Management\n—Not included\n—Not included\nIncluded\nIncluded\nGranular Admin Controls\n—Not included\n—Not included\nIncluded\nIncluded\nOrg-Wide Sharing\n—Not included\n—Not included\nIncluded\nIncluded\nIntegrations & Data\nConnectors & MCPs\n—Not included\nIncluded\nIncluded\nIncluded\nPrivate NPM Registries\n—Not included\n—Not included\nIncluded\nIncluded\nDesign System Knowledge\n—Not included\n—Not included\nIncluded\nIncluded\nSecurity & Support\nSingle Sign-On (SSO)\n—Not included\n—Not included\nIncluded\nIncluded\nAudit Logs\n—Not included\n—Not included\n—Not included\nIncluded\nSOC 2, GDPR, ISO 27001\n—Not included\n—Not included\n—Not included\nIncluded\nAdvanced Security Reviews\n—Not included\n—Not included\n—Not included\nIncluded\nDedicated Infrastructure\n—Not included\n—Not included\n—Not included\nIncluded\nData Governance & Retention\n—Not included\n—Not included\n—Not included\nIncluded\nDedicated Account Manager\n—Not included\n—Not included\n—Not included\nIncluded\nFlexible Billing, Procurement & MSA\n—Not included\n—Not included\n—Not included\nIncluded\nSupport\nCommunity\nEmail\nPriority\n24/7 Priority\nFAQs\nEverything you need to know about the product and billing.\nVisit Help Center\nWhat are tokens?\nAI tokens are a complex topic related to all AI apps, not just Bolt. You can learn more about tokens\nhere\n. For Bolt specifically it is important to know that most token usage is related to syncing your project’s file system to the AI: the larger the project, the more tokens used per message. Our top priority is to increase the efficiency of token usage in Bolt. We continue to make improvements so that Bolt uses fewer tokens.\nHow do Teams plans work?\nDo tokens rollover from month to month?\nCan I change my plan later?\nCan I cancel my subscription?\nWhat are the token limits associated with a free plan?\nAre you ready?\nStart building today\nJoin thousands of teams shipping faster with our enterprise platform.\nStart Building\nSolutions\nAI App Builder\nAI Website Builder\nSaaS Dev\nPrototyping\nSmall Business\nEnterprise\nResources\nBlog\nCommunity\nHelp Center\nSecurity & Trust\nTemplates\nMore\nCareers\nPricing\nTerms of Use\nPrivacy Policy\nConnect",
+      "dropdowns": []
+    },
+    {
+      "competitor": "Bolt",
+      "view": "Yearly",
+      "view_index": 1,
+      "opens_on": "Monthly",
+      "url": "https://bolt.new/pricing",
+      "method": "browser",
+      "fetched_at": "2026-10-26T20:28:38Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.037428,
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "list_price": null,
+          "billing": "/month; Free forever, no card required",
+          "includes": [
+            "Try Bolt with daily limits. No credit card.",
+            "1M tokens/month to try Bolt",
+            "Public and private projects",
+            "Bolt branding on websites",
+            "Unlimited databases",
+            "Website hosting"
+          ],
+          "quotes": [
+            "Free",
+            "$0/month",
+            "Free forever, no card required",
+            "Try Bolt with daily limits. No credit card.",
+            "1M tokens/month to try Bolt",
+            "Public and private projects",
+            "Bolt branding on websites",
+            "Unlimited databases",
+            "Website hosting"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "$18",
+          "list_price": null,
+          "billing": "/month; Total of $216 ~~$300~~ / year; Billed annually",
+          "includes": [
+            "Everything in Free, plus real app capacity and your own domain.",
+            "Your own domain, no Bolt branding",
+            "10M tokens/month, rollover included",
+            "Expanded database capacity",
+            "Choice of database provider",
+            "Access to the newest AI models",
+            "Connectors and MCPs",
+            "SEO boosting"
+          ],
+          "quotes": [
+            "MOST POPULARPro",
+            "$18*/month",
+            "Total of $216 ~~$300~~ / year",
+            "Billed annually",
+            "Everything in Free, plus real app capacity and your own domain.",
+            "Your own domain, no Bolt branding",
+            "10M tokens/month, rollover included",
+            "Expanded database capacity",
+            "Choice of database provider",
+            "Access to the newest AI models",
+            "Connectors and MCPs",
+            "SEO boosting"
+          ]
+        },
+        {
+          "name": "Teams",
+          "price": "$27",
+          "list_price": null,
+          "billing": "/month; Total of $324 ~~$360~~ / year; Per member, billed annually",
+          "includes": [
+            "Everything in Pro, plus shared capacity and team controls for collaboration.",
+            "Best for small teams.",
+            "Centralized billing",
+            "Team-level access management",
+            "Granular admin controls & user provisioning",
+            "Share with your organization",
+            "Private NPM registries support",
+            "Design System knowledge with per-package prompts",
+            "Priority support"
+          ],
+          "quotes": [
+            "Teams",
+            "$27*/month",
+            "Total of $324 ~~$360~~ / year",
+            "Per member, billed annually",
+            "Everything in Pro, plus shared capacity and team controls for collaboration.",
+            "Best for small teams.",
+            "Centralized billing",
+            "Team-level access management",
+            "Granular admin controls & user provisioning",
+            "Share with your organization",
+            "Private NPM registries support",
+            "Design System knowledge with per-package prompts",
+            "Priority support"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "list_price": null,
+          "billing": "Custom annual contract, billed by consumption",
+          "includes": [
+            "Everything in Teams, built for scale, security, and compliance.",
+            "Get advanced security, compliance, and 24/7 support. Customized to your team's exact needs.",
+            "SOC 2 Type II, SSO, and data governance",
+            "Unlimited tokens, priced by consumption",
+            "Dedicated infrastructure and account manager",
+            "Data governance & retention policies",
+            "Flexible procurement, MSA, and 24/7 support"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Custom",
+            "Custom annual contract, billed by consumption",
+            "Everything in Teams, built for scale, security, and compliance.",
+            "Get advanced security, compliance, and 24/7 support. Customized to your team's exact needs.",
+            "SOC 2 Type II, SSO, and data governance",
+            "Unlimited tokens, priced by consumption",
+            "Dedicated infrastructure and account manager",
+            "Data governance & retention policies",
+            "Flexible procurement, MSA, and 24/7 support"
+          ]
+        }
+      ],
+      "tables": [],
+      "text": "Back\nSolutions\nResources\nCareers\nPricing\nSign in\nGet Started\nSolutions\nResources\nCareers\nPricing\nAI for Small Business →\nCustom apps for your business, built in an afternoon — no code, no developer, no $100K project.\nTop Use Cases\nAI App Builder\nAI Website Builder\nSaaS Dev\nPrototyping\nAll Use Cases\nBusiness Type\nEntrepreneurs\nSmall Business\nAgencies\nEnterprise\nAll Solutions\nBolt Templates →\nProduction-ready starting points — dashboards, storefronts, portfolios, and more. Fork one and make it yours.\nSupport\nCommunity\nHelp Center\nSecurity & Trust\nBuild and Learn\nBlog\nTemplates\nGet Started\nSign in\nPricing\nStart for free. No credit card required.\nYearlySave up to 28%\nMonthly\nFree\n$0/month\nFree forever, no card required\nStart Free\nTry Bolt with daily limits. No credit card.\n1M tokens/month to try Bolt\nPublic and private projects\nBolt branding on websites\nUnlimited databases\nWebsite hosting\nMOST POPULARPro\n$18*/month\nTotal of $216 ~~$300~~ / year\nBilled annually\nGet Pro\nEverything in Free, plus real app capacity and your own domain.\nYour own domain, no Bolt branding\n10M tokens/month, rollover included\nExpanded database capacity\nChoice of database provider\nAccess to the newest AI models\nConnectors and MCPs\nSEO boosting\nTeams\n$27*/month\nTotal of $324 ~~$360~~ / year\nPer member, billed annually\nStart a Team\nEverything in Pro, plus shared capacity and team controls for collaboration.\nBest for small teams.\nCentralized billing\nTeam-level access management\nGranular admin controls & user provisioning\nShare with your organization\nPrivate NPM registries support\nDesign System knowledge with per-package prompts\nPriority support\nEnterprise\nCustom\nCustom annual contract, billed by consumption\nBook a Demo\nEverything in Teams, built for scale, security, and compliance.\nGet advanced security, compliance, and 24/7 support. Customized to your team's exact needs.\nSOC 2 Type II, SSO, and data governance\nUnlimited tokens, priced by consumption\nDedicated infrastructure and account manager\nData governance & retention policies\nFlexible procurement, MSA, and 24/7 support\n*Plus applicable taxes\nTrusted by teams shipping with AI\nTrusted by Accenture, Shopify, Google, Cloudflare, AWS, Microsoft, Salesforce, Meta\nSecurity and compliance\nEnterprise-grade security and compliance certifications\nLearn More\nFree\nPro\nTeams\nEnterprise\nPro plan comparison\nCompare\nFree\nStart Free\nPro\nGet Pro\nTeams\nStart a Team\nEnterprise\nBook a Demo\nUsage & Tokens\nMonthly AI Tokens\n1M\nStarts at 10M\nStarts at 10M per member\nCustom\nDaily Token Limit\n300K\nNo Limit\nNo Limit\nNo Limit\nUnused Tokens roll over\n—Not included\nIncluded\nIncluded\nIncluded\nFile Upload Limit\n10MB\n100MB\n100MB\nCustom\nWeb Requests / Month\n333K\n1M\nUp to 1M\nCustom\nAccess to Best & Newest AI Models\n—Not included\nIncluded\nIncluded\nIncluded\nProjects & Hosting\nPublic & Private Projects\nIncluded\nIncluded\nIncluded\nIncluded\nBolt Branding removed\n—Not included\nIncluded\nIncluded\nIncluded\nCustom Domains\n—Not included\nIncluded\nIncluded\nIncluded\nPrivate Sharing\n—Not included\nIncluded\nIncluded\nIncluded\nWebsite Hosting\nIncluded\nIncluded\nIncluded\nIncluded\nSEO Boost for Published Sites\n—Not included\nIncluded\nIncluded\nIncluded\nTeam Templates\n—Not included\n—Not included\nIncluded\nIncluded\nCollaboration\nCentralized Billing\n—Not included\n—Not included\nIncluded\nIncluded\nTeam-Level Access Management\n—Not included\n—Not included\nIncluded\nIncluded\nGranular Admin Controls\n—Not included\n—Not included\nIncluded\nIncluded\nOrg-Wide Sharing\n—Not included\n—Not included\nIncluded\nIncluded\nIntegrations & Data\nConnectors & MCPs\n—Not included\nIncluded\nIncluded\nIncluded\nPrivate NPM Registries\n—Not included\n—Not included\nIncluded\nIncluded\nDesign System Knowledge\n—Not included\n—Not included\nIncluded\nIncluded\nSecurity & Support\nSingle Sign-On (SSO)\n—Not included\n—Not included\nIncluded\nIncluded\nAudit Logs\n—Not included\n—Not included\n—Not included\nIncluded\nSOC 2, GDPR, ISO 27001\n—Not included\n—Not included\n—Not included\nIncluded\nAdvanced Security Reviews\n—Not included\n—Not included\n—Not included\nIncluded\nDedicated Infrastructure\n—Not included\n—Not included\n—Not included\nIncluded\nData Governance & Retention\n—Not included\n—Not included\n—Not included\nIncluded\nDedicated Account Manager\n—Not included\n—Not included\n—Not included\nIncluded\nFlexible Billing, Procurement & MSA\n—Not included\n—Not included\n—Not included\nIncluded\nSupport\nCommunity\nEmail\nPriority\n24/7 Priority\nFAQs\nEverything you need to know about the product and billing.\nVisit Help Center\nWhat are tokens?\nAI tokens are a complex topic related to all AI apps, not just Bolt. You can learn more about tokens\nhere\n. For Bolt specifically it is important to know that most token usage is related to syncing your project’s file system to the AI: the larger the project, the more tokens used per message. Our top priority is to increase the efficiency of token usage in Bolt. We continue to make improvements so that Bolt uses fewer tokens.\nHow do Teams plans work?\nDo tokens rollover from month to month?\nCan I change my plan later?\nCan I cancel my subscription?\nWhat are the token limits associated with a free plan?\nAre you ready?\nStart building today\nJoin thousands of teams shipping faster with our enterprise platform.\nStart Building\nSolutions\nAI App Builder\nAI Website Builder\nSaaS Dev\nPrototyping\nSmall Business\nEnterprise\nResources\nBlog\nCommunity\nHelp Center\nSecurity & Trust\nTemplates\nMore\nCareers\nPricing\nTerms of Use\nPrivacy Policy\nConnect",
+      "dropdowns": []
+    },
+    {
+      "competitor": "Lovable",
+      "view": "Monthly",
+      "view_index": 0,
+      "opens_on": "Monthly",
+      "url": "https://lovable.dev/pricing",
+      "method": "browser",
+      "fetched_at": "2026-10-26T20:28:29Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.041916,
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "No credit card needed",
+            "Free grants",
+            "Unlimited collaborators",
+            "5 lovable.app domains",
+            "Invite-only publishing",
+            "Publish websites that only people you invite can open. Invite up to 10 people per project.",
+            "Cloud",
+            "Community support"
+          ],
+          "quotes": [
+            "Free",
+            "$0",
+            "No credit card needed",
+            "Free grants",
+            "Unlimited collaborators",
+            "5 lovable.app domains",
+            "Invite-only publishing",
+            "Publish websites that only people you invite can open. Invite up to 10 people per project.",
+            "Cloud",
+            "Community support"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "$25",
+          "list_price": null,
+          "billing": "/ month",
+          "includes": [
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Free features",
+            "100 Pro credits",
+            "Credit rollovers",
+            "Credits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.",
+            "On-demand credit top-ups",
+            "Unlimited lovable.app domains",
+            "Custom domains",
+            "User roles & permissions",
+            "Per-member credit limits",
+            "Remove the Lovable badge",
+            "Email support",
+            "Design systems"
+          ],
+          "quotes": [
+            "Pro",
+            "$25",
+            "/ month",
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Free features",
+            "100 Pro credits",
+            "Credit rollovers",
+            "Credits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.",
+            "On-demand credit top-ups",
+            "Unlimited lovable.app domains",
+            "Custom domains",
+            "User roles & permissions",
+            "Per-member credit limits",
+            "Remove the Lovable badge",
+            "Email support",
+            "Design systems"
+          ],
+          "options": [
+            "100 credits $25/mo",
+            "200 credits $50/mo",
+            "400 credits $100/mo",
+            "800 credits $200/mo",
+            "1,200 credits Save 2% $294/mo",
+            "2,000 credits Save 4% $480/mo",
+            "3,000 credits Save 6% $705/mo",
+            "4,000 credits Save 8% $920/mo",
+            "5,000 credits Save 10% $1125/mo",
+            "7,500 credits Save 10% $1688/mo",
+            "10,000 credits Save 10% $2250/mo"
+          ]
+        },
+        {
+          "name": "Business",
+          "price": "$50",
+          "list_price": null,
+          "billing": "/ month",
+          "includes": [
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Pro features",
+            "100 Business credits",
+            "Team workspace",
+            "Role-based access",
+            "Workspace publish",
+            "Publish websites that are only accessible to logged in workspace members.",
+            "SSO",
+            "Security center",
+            "Design templates",
+            "Priority support"
+          ],
+          "quotes": [
+            "Business",
+            "$50",
+            "/ month",
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Pro features",
+            "100 Business credits",
+            "Team workspace",
+            "Role-based access",
+            "Workspace publish",
+            "Publish websites that are only accessible to logged in workspace members.",
+            "SSO",
+            "Security center",
+            "Design templates",
+            "Priority support"
+          ],
+          "options": [
+            "100 credits $50/mo",
+            "200 credits $100/mo",
+            "400 credits $200/mo",
+            "800 credits $400/mo",
+            "1,200 credits Save 2% $588/mo",
+            "2,000 credits Save 4% $960/mo",
+            "3,000 credits Save 6% $1410/mo",
+            "4,000 credits Save 8% $1840/mo",
+            "5,000 credits Save 10% $2250/mo",
+            "7,500 credits Save 12% $3300/mo",
+            "10,000 credits Save 14% $4300/mo"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Platform fee",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "Volume based pricingUnlimited users",
+            "All Business features",
+            "Directory sync (SCIM)",
+            "Audit logs",
+            "Restrict who publishes and invites",
+            "Auto-retire abandoned apps",
+            "Scheduled deep security scans",
+            "Sensitive data detection and control",
+            "Advanced design systems support",
+            "Git sync data residency",
+            "EU inference",
+            "GitHub Enterprise, cloud or self-hosted",
+            "Private npm registry",
+            "Named CSM, onboarding and deployment",
+            "Custom SLA"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Platform fee",
+            "Volume based pricingUnlimited users",
+            "All Business features",
+            "Directory sync (SCIM)",
+            "Audit logs",
+            "Restrict who publishes and invites",
+            "Auto-retire abandoned apps",
+            "Scheduled deep security scans",
+            "Sensitive data detection and control",
+            "Advanced design systems support",
+            "Git sync data residency",
+            "EU inference",
+            "GitHub Enterprise, cloud or self-hosted",
+            "Private npm registry",
+            "Named CSM, onboarding and deployment",
+            "Custom SLA"
+          ]
+        }
+      ],
+      "tables": [],
+      "text": "Skip to main content\nWe use cookies to enhance your development experience and keep your data secure.\nPrivacy Policy\nAccept all\nManage preferences\nReject all\nLog in\nGet started\nSolutions\nResources\nCommunity\nEnterprise\nPricing\nSecurity\nLog in\nGet started\nPricing\nStart for free. Upgrade to get the capacity that exactly matches your team's needs.\nPlans\nMonthly\nYearly2 months free\nFree\nDiscover what Lovable can do for you\n$0\nGet started\nNo credit card needed\nFree grants\nUnlimited collaborators\n5 lovable.app domains\nInvite-only publishing\nPublish websites that only people you invite can open. Invite up to 10 people per project.\nCloud\nCommunity support\nPro\nDesigned for fast-moving teams building together in real time.\n$25\n/ month\n100 monthly credits\nGet started\nUnlimited users\nFree grants\nAll Free features\n100 Pro credits\nCredit rollovers\nCredits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.\nOn-demand credit top-ups\nUnlimited lovable.app domains\nCustom domains\nUser roles & permissions\nPer-member credit limits\nRemove the Lovable badge\nEmail support\nDesign systems\nBusiness\nAdvanced controls and power features for growing departments\n$50\n/ month\n100 monthly credits\nGet started\nUnlimited users\nFree grants\nAll Pro features\n100 Business credits\nTeam workspace\nRole-based access\nWorkspace publish\nPublish websites that are only accessible to logged in workspace members.\nSSO\nSecurity center\nDesign templates\nPriority support\nEnterprise\nBuilt for large orgs needing flexibility, scale, and governance.\nPlatform fee\nBook a demo\nVolume based pricingUnlimited users\nAll Business features\nDirectory sync (SCIM)\nAudit logs\nRestrict who publishes and invites\nAuto-retire abandoned apps\nScheduled deep security scans\nSensitive data detection and control\nAdvanced design systems support\nGit sync data residency\nEU inference\nGitHub Enterprise, cloud or self-hosted\nPrivate npm registry\nNamed CSM, onboarding and deployment\nCustom SLA\nLovable for students\nVerify student status and get access to up to 50% off Lovable Pro.\nGet started\nLovable for campus\nBilling and administrative controls for universities and colleges.\nContact sales\nLovable for kids\nCompliant access & curriculum for schools in partnership with imagi.\nLearn more\nSecurity and compliance\nEnterprise-grade security and compliance certifications\nLearn more\nFrequently asked questions\nWhat is Lovable and how does it work?\nLovable is an AI software engineer, which enables anyone to build for the web. Simply chat to instantly build websites and web apps, with no technical knowledge needed.\nWhat is a credit?\nCredits are units Lovable uses to measure and pay for usage across your workspace. Credits let you build apps, run deployed apps, and power AI features from one balance. The value of a credit and the rate at which they are consumed for a given action depend on your subscription plan and the feature used, and credits are not necessarily equal in value across different plans.\nHow do I use credits in Lovable?\nPaid plans have access to a credit balance. Credits from your balance can be used in Lovable for building by sending messages to Lovable, hosting with Cloud, and offering AI features to users as part of your app.\nIn addition to your credit balance, Pro and Business subscriptions include grants for building and hosting with Cloud.\nFor building, pricing varies by mode:\nDefault Mode: credits vary based on task complexity\nPlan Mode: 1 credit per message\nHere are some example prompts and their cost:\nHere are some example prompts and their cost:\nUser Prompt\nWork Done\nCredits\n“Make the button gray”\nUpdates the button styles\n0.50\n“Remove the footer”\nRemoves the footer component\n0.90\n“Add authentication with sign up and login”\nAdds authentication pages and logic, updates routes\n1.20\n“Build me a landing page, use images”\nCreates a landing page with 3 generated images, theme, and 5 sections\n1.70\nYou can see the cost of each message in the message history by hovering over the three dots of an message.\nDo credits expire?\nYes. If unused, monthly plan credits expire two (2) months after they're issued, and annual plan credits expire one (1) month after your annual period ends. Top-up credits last twelve (12) months from purchase. Included grants of daily build credits expire at the end of each day and don't roll over.\nWhat happens to my credits if my subscription ends?\nIf you cancel your plan, you can keep using your remaining credits until the end of your current billing period. After that, your plan switches to Free and you only have access to grants included in the free plan. If your workspace has unused paid credits left, they will reactivate if you re-subscribe to any plan at any point before expiry.\nIn very rare instances we had to close user accounts due to fraud or other breach of our Terms. In such cases, any remaining credits are deleted, unless otherwise required by the law.\nAre credits refundable?\nNo. Credits aren't refundable or redeemable for cash or any other value.\nWhat is included in free and paid plans?\nStarting to build on Lovable is free.\nThe free plan includes a daily grant of 5 build credits (up to 30 a month), plus monthly grants of 20 Cloud credits. The free plan also grants 4 credits usable by AI features built into user apps, to try the feature before subscribing.\nPaid subscribers get their plan's credits added to their balance monthly. This balance can be used flexibly to cover building, Cloud, and AI features in user apps. On top, subscriptions include daily grants of 5 build credits (some regional plans cap these at 30 per month) and a monthly grant of 20 Cloud credits.\nHow do I buy credits for a team, class, or community?\nEvery Lovable plan belongs to a workspace, and everyone you invite into that workspace shares its credits. To fund a group of people, upgrade one workspace to a plan with enough monthly credits for everyone, then invite the whole group. Everyone builds from the shared credit pool on one subscription and one invoice, and each member can work on as many of their own projects as they want.\nTo keep any one person from using up the shared credits, workspace owners and admins can set a default monthly credit limit and per-member overrides.\nLearn more about workspaces\n.\nThis works the same for companies, classrooms, and communities. For large organizations, the Enterprise plan offers volume-based credit pricing.\nDo you charge per seat or per user?\nNo. Workspaces support unlimited members on all plans, and plans are priced by the credits they include, not by seats. Inviting more people doesn't change your subscription cost; what changes is how quickly the group uses the workspace's shared credits.\nHow much does it cost to run my app on Lovable?\nFor most users with smaller or new apps, hosting (running an app on Lovable) does not cost anything: In most cases, the cost to publish, view, and keep your app running will be minimal and fully covered by the included grant that comes with your subscription.\nApps that reach significant visitor traffic and/or size may start incurring cost on top of the included grant, which is covered by your credit balance.\nLearn more here\nWhy is the Business plan more expensive?\nThe higher price reflects the additional features Business adds on top of Pro for teams and larger organizations.\nImportant: The cost for running their app and for AI features built into apps is the same for Business and Pro subscribers and not more expensive on the business plan. Since credits are priced higher on business plans, user who switch from Pro to Business plans will therefore see a decrease in credit usage for Run and AI cost in plan usage details.\nWho owns the projects and code?\nYou do. You own your code, which means the apps, websites, and other projects you build with Lovable, customer data stored in Lovable, as well as any AI output you generate in Lovable. (This is subject to any third-party rights in the underlying AI models.)\nDo you offer a student discount?\nYes, we offer a student discount for students with a valid student email. You can read more and claim your discount on\nlovable.dev/students\n. Make sure you are logged in with your university email address.\nWhere can I find out more?\nJoin the community on\nDiscord\nor read up more on our\ndocumentation\n.\nRelated articles\nPlans and credits\nCompany\nCareers\nPress & media\nEnterprise\nSecurity\nTrust center(opens in new window)\nPartnerships\nProduct\nPricing\nStudent discount\nFor Work\nFounders\nProduct Managers\nDesigners\nMarketers\nSales\nOps\nPeople\nApp builder\nWebsite builder\nAI-powered apps\nPrototyping\nInternal Tools\nDownload apps\nConnections(opens in new window)\nChangelog(opens in new window)\nStatus(opens in new window)\nResources\nLearn(opens in new window)\nTemplates\nGuides\nConnectors\nMCP server\nVideos\nBlog\nSupport\nReviews\nSitemap\nLegal\nPrivacy policy(opens in new window)\nDo not sell or share my personal information\nCookie settings\nEnterprise terms(opens in new window)\nGeneral terms(opens in new window)\nDesktop app terms(opens in new window)\nDomain registration terms(opens in new window)\nDMCA copyright policy(opens in new window)\nAccessibility(opens in new window)\nPlatform rules(opens in new window)\nReport abuse(opens in new window)\nReport security concerns(opens in new window)\nDPA(opens in new window)\nCommunity\nBecome a partner\nHire a Lovable partner(opens in new window)\nAffiliates\nCode of conduct\nDiscord(opens in new window)\nReddit(opens in new window)\nX / Twitter(opens in new window)\nYouTube(opens in new window)\nLinkedIn(opens in new window)\nEN",
+      "dropdowns": [
+        {
+          "plan": "Pro",
+          "label": "100 monthly credits",
+          "options": [
+            "100 credits $25/mo",
+            "200 credits $50/mo",
+            "400 credits $100/mo",
+            "800 credits $200/mo",
+            "1,200 credits Save 2% $294/mo",
+            "2,000 credits Save 4% $480/mo",
+            "3,000 credits Save 6% $705/mo",
+            "4,000 credits Save 8% $920/mo",
+            "5,000 credits Save 10% $1125/mo",
+            "7,500 credits Save 10% $1688/mo",
+            "10,000 credits Save 10% $2250/mo"
+          ]
+        },
+        {
+          "plan": "Business",
+          "label": "100 monthly credits",
+          "options": [
+            "100 credits $50/mo",
+            "200 credits $100/mo",
+            "400 credits $200/mo",
+            "800 credits $400/mo",
+            "1,200 credits Save 2% $588/mo",
+            "2,000 credits Save 4% $960/mo",
+            "3,000 credits Save 6% $1410/mo",
+            "4,000 credits Save 8% $1840/mo",
+            "5,000 credits Save 10% $2250/mo",
+            "7,500 credits Save 12% $3300/mo",
+            "10,000 credits Save 14% $4300/mo"
+          ]
+        }
+      ]
+    },
+    {
+      "competitor": "Lovable",
+      "view": "Yearly",
+      "view_index": 1,
+      "opens_on": "Monthly",
+      "url": "https://lovable.dev/pricing",
+      "method": "browser",
+      "fetched_at": "2026-10-26T20:28:29Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.044036,
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "No credit card needed",
+            "Free grants",
+            "Unlimited collaborators",
+            "5 lovable.app domains",
+            "Invite-only publishing",
+            "Publish websites that only people you invite can open. Invite up to 10 people per project.",
+            "Cloud",
+            "Community support"
+          ],
+          "quotes": [
+            "Free",
+            "$0",
+            "No credit card needed",
+            "Free grants",
+            "Unlimited collaborators",
+            "5 lovable.app domains",
+            "Invite-only publishing",
+            "Publish websites that only people you invite can open. Invite up to 10 people per project.",
+            "Cloud",
+            "Community support"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "$21",
+          "list_price": null,
+          "billing": "/ month, billed annually",
+          "includes": [
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Free features",
+            "100 Pro credits",
+            "Credit rollovers",
+            "Credits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.",
+            "On-demand credit top-ups",
+            "Unlimited lovable.app domains",
+            "Custom domains",
+            "User roles & permissions",
+            "Per-member credit limits",
+            "Remove the Lovable badge",
+            "Email support",
+            "Design systems"
+          ],
+          "quotes": [
+            "Pro",
+            "$21",
+            "/ month, billed annually",
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Free features",
+            "100 Pro credits",
+            "Credit rollovers",
+            "Credits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.",
+            "On-demand credit top-ups",
+            "Unlimited lovable.app domains",
+            "Custom domains",
+            "User roles & permissions",
+            "Per-member credit limits",
+            "Remove the Lovable badge",
+            "Email support",
+            "Design systems"
+          ],
+          "options": [
+            "100 credits $21/mo",
+            "200 credits $42/mo",
+            "400 credits $84/mo",
+            "800 credits Save 1% $167/mo",
+            "1,200 credits Save 3% $245/mo",
+            "2,000 credits Save 5% $400/mo",
+            "3,000 credits Save 7% $588/mo",
+            "4,000 credits Save 9% $767/mo",
+            "5,000 credits Save 11% $938/mo",
+            "7,500 credits Save 11% $1407/mo",
+            "10,000 credits Save 11% $1875/mo"
+          ]
+        },
+        {
+          "name": "Business",
+          "price": "$42",
+          "list_price": null,
+          "billing": "/ month, billed annually",
+          "includes": [
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Pro features",
+            "100 Business credits",
+            "Team workspace",
+            "Role-based access",
+            "Workspace publish",
+            "Publish websites that are only accessible to logged in workspace members.",
+            "SSO",
+            "Security center",
+            "Design templates",
+            "Priority support"
+          ],
+          "quotes": [
+            "Business",
+            "$42",
+            "/ month, billed annually",
+            "100 monthly credits",
+            "Unlimited users",
+            "Free grants",
+            "All Pro features",
+            "100 Business credits",
+            "Team workspace",
+            "Role-based access",
+            "Workspace publish",
+            "Publish websites that are only accessible to logged in workspace members.",
+            "SSO",
+            "Security center",
+            "Design templates",
+            "Priority support"
+          ],
+          "options": [
+            "100 credits $42/mo",
+            "200 credits $84/mo",
+            "400 credits Save 1% $167/mo",
+            "800 credits Save 1% $334/mo",
+            "1,200 credits Save 3% $490/mo",
+            "2,000 credits Save 5% $800/mo",
+            "3,000 credits Save 7% $1175/mo",
+            "4,000 credits Save 9% $1534/mo",
+            "5,000 credits Save 11% $1875/mo",
+            "7,500 credits Save 13% $2750/mo",
+            "10,000 credits Save 15% $3584/mo"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Platform fee",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "Volume based pricingUnlimited users",
+            "All Business features",
+            "Directory sync (SCIM)",
+            "Audit logs",
+            "Restrict who publishes and invites",
+            "Auto-retire abandoned apps",
+            "Scheduled deep security scans",
+            "Sensitive data detection and control",
+            "Advanced design systems support",
+            "Git sync data residency",
+            "EU inference",
+            "GitHub Enterprise, cloud or self-hosted",
+            "Private npm registry",
+            "Named CSM, onboarding and deployment",
+            "Custom SLA"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Platform fee",
+            "Volume based pricingUnlimited users",
+            "All Business features",
+            "Directory sync (SCIM)",
+            "Audit logs",
+            "Restrict who publishes and invites",
+            "Auto-retire abandoned apps",
+            "Scheduled deep security scans",
+            "Sensitive data detection and control",
+            "Advanced design systems support",
+            "Git sync data residency",
+            "EU inference",
+            "GitHub Enterprise, cloud or self-hosted",
+            "Private npm registry",
+            "Named CSM, onboarding and deployment",
+            "Custom SLA"
+          ]
+        }
+      ],
+      "tables": [],
+      "text": "Skip to main content\nWe use cookies to enhance your development experience and keep your data secure.\nPrivacy Policy\nAccept all\nManage preferences\nReject all\nLog in\nGet started\nSolutions\nResources\nCommunity\nEnterprise\nPricing\nSecurity\nLog in\nGet started\nPricing\nStart for free. Upgrade to get the capacity that exactly matches your team's needs.\nPlans\nMonthly\nYearly2 months free\nFree\nDiscover what Lovable can do for you\n$0\nGet started\nNo credit card needed\nFree grants\nUnlimited collaborators\n5 lovable.app domains\nInvite-only publishing\nPublish websites that only people you invite can open. Invite up to 10 people per project.\nCloud\nCommunity support\nPro\nDesigned for fast-moving teams building together in real time.\n~~$25~~\nOriginally $25 per month\n$21\n/ month, billed annually\n100 monthly credits\nGet started\nUnlimited users\nFree grants\nAll Free features\n100 Pro credits\nCredit rollovers\nCredits roll over for 1 month on monthly plans, or until one month after the end of your annual plan.\nOn-demand credit top-ups\nUnlimited lovable.app domains\nCustom domains\nUser roles & permissions\nPer-member credit limits\nRemove the Lovable badge\nEmail support\nDesign systems\nBusiness\nAdvanced controls and power features for growing departments\n~~$50~~\nOriginally $50 per month\n$42\n/ month, billed annually\n100 monthly credits\nGet started\nUnlimited users\nFree grants\nAll Pro features\n100 Business credits\nTeam workspace\nRole-based access\nWorkspace publish\nPublish websites that are only accessible to logged in workspace members.\nSSO\nSecurity center\nDesign templates\nPriority support\nEnterprise\nBuilt for large orgs needing flexibility, scale, and governance.\nPlatform fee\nBook a demo\nVolume based pricingUnlimited users\nAll Business features\nDirectory sync (SCIM)\nAudit logs\nRestrict who publishes and invites\nAuto-retire abandoned apps\nScheduled deep security scans\nSensitive data detection and control\nAdvanced design systems support\nGit sync data residency\nEU inference\nGitHub Enterprise, cloud or self-hosted\nPrivate npm registry\nNamed CSM, onboarding and deployment\nCustom SLA\nLovable for students\nVerify student status and get access to up to 50% off Lovable Pro.\nGet started\nLovable for campus\nBilling and administrative controls for universities and colleges.\nContact sales\nLovable for kids\nCompliant access & curriculum for schools in partnership with imagi.\nLearn more\nSecurity and compliance\nEnterprise-grade security and compliance certifications\nLearn more\nFrequently asked questions\nWhat is Lovable and how does it work?\nLovable is an AI software engineer, which enables anyone to build for the web. Simply chat to instantly build websites and web apps, with no technical knowledge needed.\nWhat is a credit?\nCredits are units Lovable uses to measure and pay for usage across your workspace. Credits let you build apps, run deployed apps, and power AI features from one balance. The value of a credit and the rate at which they are consumed for a given action depend on your subscription plan and the feature used, and credits are not necessarily equal in value across different plans.\nHow do I use credits in Lovable?\nPaid plans have access to a credit balance. Credits from your balance can be used in Lovable for building by sending messages to Lovable, hosting with Cloud, and offering AI features to users as part of your app.\nIn addition to your credit balance, Pro and Business subscriptions include grants for building and hosting with Cloud.\nFor building, pricing varies by mode:\nDefault Mode: credits vary based on task complexity\nPlan Mode: 1 credit per message\nHere are some example prompts and their cost:\nHere are some example prompts and their cost:\nUser Prompt\nWork Done\nCredits\n“Make the button gray”\nUpdates the button styles\n0.50\n“Remove the footer”\nRemoves the footer component\n0.90\n“Add authentication with sign up and login”\nAdds authentication pages and logic, updates routes\n1.20\n“Build me a landing page, use images”\nCreates a landing page with 3 generated images, theme, and 5 sections\n1.70\nYou can see the cost of each message in the message history by hovering over the three dots of an message.\nDo credits expire?\nYes. If unused, monthly plan credits expire two (2) months after they're issued, and annual plan credits expire one (1) month after your annual period ends. Top-up credits last twelve (12) months from purchase. Included grants of daily build credits expire at the end of each day and don't roll over.\nWhat happens to my credits if my subscription ends?\nIf you cancel your plan, you can keep using your remaining credits until the end of your current billing period. After that, your plan switches to Free and you only have access to grants included in the free plan. If your workspace has unused paid credits left, they will reactivate if you re-subscribe to any plan at any point before expiry.\nIn very rare instances we had to close user accounts due to fraud or other breach of our Terms. In such cases, any remaining credits are deleted, unless otherwise required by the law.\nAre credits refundable?\nNo. Credits aren't refundable or redeemable for cash or any other value.\nWhat is included in free and paid plans?\nStarting to build on Lovable is free.\nThe free plan includes a daily grant of 5 build credits (up to 30 a month), plus monthly grants of 20 Cloud credits. The free plan also grants 4 credits usable by AI features built into user apps, to try the feature before subscribing.\nPaid subscribers get their plan's credits added to their balance monthly. This balance can be used flexibly to cover building, Cloud, and AI features in user apps. On top, subscriptions include daily grants of 5 build credits (some regional plans cap these at 30 per month) and a monthly grant of 20 Cloud credits.\nHow do I buy credits for a team, class, or community?\nEvery Lovable plan belongs to a workspace, and everyone you invite into that workspace shares its credits. To fund a group of people, upgrade one workspace to a plan with enough monthly credits for everyone, then invite the whole group. Everyone builds from the shared credit pool on one subscription and one invoice, and each member can work on as many of their own projects as they want.\nTo keep any one person from using up the shared credits, workspace owners and admins can set a default monthly credit limit and per-member overrides.\nLearn more about workspaces\n.\nThis works the same for companies, classrooms, and communities. For large organizations, the Enterprise plan offers volume-based credit pricing.\nDo you charge per seat or per user?\nNo. Workspaces support unlimited members on all plans, and plans are priced by the credits they include, not by seats. Inviting more people doesn't change your subscription cost; what changes is how quickly the group uses the workspace's shared credits.\nHow much does it cost to run my app on Lovable?\nFor most users with smaller or new apps, hosting (running an app on Lovable) does not cost anything: In most cases, the cost to publish, view, and keep your app running will be minimal and fully covered by the included grant that comes with your subscription.\nApps that reach significant visitor traffic and/or size may start incurring cost on top of the included grant, which is covered by your credit balance.\nLearn more here\nWhy is the Business plan more expensive?\nThe higher price reflects the additional features Business adds on top of Pro for teams and larger organizations.\nImportant: The cost for running their app and for AI features built into apps is the same for Business and Pro subscribers and not more expensive on the business plan. Since credits are priced higher on business plans, user who switch from Pro to Business plans will therefore see a decrease in credit usage for Run and AI cost in plan usage details.\nWho owns the projects and code?\nYou do. You own your code, which means the apps, websites, and other projects you build with Lovable, customer data stored in Lovable, as well as any AI output you generate in Lovable. (This is subject to any third-party rights in the underlying AI models.)\nDo you offer a student discount?\nYes, we offer a student discount for students with a valid student email. You can read more and claim your discount on\nlovable.dev/students\n. Make sure you are logged in with your university email address.\nWhere can I find out more?\nJoin the community on\nDiscord\nor read up more on our\ndocumentation\n.\nRelated articles\nPlans and credits\nCompany\nCareers\nPress & media\nEnterprise\nSecurity\nTrust center(opens in new window)\nPartnerships\nProduct\nPricing\nStudent discount\nFor Work\nFounders\nProduct Managers\nDesigners\nMarketers\nSales\nOps\nPeople\nApp builder\nWebsite builder\nAI-powered apps\nPrototyping\nInternal Tools\nDownload apps\nConnections(opens in new window)\nChangelog(opens in new window)\nStatus(opens in new window)\nResources\nLearn(opens in new window)\nTemplates\nGuides\nConnectors\nMCP server\nVideos\nBlog\nSupport\nReviews\nSitemap\nLegal\nPrivacy policy(opens in new window)\nDo not sell or share my personal information\nCookie settings\nEnterprise terms(opens in new window)\nGeneral terms(opens in new window)\nDesktop app terms(opens in new window)\nDomain registration terms(opens in new window)\nDMCA copyright policy(opens in new window)\nAccessibility(opens in new window)\nPlatform rules(opens in new window)\nReport abuse(opens in new window)\nReport security concerns(opens in new window)\nDPA(opens in new window)\nCommunity\nBecome a partner\nHire a Lovable partner(opens in new window)\nAffiliates\nCode of conduct\nDiscord(opens in new window)\nReddit(opens in new window)\nX / Twitter(opens in new window)\nYouTube(opens in new window)\nLinkedIn(opens in new window)\nEN\n100 credits\n$21/mo\n200 credits\n$42/mo\n400 credits\n$84/mo\n800 credits\nSave 1%$167/mo\n1,200 credits\nSave 3%$245/mo\n2,000 credits\nSave 5%$400/mo\n3,000 credits\nSave 7%$588/mo\n4,000 credits\nSave 9%$767/mo\n5,000 credits\nSave 11%$938/mo\n7,500 credits\nSave 11%$1407/mo\n10,000 credits\nSave 11%$1875/mo\nNeed more credits?Talk to sales\n100 credits\n$42/mo\n200 credits\n$84/mo\n400 credits\nSave 1%$167/mo\n800 credits\nSave 1%$334/mo\n1,200 credits\nSave 3%$490/mo\n2,000 credits\nSave 5%$800/mo\n3,000 credits\nSave 7%$1175/mo\n4,000 credits\nSave 9%$1534/mo\n5,000 credits\nSave 11%$1875/mo\n7,500 credits\nSave 13%$2750/mo\n10,000 credits\nSave 15%$3584/mo\nNeed more credits?Talk to sales",
+      "dropdowns": [
+        {
+          "plan": "Pro",
+          "label": "100 monthly credits",
+          "options": [
+            "100 credits $21/mo",
+            "200 credits $42/mo",
+            "400 credits $84/mo",
+            "800 credits Save 1% $167/mo",
+            "1,200 credits Save 3% $245/mo",
+            "2,000 credits Save 5% $400/mo",
+            "3,000 credits Save 7% $588/mo",
+            "4,000 credits Save 9% $767/mo",
+            "5,000 credits Save 11% $938/mo",
+            "7,500 credits Save 11% $1407/mo",
+            "10,000 credits Save 11% $1875/mo"
+          ]
+        },
+        {
+          "plan": "Business",
+          "label": "100 monthly credits",
+          "options": [
+            "100 credits $42/mo",
+            "200 credits $84/mo",
+            "400 credits Save 1% $167/mo",
+            "800 credits Save 1% $334/mo",
+            "1,200 credits Save 3% $490/mo",
+            "2,000 credits Save 5% $800/mo",
+            "3,000 credits Save 7% $1175/mo",
+            "4,000 credits Save 9% $1534/mo",
+            "5,000 credits Save 11% $1875/mo",
+            "7,500 credits Save 13% $2750/mo",
+            "10,000 credits Save 15% $3584/mo"
+          ]
+        }
+      ]
+    },
+    {
+      "competitor": "Replit",
+      "view": null,
+      "view_index": 0,
+      "opens_on": null,
+      "url": "https://replit.com/pricing",
+      "method": "http",
+      "fetched_at": "2026-10-26T20:28:44Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.02428,
+      "plans": [
+        {
+          "name": "Core",
+          "price": "$18",
+          "list_price": "$20",
+          "billing": "/ month, billed annually",
+          "includes": [
+            "AI integrations",
+            "Up to 30 hours of chat on Free Mode",
+            "Up to 60 projects on Free Mode",
+            "$20 towards more powerful models",
+            "Plan mode",
+            "Unlimited workspaces"
+          ],
+          "quotes": [
+            "Core",
+            "~~$20~~ $18 / month, billed annually",
+            "AI integrations",
+            "Up to 30 hours of chat on Free Mode",
+            "Up to 60 projects on Free Mode",
+            "$20 towards more powerful models",
+            "Plan mode",
+            "Unlimited workspaces"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "$90",
+          "list_price": "$100",
+          "billing": "/ month, billed annually",
+          "includes": [
+            "10 parallel agents",
+            "Premium Support",
+            "Everything in Core plus:",
+            "Even more Free Mode usage to chat and create",
+            "$100 towards most powerful models",
+            "Up to 15 collaborators",
+            "Invite up to 50 viewers",
+            "Database rollback up to 28 days"
+          ],
+          "quotes": [
+            "Pro",
+            "~~$100~~ $90 / month, billed annually",
+            "10 parallel agents",
+            "Premium Support",
+            "Everything in Core plus:",
+            "Even more Free Mode usage to chat and create",
+            "$100 towards most powerful models",
+            "Up to 15 collaborators",
+            "Invite up to 50 viewers",
+            "Database rollback up to 28 days"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "Enterprise-grade security and control",
+            "SSO, SCIM & audit logs",
+            "Advanced privacy controls",
+            "Centralized security management",
+            "Single-tenant & private networking options",
+            "Dedicated premium support",
+            "and much more"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Custom",
+            "Enterprise-grade security and control",
+            "SSO, SCIM & audit logs",
+            "Advanced privacy controls",
+            "Centralized security management",
+            "Single-tenant & private networking options",
+            "Dedicated premium support",
+            "and much more"
+          ]
+        }
+      ],
+      "tables": [],
+      "text": "Skip to content\nProducts\nCREATE\nDesign\nApps & Websites\nSlides\nPLATFORM\nAgents\nDatabases\nIntegrations\nSecurity\nSolutions\nBY ROLE\nFounders\nProduct Managers\nDesigners\nEngineers\nOperations\nIT\nBY USE CASE\nApps\nWebsites\nLanding Pages\nDashboards\nPrototypes\nChatbots\nPricing\nEnterprise\nResources\nLEARN & SUPPORT\nDocs\nCommunity\nSupport\nReplit Experts\nPartners\nDISCOVER\nCustomer Stories\nGallery\nBlog\nNewsroom\nContact sales\nLog in\nSign up\nProducts\nCREATE\nDesign\nApps & Websites\nSlides\nPLATFORM\nAgents\nDatabases\nIntegrations\nSecurity\nSolutions\nBY ROLE\nFounders\nProduct Managers\nDesigners\nEngineers\nOperations\nIT\nBY USE CASE\nApps\nWebsites\nLanding Pages\nDashboards\nPrototypes\nChatbots\nPricing\nEnterprise\nResources\nLEARN & SUPPORT\nDocs\nCommunity\nSupport\nReplit Experts\nPartners\nDISCOVER\nCustomer Stories\nGallery\nBlog\nNewsroom\nLog in\nSign up\nPricing\nChoose the best plan for you.\nMonthly\nYearly\nUp to 10% off\nCore\n~~$20~~ $18 / month, billed annually\nAI integrations\nUp to 30 hours of chat on Free Mode\nUp to 60 projects on Free Mode\n$20 towards more powerful models\nPlan mode\nUnlimited workspaces\nTry now\nPro\n~~$100~~ $90 / month, billed annually\n10 parallel agents\nPremium Support\nEverything in Core plus:\nEven more Free Mode usage to chat and create\n$100 towards most powerful models\nUp to 15 collaborators\nInvite up to 50 viewers\nDatabase rollback up to 28 days\nUpgrade to Pro\nEnterprise\nCustom\nEnterprise-grade security and control\nSSO, SCIM & audit logs\nAdvanced privacy controls\nCentralized security management\nSingle-tenant & private networking options\nDedicated premium support\nand much more\nContact sales\nGet started\n*Prices are subject to tax depending on your location. Replit Agent is powered by large language models. While it can produce powerful results, its behavior is probabilistic - meaning it may occasionally make mistakes.\nFrequently asked questions\nWhat are all the features included in these plans?\nHow do credits work?\nWhat happens when I run out of credits?\nWhat comes with my subscription?\nWhat plan is best for me?\nWhat is Effort-Based Pricing (pay-as-you-go)?\nHow can I control what I spend on Replit?\nHow can I see how much I'm spending?\nDo you offer invoicing instead of credit card payments?\nDo you offer annual plans at a discount?\nStill have questions?You can see more details in our\nBilling docs\n. If you're interested in the Enterprise plan,\ncontact us\n. For support, sign in to Replit and use the ? on the top right corner of the page for help.\nReplit is the AI platform that helps you turn your ideas into real outcomes. Describe what you want in natural language, then create, launch, and grow apps, sites, tools, and businesses in one place.\nReplit on X\nReplit on YouTube\nReplit on LinkedIn\nReplit on Instagram\nReplit on Facebook\nReplit on TikTok\nProduct\nDesign\nSlides\nAgents\nDatabases\nIntegrations\nSecurity\nEnterprise\nPricing\nResources\nTemplates\nGallery\nCustomer stories\nDocs\nBlog\nCommunity\nSupport\nStatus\nCompany\nAbout\nCareers\nNewsroom\nPartners\nCertifications\nBrand kit\nContact us\nLegal\nTerms of service\nPrivacy policy\nPro agreement\nEnterprise agreement\nData processing agreement\nSubprocessors\nReport abuse\nAll rights reserved. Copyright © 2026 Replit, Inc.",
+      "dropdowns": []
+    },
+    {
+      "competitor": "v0",
+      "view": null,
+      "view_index": 0,
+      "opens_on": null,
+      "url": "https://v0.app/pricing",
+      "method": "http",
+      "fetched_at": "2026-10-26T20:28:44Z",
+      "ok": true,
+      "status": 200,
+      "error": null,
+      "reader": "ai",
+      "ai_error": null,
+      "cost_usd": 0.033576,
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "list_price": null,
+          "billing": "/month",
+          "includes": [
+            "Free access to v0",
+            "Deploy apps to Vercel",
+            "Edit visually with Design Mode",
+            "Sync with GitHub",
+            "7 message/day limit"
+          ],
+          "quotes": [
+            "Free",
+            "$0/month",
+            "Free access to v0",
+            "Deploy apps to Vercel",
+            "Edit visually with Design Mode",
+            "Sync with GitHub",
+            "7 message/day limit"
+          ]
+        },
+        {
+          "name": "Plus",
+          "price": "$30",
+          "list_price": "$90",
+          "billing": "/user/month",
+          "includes": [
+            "Everything from Free",
+            "Access to all models",
+            "$30 of included monthly credits per user",
+            "$2 of free daily credits on login per user",
+            "Purchase additional credits outside of your monthly usage shared across your team",
+            "Centralized billing on",
+            "vercel.com",
+            "Share chats and collaborate with your team"
+          ],
+          "quotes": [
+            "Plus",
+            "$30 ~~$90~~ /user/month",
+            "Everything from Free",
+            "Access to all models",
+            "$30 of included monthly credits per user",
+            "$2 of free daily credits on login per user",
+            "Purchase additional credits outside of your monthly usage shared across your team",
+            "Centralized billing on",
+            "vercel.com",
+            "Share chats and collaborate with your team"
+          ]
+        },
+        {
+          "name": "Business",
+          "price": "$100",
+          "list_price": null,
+          "billing": "/user/month",
+          "includes": [
+            "Everything from Plus",
+            "Access to all models",
+            "$30 of included monthly credits per user",
+            "$2 of free daily credits on login per user",
+            "Training opt-out by default",
+            "Purchase additional credits outside of your monthly usage shared across your team",
+            "Centralized billing on",
+            "vercel.com",
+            "Share chats and collaborate with your team"
+          ],
+          "quotes": [
+            "Business",
+            "$100/user/month",
+            "Everything from Plus",
+            "Access to all models",
+            "$30 of included monthly credits per user",
+            "$2 of free daily credits on login per user",
+            "Training opt-out by default",
+            "Purchase additional credits outside of your monthly usage shared across your team",
+            "Centralized billing on",
+            "vercel.com",
+            "Share chats and collaborate with your team"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "list_price": null,
+          "billing": null,
+          "includes": [
+            "Everything from Business",
+            "Access to all models",
+            "Your data is never used for training",
+            "SAML SSO",
+            "Role-based access control",
+            "Priority access for better performance and no queues",
+            "Guaranteed customer support SLAs"
+          ],
+          "quotes": [
+            "Enterprise",
+            "Custom",
+            "Everything from Business",
+            "Access to all models",
+            "Your data is never used for training",
+            "SAML SSO",
+            "Role-based access control",
+            "Priority access for better performance and no queues",
+            "Guaranteed customer support SLAs"
+          ]
+        }
+      ],
+      "tables": [
+        {
+          "title": "Model pricing",
+          "columns": [
+            "Input",
+            "Cache write",
+            "Cache read",
+            "Output"
+          ],
+          "rows": [
+            {
+              "label": "v0 MiniLightning-fast speed with near-frontier intelligence",
+              "values": [
+                "$0.20/1M",
+                "$0.25/1M",
+                "$0.02/1M",
+                "$1.20/1M"
+              ]
+            },
+            {
+              "label": "v0 ProBalanced speed and intelligence, with superior performance for most tasks",
+              "values": [
+                "$2/1M",
+                "$2.50/1M",
+                "$0.20/1M",
+                "$10/1M"
+              ]
+            },
+            {
+              "label": "v0 MaxMaximum intelligence for complex work and demanding users",
+              "values": [
+                "$5/1M",
+                "$6.25/1M",
+                "$0.50/1M",
+                "$25/1M"
+              ]
+            },
+            {
+              "label": "v0 Max FastMaximum intelligence with 2.5x faster output speed for rapid iteration",
+              "values": [
+                "$10/1M",
+                "$12.50/1M",
+                "$1/1M",
+                "$50/1M"
+              ]
+            }
+          ]
+        }
+      ],
+      "text": "Home\nTemplates\nEnterprise\nPricing\niOS\nStudents\nFAQ\nGet Started\nPlans and Pricing\nFree\n$0/month\nIncludes\nFree access to v0\nDeploy apps to Vercel\nEdit visually with Design Mode\nSync with GitHub\n7 message/day limit\nStart Building\nPlus\nPopular\n$30 ~~$90~~ /user/month\nEverything from Free\nAccess to all models\n$30 of included monthly credits per user\n$2 of free daily credits on login per user\nPurchase additional credits outside of your monthly usage shared across your team\nCentralized billing on\nvercel.com\nShare chats and collaborate with your team\nSelect Plan\nBusiness\n$100/user/month\nEverything from Plus\nAccess to all models\n$30 of included monthly credits per user\n$2 of free daily credits on login per user\nTraining opt-out by default\nPurchase additional credits outside of your monthly usage shared across your team\nCentralized billing on\nvercel.com\nShare chats and collaborate with your team\nSelect Plan\nEnterprise\nCustom\nEverything from Business\nAccess to all models\nYour data is never used for training\nSAML SSO\nRole-based access control\nPriority access for better performance and no queues\nGuaranteed customer support SLAs\nContact Us\nAll prices shown are in USD and exclude value-added tax (VAT), goods and services tax (GST), and other applicable taxes. Taxes are calculated based on your billing address and added to your invoice where required by law.\nLearn more about taxes\n.\nModel pricing\nv0 model token rates in US dollars per one million tokens\nModel\nInput\nCache write\nCache read\nOutput\nv0 MiniLightning-fast speed with near-frontier intelligence\n$0.20/1M\n$0.25/1M\n$0.02/1M\n$1.20/1M\nv0 ProBalanced speed and intelligence, with superior performance for most tasks\n$2/1M\n$2.50/1M\n$0.20/1M\n$10/1M\nv0 MaxMaximum intelligence for complex work and demanding users\n$5/1M\n$6.25/1M\n$0.50/1M\n$25/1M\nv0 Max FastMaximum intelligence with 2.5x faster output speed for rapid iteration\n$10/1M\n$12.50/1M\n$1/1M\n$50/1M\nFrequently Asked Questions\n01What does a \"token\" mean on v0?\nInput tokens are measured based on what you send and output tokens are measured based on what v0 returns. Every time you send a prompt or receive output from v0, it is broken into tokens and measured. Pricing is based on how many of each are processed.\n02How can I purchase credits?\n03When do my additional purchased credits expire?\n04What if I already have a Vercel account?\n05Do you offer refunds?\n06How do I cancel my plan?\n07Do you accept PayPal?\n08Can you give me a receipt or invoice for tax purpose?\n09Do you offer discounts for students, veterans, nonprofits, etc.?\n10Do you offer purchasing power parity (PPP)?\n11If I send a message, where does that usage come from?\n12How can I start buying on-demand usage if I run out of included monthly usage?\n13When does my plan's included usage renew?\n14Why do messages use so many input tokens? My prompts are short.\n15What happened to the Ultra plan?\nProduct\nHome\nEnterprise\nPricing\nv0 for Students\nCompany\nTerms\nAI Policy\nPrivacy\nCookies\nResources\nFAQs\nDocs\nVercel Community\nVercel\nSocial\nTwitter\nLinkedIn\n$5 in one-time credits for new users",
+      "dropdowns": []
+    }
+  ]
+}

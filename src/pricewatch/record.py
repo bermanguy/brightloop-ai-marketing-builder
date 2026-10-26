@@ -13,9 +13,11 @@ import sys
 from pathlib import Path
 
 from .live import collect, now_utc
+from .sources.fetch import label
 
 RECORDED = Path("fixtures") / "recorded"
-KEEP = ("competitor", "url", "method", "fetched_at", "ok", "status", "error", "reader", "ai_error", "cost_usd", "plans", "text")
+KEEP = ("competitor", "view", "view_index", "opens_on", "url", "method", "fetched_at", "ok", "status", "error", "reader",
+        "ai_error", "cost_usd", "plans", "tables", "text", "dropdowns")
 
 
 def record(out_dir=RECORDED, pages_dir=None, use_ai=True):
@@ -36,7 +38,7 @@ def main(argv=None):
     path, run = record(args.out)
     for page in run["pages"]:
         state = f"{page['reader']}, {len(page['plans'])} plans" if page["ok"] else f"FAILED: {page['error']}"
-        print(f"{page['competitor']:8} {state}")
+        print(f"{label(page):18} {state}")
     print(f"${run['cost_usd']:.4f} -> {path}")
     return 0 if all(page["ok"] for page in run["pages"]) else 1
 

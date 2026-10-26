@@ -127,5 +127,43 @@ def read_page(page):
     if not plans:
         result["ok"] = False
         result["error"] = "no plans could be read from the page (layout change?)"
-    result["plans"] = plans
+    result["plans"] = with_options(plans, page)
     return result
+
+
+def with_options(plans, page):
+    """Add each plan's dropdown options (Lovable's credit ladder), as the page lists them.
+
+    They're read from the page's own dropdown by the browser (fetch._open_dropdowns),
+    not by a reader, so they are page text by construction.
+    """
+    dropdowns = {d["plan"]: d for d in page.get("dropdowns") or []}
+    for plan in plans:
+        if plan["name"] in dropdowns:
+            plan["options"] = dropdowns[plan["name"]]["options"]
+    return plans
+
+
+def checked_table(table, text):
+    """The table with only the rows that are on the page as written, or None.
+
+    A row is kept only if its label and its values are consecutive lines of the
+    page, in order, one value per column: that checks the values belong to that
+    row and those columns, not just that they appear somewhere.
+    """
+    lines = (text or "").split("\n")
+    if not table.get("columns") or not table.get("title") or table["title"] not in text:
+        return None
+    if any(column not in lines for column in table["columns"]):
+        return None
+    starts = {}
+    for index, line in enumerate(lines):
+        starts.setdefault(line, []).append(index)
+    rows = []
+    for row in table.get("rows") or []:
+        cells = [row["label"], *row["values"]]
+        if len(row["values"]) == len(table["columns"]) and any(
+            lines[i : i + len(cells)] == cells for i in starts.get(row["label"], [])
+        ):
+            rows.append({"label": row["label"], "values": list(row["values"])})
+    return {"title": table["title"], "columns": list(table["columns"]), "rows": rows} if rows else None

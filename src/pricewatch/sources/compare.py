@@ -16,11 +16,15 @@ Rules, not AI (D13):
   so it stays a details change.)
 - Each plan gives at most one signal per run, so one change isn't shown twice.
 - A plan that appears or disappears is one signal.
+- A page with a billing toggle is compared view by view (Monthly with Monthly,
+  Yearly with Yearly). If it now opens on the other view, that's one signal.
+- A table of limits or prices (e.g. Bolt's plan comparison, v0's model rates)
+  gives one signal per table, listing the rows whose values changed.
 - Only pages read successfully in both snapshots are compared. A failed page
   never reads as "every plan removed" (D12); the caller reports it instead.
 
-"The plan's lines" are its quotes: the page lines the reader says the plan's
-values came from. They're compared instead of the reader's billing/includes
+"The plan's lines" are its quotes, the page lines the reader says the plan's
+values came from, plus its dropdown options (Lovable's credit ladder). They're compared instead of the reader's billing/includes
 fields because the AI files the same line under either field from one run to
 the next (seen on Lovable's "Volume based pricingUnlimited users"), while the
 lines themselves only change when the page does.
@@ -63,10 +67,20 @@ def _period(plan):
     return found.pop() if len(found) == 1 else None
 
 
-def _signal(page, plan_name, kind, text):
+def _plan(page, name):
+    """"Pro plan", or "Pro plan (Yearly view)" on a page with a billing toggle."""
+    return f"{name} plan ({page['view']} view)" if page.get("view") else f"{name} plan"
+
+
+def _row(columns, values):
+    return "; ".join(f"{column}: {value}" for column, value in zip(columns, values))
+
+
+def _signal(page, subject, kind, text):
     stamp = re.sub(r"[^0-9]", "", page["fetched_at"] or "")
+    view = f"{_slug(page['view'])}-" if page.get("view") else ""
     return {
-        "id": f"live-{_slug(page['competitor'])}-{_slug(plan_name)}-{kind}-{stamp}",
+        "id": f"live-{_slug(page['competitor'])}-{view}{_slug(subject)}-{kind}-{stamp}",
         "type": "pricing",
         "competitor": page["competitor"],
         "source": page["url"],
@@ -84,7 +98,8 @@ def compare_page(before, after):
 
     for name, plan in new.items():
         if name not in old:
-            signals.append(_signal(after, name, "added", f"New plan on the pricing page: {name}, {_price_words(plan)}."))
+            where = f" ({after['view']} view)" if after.get("view") else ""
+            signals.append(_signal(after, name, "added", f"New plan on the pricing page{where}: {name}, {_price_words(plan)}."))
             continue
         was = old[name]
         price_changed = any(was.get(field) != plan.get(field) for field in PRICE_FIELDS)
@@ -92,11 +107,12 @@ def compare_page(before, after):
         if price_changed and before_period and after_period and before_period != after_period:
             signals.append(_signal(after, name, "view", (
                 f"The pricing page now opens on {after_period} billing, not {before_period} {since}: "
-                f"{name} plan now shows {_price_words(plan)}; it showed {_price_words(was)}. "
+                f"{_plan(after, name)} now shows {_price_words(plan)}; it showed {_price_words(was)}. "
                 "This is a change in which billing period the page shows first, not necessarily a price change."
             )))
             continue
-        old_lines, new_lines = was["quotes"], plan["quotes"]
+        old_lines = was["quotes"] + (was.get("options") or [])
+        new_lines = plan["quotes"] + (plan.get("options") or [])
         changes, kind = [], "details"
         if price_changed:
             kind = "price"
@@ -111,21 +127,44 @@ def compare_page(before, after):
         if removed:
             changes.append(f"no longer shows {_lines(removed)}")
         if changes:
-            signals.append(_signal(after, name, kind, f"{name} plan {' and '.join(changes)} {since}."))
+            signals.append(_signal(after, name, kind, f"{_plan(after, name)} {' and '.join(changes)} {since}."))
 
     for name, plan in old.items():
         if name not in new:
             signals.append(
-                _signal(after, name, "removed", f"{name} plan ({_price_words(plan)}) is no longer on the pricing page {since}.")
+                _signal(after, name, "removed", f"{_plan(after, name)} ({_price_words(plan)}) is no longer on the pricing page {since}.")
             )
+
+    for title, table in {t["title"]: t for t in after.get("tables") or []}.items():
+        was = {t["title"]: t for t in before.get("tables") or []}.get(title)
+        if not was:
+            continue  # a table that wasn't read before: its first reading, nothing to compare
+        old_rows = {r["label"]: r["values"] for r in was["rows"]}
+        new_rows = {r["label"]: r["values"] for r in table["rows"]}
+        changed = [
+            f'"{label}" now shows {_row(table["columns"], values)}; it showed {_row(was["columns"], old_rows[label])}'
+            for label, values in new_rows.items() if label in old_rows and (values, table["columns"]) != (old_rows[label], was["columns"])
+        ]
+        changed += [f'new row "{label}": {_row(table["columns"], values)}' for label, values in new_rows.items() if label not in old_rows]
+        changed += [f'row "{label}" is gone' for label in old_rows if label not in new_rows]
+        if changed:
+            more = len(changed) - MAX_LINES
+            listed = "; and ".join(changed[:MAX_LINES]) + (f"; and {more} more" if more > 0 else "")
+            signals.append(_signal(after, title, "limits", f'The "{title}" table on the pricing page changed {since}: {listed}.'))
+
+    if after.get("view_index") == 0 and before.get("opens_on") and after.get("opens_on") and before["opens_on"] != after["opens_on"]:
+        signals.append(_signal(after, "page", "opens", (
+            f"The pricing page now opens on its {after['opens_on']} prices, not {before['opens_on']} {since}. "
+            "Both are still on the page; this is a change in which prices visitors see first."
+        )))
     return signals
 
 
 def compare(previous, current):
-    """Signals for every competitor whose page was read in both. previous/current: {competitor: page}."""
+    """Signals for every page (or view) read in both. previous/current: {fetch.label(page): page}."""
     signals = []
-    for competitor, page in current.items():
-        before = previous.get(competitor)
+    for name, page in current.items():
+        before = previous.get(name)
         if page.get("ok") and before and before.get("ok"):
             signals.extend(compare_page(before, page))
     return signals
