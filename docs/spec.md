@@ -14,7 +14,7 @@ Maya, Head of Growth, owns signups and trial starts. Competitors' pricing and pa
 
 ## What Maya gets
 
-A page she opens on Monday morning listing what changed in competitors' pricing since the last check. Each entry says what happened, what to do about it, how confident the tool is, and the source link. For example: "Lovable raised Pro from $20 to $25/month. Update our comparison page and push our price in this week's campaign. Confidence: high. Source: lovable.dev/pricing." Unconfirmed claims appear too, labelled unverified with a "don't act yet" action.
+A page she opens on Monday morning listing what changed in competitors' pricing since the last check. Each entry says what happened, what to do about it, how confident the tool is, and the source link. For example: "Lovable raised its Pro plan from $20 to $25 / month. What to do: anything we publish that quotes the price of Lovable's Pro plan (comparison pages, ads, sales material) now shows the old $20: update it. Then decide with whoever owns our pricing whether to push our trial while Lovable's prospects re-compare. Confidence: high. Source: lovable.dev/pricing." We don't hold Brightloop's own prices, so an action never says which product is cheaper or what Brightloop should charge (D26). *[assumption: that Brightloop publishes material quoting competitors' prices; Maya didn't say]* Unconfirmed claims appear too, labelled unverified with a "don't act yet" action.
 
 A second view shows **each competitor's current plans and prices**, so the app is also a reference for the whole pricing picture (D12).
 
@@ -39,7 +39,7 @@ A second view shows **each competitor's current plans and prices**, so the app i
 | R3 | Feature launches are skipped, with the reason given. *[open: a launch that changes what a plan includes, e.g. "now on every plan", may count as packaging; see Open questions]* | "Feature launches I mostly ignore" |
 | R4 | **No link, no number.** Every number in an item's `action` or `why` must appear, with its URL, in that item's sources. The system never computes, rounds or invents a figure that isn't in a source. | "no link, no number" |
 | R5 | **Believe a price only if it comes from the competitor's own website.** A claim from anywhere else (ads, sponsored posts, blogs, Reddit, AI summaries) is still shown, but **flagged as unverified with low confidence**, and the action is "don't act yet; it isn't on the competitor's own pricing page". Example: `pr-401`, Lovable Pro $20→$25 from lovable.dev/pricing, is a normal high-confidence item. `pr-402`, "Bolt is now free forever" from a sponsored post, becomes a low-confidence item labelled unverified. *[decision D10; the source rule itself is an assumption from her incident, not her words]* | the 30% incident |
-| R6 | Each action is phrased in terms of signups and trial starts where possible. *[assumption]* | "anything that moves trial starts" |
+| R6 | Each action is phrased in terms of signups and trial starts where possible. *[assumption]* Actions name what's now out of date and what to decide; never which product is cheaper, since we don't hold Brightloop's prices (D26). | "anything that moves trial starts" |
 
 ## Rules from the brief and the test contract
 
