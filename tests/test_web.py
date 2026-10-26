@@ -91,3 +91,17 @@ def test_a_run_that_crashes_does_not_block_the_next_one(client, monkeypatch):
     assert crashing.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 500
     monkeypatch.setattr(web, "run_live", lambda store: store.runs(1)[0])
     assert client.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 200
+
+
+def test_the_schedule_keeps_the_six_hour_pace(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(web, "run_live", lambda store: calls.append(store) or store.runs(1)[0])
+    auth = {"Authorization": "Bearer test-token"}
+    # The fixture's last run is from 2026-10-25, long enough ago: this call runs.
+    assert "items" in client.post("/run?unless_ran_within_hours=5.5", headers=auth).json() and len(calls) == 1
+    now = web.datetime.now(web.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    web.store().save_run({"items": [], "skipped": [], "run": {"started_at": now, "errors": [], "cost_usd": 0.0}})
+    assert client.post("/run?unless_ran_within_hours=5.5", headers=auth).json() == {"skipped": f"last run started at {now}"}
+    assert len(calls) == 1
+    # Check now always runs.
+    assert client.post("/run", headers=auth).status_code == 200 and len(calls) == 2
