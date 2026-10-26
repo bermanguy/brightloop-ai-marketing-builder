@@ -42,57 +42,67 @@ def unsupported_numbers(item):
 
 # What each kind of change on a competitor's own pricing page means for Brightloop's
 # trial starts, and what to do about it (R6). We don't hold Brightloop's own prices,
-# so the action says where to compare, never which is cheaper.
+# so an action never says which product is cheaper or what Brightloop should charge.
+# It says what's now out of date (anything Brightloop publishes that quotes the
+# competitor: the old figure is exactly the wrong-number risk of Maya's incident),
+# and what to decide with whoever owns Brightloop's pricing (D26). Where Brightloop
+# quotes competitors (comparison pages, ads, sales material) is an assumption.
+PUBLISHED = "Anything we publish that quotes"
+DECIDE = "decide with whoever owns our pricing"
 CHANGES = {
     "price_up": (
         "{c} raised its {plan} from {was} to {now}{billing}.",
-        "Put our price next to {c}'s on the comparison page this week. If ours now looks better, lead with it in "
-        "this week's trial-start ads.",
+        f"{PUBLISHED} the price of {{c}}'s {{plan}} (comparison pages, ads, sales material) now shows the old "
+        f"{{was}}: update it. Then {DECIDE} whether to push our trial while {{c}}'s prospects re-compare.",
         "A price rise sends some of {c}'s prospects comparing alternatives, the moment they decide where to start a trial.",
     ),
     "price_down": (
         "{c} cut its {plan} from {was} to {now}{billing}.",
-        "Update our comparison page today, and check that this week's trial-start ads still hold up against {c}'s "
-        "new price. Don't claim we're cheaper until that's checked.",
+        f"{PUBLISHED} the price of {{c}}'s {{plan}} (comparison pages, ads, sales material) now shows the old "
+        f"{{was}}: update it. Then {DECIDE} whether we need to respond. Don't claim we're cheaper until that's checked.",
         "A lower price makes {c} the easier pick for prospects comparing on price, which can cost us trial starts.",
     ),
     "price": (
         "{c} changed the price of its {plan}: it now shows {now}; it showed {was}.",
-        "Update our comparison page with {c}'s new price this week.",
+        f"{PUBLISHED} the price of {{c}}'s {{plan}} (comparison pages, ads, sales material) is now out of date: "
+        "update it.",
         "Prospects compare prices before they start a trial.",
     ),
     "details": (
         "{c} changed what its {plan} includes, at the same price.",
-        "Read the change below and update our comparison page. If {c} now gives less for the same price, say what "
-        "we include in this week's trial-start campaign.",
+        f"{PUBLISHED} what {{c}}'s {{plan}} includes is now out of date: read the change below and update it. If {{c}} "
+        f"now gives less for the same price, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Prospects compare what each plan includes, not only the price.",
     ),
     "limits": (
         "{c} changed limits in its {plan}.",
-        "Read the change below and update our comparison page. If {c} now gives less, say what we include in this "
-        "week's trial-start campaign.",
+        f"{PUBLISHED} {{c}}'s limits is now out of date: read the change below and update it. If {{c}} now gives "
+        f"less, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Limits like tokens and requests are what prospects hit first on a trial, so they compare them.",
     ),
     "added": (
         "{c} added a {plan}, at {now}.",
-        "Add it to our comparison page and decide which of our plans it competes with.",
+        f"Add it wherever we compare ourselves with {{c}} (comparison pages, sales material), and {DECIDE} which "
+        "of our plans it competes with.",
         "A new plan, especially a cheaper way in, gives prospects a new reason to start a trial at {c}.",
     ),
     "removed": (
         "{c} removed its {plan}. It was {was}.",
-        "Update our comparison page. Prospects who wanted that plan need another option: consider pointing this "
-        "week's trial-start campaign at them.",
+        f"Take it out wherever we compare ourselves with {{c}}. Prospects who wanted that plan need another option: "
+        f"{DECIDE} whether to point this week's trial-start campaign at them.",
         "People who wanted the plan that's gone are looking for a replacement.",
     ),
     "opens": (
         "{c}'s pricing page now shows its {now} prices first, not {was}.",
-        "No price changed. Wherever our ads or comparison page quote {c}'s price, say which billing period it is.",
+        "No price changed. Wherever we quote {c}'s price, say which billing period it is, so we never set our "
+        "monthly price against their yearly one.",
         "Yearly prices look lower per month, so the same plan can look cheaper or dearer depending on which view "
         "prospects see first.",
     ),
     "view": (
         "{c}'s pricing page now opens on {now} billing, not {was}, for its {plan}.",
-        "No price changed. Wherever our ads or comparison page quote {c}'s price, say which billing period it is.",
+        "No price changed. Wherever we quote {c}'s price, say which billing period it is, so we never set our "
+        "monthly price against their yearly one.",
         "Yearly prices look lower per month, so the same plan can look cheaper or dearer depending on which view "
         "prospects see first.",
     ),
@@ -112,7 +122,16 @@ def change_text(competitor, signal):
     if any(f"{{{key}}}" in part and not values[key] for part in template for key in ("plan", "was", "now")):
         return None
     headline, action, why = (part.format(**values) for part in template)
-    return headline, action, why, "Update the comparison page"
+    views = signal.get("views") if isinstance(signal.get("views"), list) else []
+    verb = {"price_up": "raised", "price_down": "cut"}.get(signal.get("change"))
+    if verb and views:  # one change seen in each billing view: "Monthly: $25 to $30 / month; Yearly: ..."
+        parts = []
+        for v in views:
+            billing = visible_text(v.get("billing"))
+            billing = (f" {billing}" if billing.startswith("/") else f" ({billing})") if billing else ""
+            parts.append(f"{visible_text(v.get('view'))}: {visible_text(v.get('was'))} to {visible_text(v.get('now'))}{billing}")
+        headline = f"{competitor} {verb} its {values['plan']}. {'; '.join(parts)}."
+    return headline, action, why, "Update what quotes them"
 
 
 def verified_text(competitor, url, quote, own_pricing_page):
@@ -123,15 +142,15 @@ def verified_text(competitor, url, quote, own_pricing_page):
     )
     if own_pricing_page:
         action = (
-            f"Check this change on {competitor}'s pricing page against ours this week. Update our comparison "
-            "page, and if we now compare better, say so in this week's trial-start campaign."
+            f"{PUBLISHED} {competitor}'s pricing (comparison pages, ads, sales material) may now be out of date: "
+            f"check it against the page and update it. Then {DECIDE} whether to respond."
         )
-        cta = "Update the comparison page"
+        cta = "Update what quotes them"
     else:
         pricing = pricing_page_name(competitor)
         action = (
-            f"Confirm this on {pricing} before acting. If it's there, update our comparison "
-            "page and this week's trial-start campaign."
+            f"Confirm this on {pricing} before acting. If it's there, update anything we publish that "
+            "quotes their pricing."
         )
         cta = "Confirm on the pricing page"
     return action, why, cta
@@ -149,7 +168,7 @@ def unverified_text(competitor, source, quote, kind, page_check=None):
     else:
         action = (
             f"Don't act yet: this isn't on {competitor}'s own pricing page. Check {pricing} "
-            "before changing campaigns or the comparison page, or repeating it to leadership."
+            "before changing anything we publish, or repeating it to leadership."
         )
     why = (
         f"It comes from {described}, not {competitor}'s own website. A claim like this, taken as fact, is how last "

@@ -18,6 +18,8 @@ Rules, not AI (D13):
 - A plan that appears or disappears is one signal.
 - A page with a billing toggle is compared view by view (Monthly with Monthly,
   Yearly with Yearly). If it now opens on the other view, that's one signal.
+- A change seen the same way in every billing view (Lovable raising Pro on
+  both its Monthly and Yearly prices) is one signal quoting each view.
 - A table of limits or prices (e.g. Bolt's plan comparison, v0's model rates)
   gives one signal per table, listing the rows whose values changed.
 - Only pages read successfully in both snapshots are compared. A failed page
@@ -108,6 +110,8 @@ def _signal(page, subject, kind, text, change=None, plan=None, was=None, now=Non
         "was": was,
         "now": now,
         "billing": billing,
+        "name": subject,
+        "view": page.get("view"),
     }
 
 
@@ -191,11 +195,46 @@ def compare_page(before, after):
     return signals
 
 
+def _unique(values):
+    return " and ".join(dict.fromkeys(v for v in values if v))
+
+
+def merge_views(signals):
+    """One signal for a change seen the same way in every billing view.
+
+    Lovable raising Pro shows on its Monthly and its Yearly view: that's one change
+    for Maya, so it's one signal quoting both views. The per-view values are kept
+    under "views". A plan that changed differently in each view stays two signals.
+    """
+    groups = {}
+    for signal in signals:
+        key = (signal["competitor"], signal.get("name"), signal["change"]) if signal.get("view") else id(signal)
+        groups.setdefault(key, []).append(signal)
+    merged = []
+    for group in groups.values():
+        if len(group) == 1 or len({s["view"] for s in group}) < len(group):
+            merged.extend(group)
+            continue
+        first = group[0]
+        merged.append(dict(
+            first,
+            id=first["id"].replace(f"-{_slug(first['view'])}-", "-", 1),
+            text=" ".join(s["text"] for s in group),
+            plan=f"{first['name']} plan" if first["plan"] else None,
+            was=_unique(s["was"] for s in group),
+            now=_unique(s["now"] for s in group),
+            billing=None,
+            view=None,
+            views=[{key: s[key] for key in ("view", "was", "now", "billing")} for s in group],
+        ))
+    return merged
+
+
 def compare(previous, current):
-    """Signals for every page (or view) read in both. previous/current: {fetch.label(page): page}."""
+    """Signals for every page (or view) read in both, a change seen in every view once. previous/current: {fetch.label(page): page}."""
     signals = []
     for name, page in current.items():
         before = previous.get(name)
         if page.get("ok") and before and before.get("ok"):
             signals.extend(compare_page(before, page))
-    return signals
+    return merge_views(signals)

@@ -267,6 +267,18 @@ Toggles and dropdowns are not clicked.
 
 **Alternatives.** Reddit public feeds (1–2 hours, may be blocked); X API search (about $200/month, about half a day).
 
+## D26 — What an item tells Maya to do, without Brightloop's prices · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Each item has a one-line headline (what happened), then "What to do" and "Why it matters", written by rule for each kind of change. Guy reviewed a preview of every kind and approved ("yes go ahead please").
+- We don't hold Brightloop's own prices (they aren't in the brief or the sample input, and Maya hasn't given them), so no action says which product is cheaper or what Brightloop should charge.
+- The action says what's now out of date: anything Brightloop publishes that quotes the competitor (comparison pages, ads, sales material), naming the old figure. Then what to decide with whoever owns Brightloop's pricing.
+- An unverified claim is shown beside what the competitor's own pricing page showed in the same run.
+- A change seen the same way in a page's Monthly and Yearly views is one item quoting both [Guy].
+
+**Why (Claude's recommendation).** "Our comparison page", used since the spec's first example, was an assumption: Maya never mentioned one. Fixing what quotes the old number is the action we can stand behind, and it's Maya's own incident (a wrong competitor number reaching leadership). That Brightloop publishes material quoting competitors is still an assumption.
+
+**Alternatives.** Spend one of Maya's 15 messages asking what she updates first (her earlier answers to similar questions were the fallback reply); add a slot for Brightloop's own prices (no data to fill it).
+
 ---
 
 ## Open questions

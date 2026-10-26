@@ -2,6 +2,8 @@
 
 import json
 
+from pricewatch.core import process
+from pricewatch.core.text import unsupported_numbers
 from pricewatch.live import run_live
 from pricewatch.store import Store
 from pricewatch.sources import compare, extract
@@ -291,6 +293,34 @@ def test_each_kind_of_change_gets_its_own_headline_and_action(tmp_path):
     result = live(tmp_path, "run2", "2026-10-25T12:00:00Z", {"lovable": [("$25", "$30")], "bolt": [("$18", "$15")]})
     by = {item["competitor"]: item for item in result["items"]}
     assert by["Lovable"]["headline"].startswith("Lovable raised its Pro plan from $25 to $30")
-    assert by["Lovable"]["action"].startswith("Put our price next to Lovable's")
+    assert by["Lovable"]["action"].startswith("Anything we publish that quotes the price of Lovable's Pro plan")
+    assert "now shows the old $25: update it" in by["Lovable"]["action"]
+    assert "owns our pricing" in by["Lovable"]["action"] and "our price" not in by["Lovable"]["action"]
     assert by["Bolt"]["headline"].startswith("Bolt cut its Pro plan from $18 to $15")
     assert "Don't claim we're cheaper" in by["Bolt"]["action"]
+
+
+def _raise(page, name, old, new):
+    plan = next(p for p in page["plans"] if p["name"] == name)
+    plan["price"] = new
+    plan["quotes"] = [q.replace(old, new) for q in plan["quotes"]]
+
+
+def test_a_change_in_both_billing_views_is_one_card():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    _raise(after["Lovable (Monthly)"], "Pro", "$25", "$30")
+    _raise(after["Lovable (Yearly)"], "Pro", "$21", "$25")
+    [signal] = compare.compare(before, after)
+    assert signal["id"] == "live-lovable-pro-price-20261027021700" and signal["change"] == "price_up"
+    assert "Pro plan (Monthly view) now shows $30" in signal["text"] and "Pro plan (Yearly view) now shows $25" in signal["text"]
+    [item] = process({"signals": [signal]})["items"]
+    assert item["headline"] == ("Lovable raised its Pro plan. Monthly: $25 to $30 / month; "
+                                "Yearly: $21 to $25 / month, billed annually.")
+    assert "now shows the old $25 and $21: update it" in item["action"] and unsupported_numbers(item) == []
+
+
+def test_a_plan_that_changed_differently_in_each_view_stays_two_cards():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    _raise(after["Lovable (Monthly)"], "Pro", "$25", "$30")
+    _raise(after["Lovable (Yearly)"], "Pro", "$21", "$19")
+    assert sorted(s["change"] for s in compare.compare(before, after)) == ["price_down", "price_up"]
