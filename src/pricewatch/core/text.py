@@ -4,7 +4,7 @@ import re
 
 from .trust import pricing_url
 
-MAX_QUOTE = 300
+MAX_QUOTE = 600
 
 # Numbers as Maya would read them: 20, $25, 1,000, 2.5, 30%. A digit glued to a
 # letter ("v0", "W43") is part of a name, not a figure.
@@ -21,7 +21,8 @@ def visible_text(raw):
     text = re.sub(r"<[^>]*>", " ", text)
     text = " ".join(text.split())
     if len(text) > MAX_QUOTE:
-        text = text[: MAX_QUOTE - 1].rstrip() + "…"
+        # Cut between words, never inside one, so no figure is shown cut short ("$1,8…").
+        text = text[: MAX_QUOTE - 1].rsplit(" ", 1)[0].rstrip() + " …"
     return text
 
 
@@ -44,7 +45,7 @@ def verified_text(competitor, url, quote, own_pricing_page):
     )
     if own_pricing_page:
         action = (
-            f"Check {competitor}'s new pricing against ours this week. Update our comparison "
+            f"Check this change on {competitor}'s pricing page against ours this week. Update our comparison "
             "page, and if we now compare better, say so in this week's trial-start campaign."
         )
         cta = "Update the comparison page"

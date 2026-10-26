@@ -307,3 +307,12 @@ def test_run_command_on_unreadable_input_still_writes_wrapper(tmp_path):
     assert done.returncode == 1
     result = json.loads(out.read_text())
     assert result["items"] == [] and re.search("Couldn't read", result["run"]["errors"][0])
+
+
+def test_a_long_quote_is_cut_between_words_so_no_figure_is_cut_short():
+    from pricewatch.core import text
+
+    quote = "Pro now shows " + "x " * 290 + "$1,875/mo for 10,000 credits"
+    shown = text.visible_text(quote)
+    assert len(shown) <= text.MAX_QUOTE and shown.endswith(" …")
+    assert shown[:-2].split()[-1] in quote.split()  # the last word shown is a whole word of the quote
