@@ -8,6 +8,10 @@ store (snapshots and run results), written as it appears on the competitor's pag
 POST /run starts a live run. It needs RUN_TOKEN (as "Authorization: Bearer ..."
 from the schedule, or typed into the Check now form); without RUN_TOKEN set,
 runs are switched off and the app only shows what's stored.
+
+GitHub delays and sometimes drops scheduled workflows, so the schedule calls
+every hour with ?unless_ran_within_hours=5.5 and the app keeps the 6-hour pace:
+a dropped call costs an hour, not six.
 """
 
 import hmac
@@ -16,6 +20,7 @@ import json
 import os
 import re
 import threading
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Form, Header, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -123,18 +128,23 @@ def runs():
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
         rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
-    form = ("<form method='post' action='/run'><input type='password' name='token' placeholder='Run token' required> "
-            "<button>Check now</button></form>")
+    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about a minute'\">"
+            "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
     table = f"<table><tr><th>Started</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))
 
 
 @app.post("/run")
-def run(token: str = Form(None), authorization: str = Header(None)):
+def run(token: str = Form(None), authorization: str = Header(None), unless_ran_within_hours: float = None):
     expected = os.environ.get("RUN_TOKEN")
     given = token or (authorization or "").removeprefix("Bearer ").strip()
     if not expected or not given or not hmac.compare_digest(given, expected):
         return JSONResponse({"error": "a valid run token is needed"}, status_code=403)
+    if unless_ran_within_hours is not None:
+        last = store().runs(1)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=unless_ran_within_hours)
+        if last and last[0]["run"]["started_at"] > cutoff.strftime("%Y-%m-%dT%H:%M:%SZ"):
+            return JSONResponse({"skipped": f"last run started at {last[0]['run']['started_at']}"})
     if not _running.acquire(blocking=False):
         return JSONResponse({"error": "a run is already in progress"}, status_code=409)
     try:

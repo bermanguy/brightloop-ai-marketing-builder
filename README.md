@@ -115,7 +115,7 @@ uvicorn pricewatch.web:app        # http://localhost:8000
 
 ## Deploy (Render + Neon)
 
-The app runs on Render's free plan from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. `.github/workflows/schedule.yml` wakes the app and starts a run every 6 hours.
+The app runs on Render's free plan from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. `.github/workflows/schedule.yml` wakes the app and starts a run every 6 hours. GitHub delays and sometimes drops scheduled runs, so it calls every hour and the app skips the call unless its last run is over 5.5 hours old.
 
 1. Neon: create a project and copy its connection string.
 2. Render: New > Blueprint, pick this repo (`render.yaml`), and fill in `DATABASE_URL` (Neon), `ANTHROPIC_API_KEY` and `RUN_TOKEN` (any long random string).

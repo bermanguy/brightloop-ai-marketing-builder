@@ -8,6 +8,13 @@ Rules, not AI (D13):
 - A changed price or list price is one signal per plan (R1).
 - Any other change to the plan's lines on the page (billing wording, what it
   includes) is one signal per plan, even when the price is the same (R2).
+- A plan whose price changes as its card switches between "billed monthly"
+  and "billed annually" is one signal saying the page now opens on the other
+  billing period, not that the price changed: the page's Monthly/Yearly toggle
+  has a new default, and we only read the default view (D14). Seen on Bolt,
+  2026-10-26. (The same price with the other period is a real change in terms,
+  so it stays a details change.)
+- Each plan gives at most one signal per run, so one change isn't shown twice.
 - A plan that appears or disappears is one signal.
 - Only pages read successfully in both snapshots are compared. A failed page
   never reads as "every plan removed" (D12); the caller reports it instead.
@@ -22,6 +29,7 @@ lines themselves only change when the page does.
 import re
 
 PRICE_FIELDS = ("price", "list_price")
+PERIOD = re.compile(r"billed (monthly|annually|yearly)", re.IGNORECASE)
 MAX_LINES = 4  # changed lines quoted per signal; the rest are counted
 
 
@@ -49,6 +57,12 @@ def _lines(items):
     return shown + (f" and {more} more" if more > 0 else "")
 
 
+def _period(plan):
+    """"monthly" or "yearly" when the plan's lines say how it's billed (one way only), else None."""
+    found = {"monthly" if m.lower() == "monthly" else "yearly" for m in PERIOD.findall(" ".join(plan["quotes"]))}
+    return found.pop() if len(found) == 1 else None
+
+
 def _signal(page, plan_name, kind, text):
     stamp = re.sub(r"[^0-9]", "", page["fetched_at"] or "")
     return {
@@ -73,23 +87,31 @@ def compare_page(before, after):
             signals.append(_signal(after, name, "added", f"New plan on the pricing page: {name}, {_price_words(plan)}."))
             continue
         was = old[name]
+        price_changed = any(was.get(field) != plan.get(field) for field in PRICE_FIELDS)
+        before_period, after_period = _period(was), _period(plan)
+        if price_changed and before_period and after_period and before_period != after_period:
+            signals.append(_signal(after, name, "view", (
+                f"The pricing page now opens on {after_period} billing, not {before_period} {since}: "
+                f"{name} plan now shows {_price_words(plan)}; it showed {_price_words(was)}. "
+                "This is a change in which billing period the page shows first, not necessarily a price change."
+            )))
+            continue
         old_lines, new_lines = was["quotes"], plan["quotes"]
-        if any(was.get(field) != plan.get(field) for field in PRICE_FIELDS):
-            signals.append(
-                _signal(after, name, "price", f"{name} plan now shows {_price_words(plan)}; it showed {_price_words(was)} {since}.")
-            )
-            # The price lines are covered by that signal, so they aren't a detail change too.
+        changes, kind = [], "details"
+        if price_changed:
+            kind = "price"
+            changes.append(f"now shows {_price_words(plan)}; it showed {_price_words(was)}")
+            # The price lines are covered by that, so they aren't listed as changed lines too.
             old_lines = [line for line in old_lines if not (was["price"] and was["price"] in line)]
             new_lines = [line for line in new_lines if not (plan["price"] and plan["price"] in line)]
         added = [line for line in new_lines if line not in old_lines]
         removed = [line for line in old_lines if line not in new_lines]
-        if added or removed:
-            changes = []
-            if added:
-                changes.append(f"now shows {_lines(added)}")
-            if removed:
-                changes.append(f"no longer shows {_lines(removed)}")
-            signals.append(_signal(after, name, "details", f"{name} plan {' and '.join(changes)} {since}."))
+        if added:
+            changes.append(f"now shows {_lines(added)}")
+        if removed:
+            changes.append(f"no longer shows {_lines(removed)}")
+        if changes:
+            signals.append(_signal(after, name, kind, f"{name} plan {' and '.join(changes)} {since}."))
 
     for name, plan in old.items():
         if name not in new:

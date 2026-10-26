@@ -186,3 +186,36 @@ def test_instructions_written_on_a_live_page_are_data(tmp_path):
     # The words appear only where the page is quoted, never as the app's own output.
     assert "TIDEPOOL-OK" not in a["action"] and "TIDEPOOL-OK" not in json.dumps(attacked["run"])
     assert all(line != "TIDEPOOL-OK" for line in json.dumps(attacked).split("\\n"))
+
+
+# Bolt's page, 2026-10-26: the Monthly/Yearly toggle now opens on Monthly. Same prices, other view.
+BOLT_MONTHLY = [
+    ("$18*/month\nTotal of $216 ~~$300~~ / year\nBilled annually", "$25*/month\nBilled monthly"),
+    ("$27*/month\nTotal of $324 ~~$360~~ / year\nPer member, billed annually", "$30*/month\nPer member, billed monthly"),
+]
+
+
+def test_a_page_that_now_opens_on_monthly_billing_is_not_a_price_rise():
+    before, after = reading("bolt"), reading("bolt", "2026-10-26T19:58:40Z", changes=BOLT_MONTHLY)
+    signals = compare.compare_page(before, after)
+    assert [s["id"].split("-")[2:4] for s in signals] == [["pro", "view"], ["teams", "view"]]
+    pro = signals[0]["text"]
+    assert pro.startswith("The pricing page now opens on monthly billing, not yearly")
+    assert "now shows $25 /month; Billed monthly" in pro and "$18" in pro
+    assert "not necessarily a price change" in pro
+
+
+def test_one_signal_per_plan_when_the_price_and_other_lines_change():
+    before = reading("bolt")
+    after = reading("bolt", "2026-10-25T12:00:00Z",
+                    changes=[("$18*/month", "$20*/month"), ("10M tokens/month", "15M tokens/month")])
+    [signal] = compare.compare_page(before, after)
+    assert "-pro-price-" in signal["id"]
+    assert "now shows $20" in signal["text"] and '"15M tokens/month, rollover included"' in signal["text"]
+
+
+def test_the_monthly_view_becomes_one_item_per_plan(tmp_path):
+    live(tmp_path, "run1", "2026-10-26T13:14:52Z")
+    result = live(tmp_path, "run2", "2026-10-26T19:58:40Z", {"bolt": BOLT_MONTHLY})
+    assert len(result["items"]) == 2 and result["skipped"] == []
+    assert all("opens on monthly billing" in item["sources"][0]["quote"] for item in result["items"])
