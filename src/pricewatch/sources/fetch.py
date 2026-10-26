@@ -54,6 +54,12 @@ class _TextExtractor(HTMLParser):
     Struck-through text (<del>, <s>, or a CSS "line-through" class as on Replit)
     is wrapped in ~~ so a crossed-out list price can't be read as the plan's
     price: v0's "$30 ~~$90~~", not "$30$90".
+
+    An inline element styled as a block ("block", "flex" or "grid" class, as on
+    Lovable and v0) ends its line, so a plan name and its description aren't run
+    together ("v0 Mini" then "Lightning-fast speed...", not "v0 MiniLightning-fast
+    speed..."). A link inside a sentence stays in it ("Centralized billing on
+    vercel.com"); a link on its own, like a menu item, is its own line.
     """
 
     STRUCK = {"del", "s", "strike"}
@@ -61,20 +67,29 @@ class _TextExtractor(HTMLParser):
     SKIP = {"script", "style", "noscript", "template", "svg", "head"}
     BLOCK = {
         "p", "div", "section", "article", "header", "footer", "main", "nav", "aside", "li", "ul", "ol",
-        "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "th", "table", "br", "hr", "button", "a", "label",
+        "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "th", "table", "br", "hr", "button", "label",
     }
+    BLOCK_CLASSES = {"block", "flex", "grid"}
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
         self.skipping = 0
         self.struck_open = []  # tag names of open struck-through elements
+        self.styled_open = []  # (tag, styled as a block) for each open inline element
 
     def handle_starttag(self, tag, attrs):
         if tag in self.SKIP:
             self.skipping += 1
         elif tag in self.BLOCK:
             self.parts.append("\n")
+        elif tag not in self.VOID:
+            styled = not self.BLOCK_CLASSES.isdisjoint((dict(attrs).get("class") or "").split())
+            # A link inside a sentence stays inline; one on its own (a menu item, a button) is its own line.
+            if tag == "a" and not self._after_text():
+                styled = True
+                self.parts.append("\n")
+            self.styled_open.append((tag, styled))
         if tag not in self.VOID and self._is_struck(tag, attrs):
             self.struck_open.append(tag)
             self.parts.append(" ~~")
@@ -86,6 +101,13 @@ class _TextExtractor(HTMLParser):
             self.skipping = max(0, self.skipping - 1)
         elif tag in self.BLOCK:
             self.parts.append("\n")
+        elif any(open_tag == tag for open_tag, _ in self.styled_open):
+            while self.styled_open:
+                open_tag, styled = self.styled_open.pop()
+                if open_tag == tag:
+                    if styled:
+                        self.parts.append("\n")
+                    break
         if self.struck_open and self.struck_open[-1] == tag + "/plain":
             self.struck_open.pop()
         elif self.struck_open and self.struck_open[-1] == tag:
@@ -96,6 +118,12 @@ class _TextExtractor(HTMLParser):
                 self.parts.pop()
                 breaks += 1
             self.parts.append("~~ " + "\n" * breaks)
+
+    def _after_text(self):
+        for part in reversed(self.parts):
+            if part.strip(" "):
+                return not part.endswith("\n")
+        return False
 
     def _is_struck(self, tag, attrs):
         if tag in self.STRUCK:

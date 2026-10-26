@@ -20,6 +20,20 @@ def test_visible_text_drops_scripts_and_keeps_blocks():
     assert text.split("\n") == ["Plus", "$30 ~~$90~~ /user/month", "10M tokens/month", "Custom domains"]
 
 
+def test_an_inline_element_styled_as_a_block_ends_its_line():
+    # v0's model table and Lovable's Enterprise card (fixtures/pages/2026-10-26).
+    html = ('<th><span class="block">v0 Mini</span><span class="mt-1 block">Lightning-fast speed</span></th>'
+            '<li><span class="flex items-center"><svg></svg><span>Volume based pricing</span></span>'
+            '<span class="flex">Unlimited users</span></li>')
+    assert fetch.visible_text(html).split("\n") == ["v0 Mini", "Lightning-fast speed", "Volume based pricing", "Unlimited users"]
+
+
+def test_a_link_in_a_sentence_stays_in_it_and_a_menu_link_is_its_own_line():
+    html = ('<nav><a href="/login">Log in</a><a href="/signup">Get started</a></nav>'
+            '<li><span>Centralized billing on<!-- --> <a href="https://vercel.com">vercel.com</a></span></li>')
+    assert fetch.visible_text(html).split("\n") == ["Log in", "Get started", "Centralized billing on vercel.com"]
+
+
 @pytest.mark.parametrize(
     "status, text, problem",
     [
