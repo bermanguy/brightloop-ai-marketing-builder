@@ -219,3 +219,68 @@ def test_the_monthly_view_becomes_one_item_per_plan(tmp_path):
     result = live(tmp_path, "run2", "2026-10-26T19:58:40Z", {"bolt": BOLT_MONTHLY})
     assert len(result["items"]) == 2 and result["skipped"] == []
     assert all("opens on monthly billing" in item["sources"][0]["quote"] for item in result["items"])
+
+
+# Every view of every page: a real AI reading of 2026-10-26 (fixtures/recorded), with planted changes.
+
+import copy  # noqa: E402
+
+from pricewatch.live import compare_and_report  # noqa: E402
+from pricewatch.sources.fetch import label  # noqa: E402
+
+RECORDED = json.loads((PAGES.parent.parent / "recorded" / "2026-10-26T202829Z.json").read_text())
+
+
+def views(at=None):
+    pages = copy.deepcopy(RECORDED["pages"])
+    for page in pages:
+        page["fetched_at"] = at or page["fetched_at"]
+    return {label(page): page for page in pages}
+
+
+def test_every_view_is_read_and_unchanged_views_are_no_change():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    assert list(after) == ["Bolt (Monthly)", "Bolt (Yearly)", "Lovable (Monthly)", "Lovable (Yearly)", "Replit", "v0"]
+    assert compare.compare(before, after) == []
+
+
+def test_a_credit_option_change_is_reported_in_its_own_view():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    pro = plan(after["Lovable (Yearly)"], "Pro")
+    assert len(pro["options"]) == 11
+    pro["options"][1] = "200 credits $45/mo"
+    [signal] = compare.compare(before, after)
+    assert signal["id"] == "live-lovable-yearly-pro-details-20261027021700"
+    assert signal["text"].startswith('Pro plan (Yearly view) now shows "200 credits $45/mo" and no longer shows "200 credits $42/mo"')
+
+
+def test_a_changed_limit_in_the_comparison_table_is_one_signal_for_the_table():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    [table] = after["Bolt (Monthly)"]["tables"]
+    row = next(r for r in table["rows"] if r["label"] == "Daily Token Limit")
+    row["values"][0] = "200K"
+    [signal] = compare.compare(before, after)
+    assert signal["id"] == "live-bolt-monthly-pro-plan-comparison-limits-20261027021700"
+    assert '"Daily Token Limit" now shows Free: 200K; Pro: No Limit' in signal["text"]
+    assert "it showed Free: 300K" in signal["text"]
+
+
+def test_a_page_that_now_opens_on_its_other_view_is_one_signal():
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    for name in ("Bolt (Monthly)", "Bolt (Yearly)"):
+        after[name]["opens_on"] = "Yearly"
+    [signal] = compare.compare(before, after)
+    assert signal["id"] == "live-bolt-monthly-page-opens-20261027021700"
+    assert signal["text"].startswith("The pricing page now opens on its Yearly prices, not Monthly")
+
+
+def test_view_changes_become_items_with_their_numbers_quoted(tmp_path):
+    store = Store(str(tmp_path / "db.sqlite"))
+    compare_and_report(list(views().values()), 0.0, store, "2026-10-26T20:28:29Z")
+    after = views("2026-10-27T02:17:00Z")
+    plan(after["Lovable (Yearly)"], "Pro")["options"][1] = "200 credits $45/mo"
+    result, signals = compare_and_report(list(after.values()), 0.0, store, "2026-10-27T02:17:00Z")
+    [item] = result["items"]
+    assert item["competitor"] == "Lovable" and item["confidence"] == 0.9 and not item["unverified"]
+    assert "$45/mo" in item["sources"][0]["quote"] and result["run"]["notes"] == []
+    assert [p["view"] for p in result["run"]["pages"]] == ["Monthly", "Yearly", "Monthly", "Yearly", None, None]

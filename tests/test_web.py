@@ -105,3 +105,17 @@ def test_the_schedule_keeps_the_six_hour_pace(client, monkeypatch):
     assert len(calls) == 1
     # Check now always runs.
     assert client.post("/run", headers=auth).status_code == 200 and len(calls) == 2
+
+
+def test_pricing_page_shows_every_view_its_dropdown_options_and_tables(tmp_path, monkeypatch):
+    from test_compare import views
+    from pricewatch.live import compare_and_report
+
+    store = Store(str(tmp_path / "views.db"))
+    compare_and_report(list(views().values()), 0.0, store, "2026-10-26T20:28:29Z")
+    monkeypatch.setattr(web, "_store", store)
+    body = TestClient(web.app).get("/pricing").text
+    for name in ("Bolt (Monthly)", "Bolt (Yearly)", "Lovable (Monthly)", "Lovable (Yearly)", "Replit", "v0"):
+        assert f"<h2>{name}</h2>" in body
+    assert "11 options in the page's dropdown" in body and "10,000 credits Save 11% $1875/mo" in body
+    assert "Bolt: Pro plan comparison" in body and "Daily Token Limit" in body and "v0: Model pricing" in body

@@ -23,7 +23,7 @@ LOW_TRUST = ("sponsored_or_anonymous", 0.2, True)
 # Markers of sponsored, ad, forum or anonymous sources. Checked first, so
 # "sponsored post on lovable.dev" is still low trust.
 LOW_TRUST_MARKERS = re.compile(
-    r"sponsor|\bads?\b|ads\.|advert|promoted|reddit|\bu/|anon|rumou?r|forum|"
+    r"sponsor|\bads?\b|ads\.|advert|promoted|reddit|news\.ycombinator|\bu/|anon|rumou?r|forum|"
     r"ai summary|chatgpt",
     re.IGNORECASE,
 )

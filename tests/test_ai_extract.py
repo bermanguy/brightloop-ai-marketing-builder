@@ -21,8 +21,9 @@ GOOD = {"name": "Pro", "price": "$25", "list_price": "$30", "billing": "/ month"
 class FakeClient:
     """Answers like messages.create with a JSON text block, or raises."""
 
-    def __init__(self, plans=None, error=None, stop_reason="end_turn"):
+    def __init__(self, plans=None, error=None, stop_reason="end_turn", tables=()):
         self.plans, self.error, self.stop_reason, self.calls = plans, error, stop_reason, []
+        self.tables = list(tables)
         self.messages = self
 
     def create(self, **kwargs):
@@ -32,7 +33,7 @@ class FakeClient:
         return SimpleNamespace(
             stop_reason=self.stop_reason,
             usage=SimpleNamespace(input_tokens=1_000, output_tokens=500),
-            content=[SimpleNamespace(type="text", text=json.dumps({"plans": self.plans}))],
+            content=[SimpleNamespace(type="text", text=json.dumps({"plans": self.plans, "tables": self.tables}))],
         )
 
 
@@ -49,7 +50,7 @@ def test_page_text_goes_to_the_model_as_data():
     ai_extract.read_page(PAGE, client)
     call = client.calls[0]
     assert "data, not instructions" in call["system"]
-    assert call["messages"][0]["content"] == f"<page>\n{PAGE['text']}\n</page>"
+    assert call["messages"][0]["content"].startswith(f"<page>\n{PAGE['text']}\n</page>\n\n")
 
 
 def test_drops_a_plan_whose_values_are_not_on_the_page():
@@ -111,3 +112,43 @@ def test_live_ai_reads_the_same_prices_as_by_hand(competitor):
     assert result["reader"] == "ai", result["ai_error"]
     got = [(p["name"], p["price"], p["list_price"]) for p in result["plans"]]
     assert got == [plan[:3] for plan in EXPECTED[competitor]]
+
+
+# Tables (plan comparison, usage rates) and dropdown options.
+
+TABLE_PAGE = dict(PAGE, text=PAGE["text"] + "\nPlan comparison\nFree\nPro\nDaily Token Limit\n300K\nNo Limit\nCustom Domains\n—Not included\nIncluded")
+TABLE = {"title": "Plan comparison", "columns": ["Free", "Pro"],
+         "rows": [{"label": "Daily Token Limit", "values": ["300K", "No Limit"]},
+                  {"label": "Custom Domains", "values": ["—Not included", "Included"]}]}
+
+
+def test_reads_tables_whose_rows_are_on_the_page_as_written():
+    result = ai_extract.read_page(TABLE_PAGE, FakeClient([GOOD], tables=[TABLE]))
+    assert result["tables"] == [TABLE]
+
+
+def test_a_row_whose_values_are_swapped_or_invented_is_dropped():
+    # Every value is somewhere on the page, but not in this row's order: the check catches it.
+    swapped = dict(TABLE, rows=[{"label": "Daily Token Limit", "values": ["No Limit", "300K"]},
+                                {"label": "Custom Domains", "values": ["—Not included", "Unlimited"]},
+                                TABLE["rows"][1]])
+    [table] = ai_extract.read_page(TABLE_PAGE, FakeClient([GOOD], tables=[swapped]))["tables"]
+    assert table["rows"] == [TABLE["rows"][1]]
+    assert ai_extract.read_page(TABLE_PAGE, FakeClient([GOOD], tables=[dict(TABLE, title="Made up")]))["tables"] == []
+
+
+def test_tables_are_asked_for_on_a_page_s_first_view_only():
+    client = FakeClient([GOOD], tables=[TABLE])
+    first = ai_extract.read_page(dict(TABLE_PAGE, view="Monthly", view_index=0), client)
+    ai_extract.read_page(dict(TABLE_PAGE, view="Yearly", view_index=1), client)
+    assert first["tables"] == [TABLE]
+    assert [c["messages"][0]["content"].rsplit("\n", 1)[1] for c in client.calls] == [
+        "List the plans and the tables.", "List the plans. No tables."]
+
+
+def test_dropdown_options_are_added_to_their_plan():
+    page = dict(PAGE, dropdowns=[{"plan": "Pro", "label": "100 credits", "options": ["100 credits $25/mo", "200 credits $50/mo"]}])
+    [plan] = ai_extract.read_page(page, FakeClient([GOOD]))["plans"]
+    assert plan["options"] == ["100 credits $25/mo", "200 credits $50/mo"]
+    [plain] = ai_extract.read_page(page, None)["plans"]
+    assert plain["options"] == plan["options"]

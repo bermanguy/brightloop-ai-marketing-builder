@@ -27,6 +27,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 
 from .core import process
 from .live import run_live
+from .sources.fetch import label
 from .store import Store
 
 app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None)
@@ -90,7 +91,7 @@ def changes():
         body = "<p>No runs yet.</p>"
     else:
         last = runs[0]["run"]
-        failed = [p["competitor"] for p in last.get("pages", []) if not p["ok"]]
+        failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
         status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
         body = f'<p class="meta">{status}</p>' + ("".join(map(render_item, items)) or "<p>No pricing changes found yet.</p>")
     return page("What changed in competitors' pricing", body)
@@ -103,7 +104,8 @@ def pricing():
         return page("Current pricing", "<p>No runs yet.</p>")
     parts = []
     for p in latest[0]["pages"]:
-        head = f"<h2>{esc(p['competitor'])}</h2><p class='meta'>{link(p['url'])} · checked {esc(p['fetched_at'])}</p>"
+        opens = f" · the page opens on this view" if p.get("view") and p.get("opens_on") == p["view"] else ""
+        head = f"<h2>{esc(label(p))}</h2><p class='meta'>{link(p['url'])} · checked {esc(p['fetched_at'])}{opens}</p>"
         if not p["ok"]:
             parts.append(head + f'<p class="failed">Couldn\'t read this page at {esc(p["fetched_at"])}: {esc(p["error"])}. '
                          "Older prices aren't shown as current.</p>")
@@ -111,10 +113,18 @@ def pricing():
         rows = "".join(
             f"<tr><td>{esc(plan['name'])}</td><td>{esc(plan['price'])}"
             + (f" <s>{esc(plan['list_price'])}</s>" if plan.get("list_price") else "")
-            + f"</td><td>{esc(plan.get('billing'))}</td><td><ul>{''.join(f'<li>{esc(line)}</li>' for line in plan['includes'])}</ul></td></tr>"
+            + f"</td><td>{esc(plan.get('billing'))}</td><td><ul>{''.join(f'<li>{esc(line)}</li>' for line in plan['includes'])}</ul>"
+            + (f"<details><summary>{len(plan['options'])} options in the page's dropdown</summary><ul>"
+               + "".join(f"<li>{esc(option)}</li>" for option in plan["options"]) + "</ul></details>" if plan.get("options") else "")
+            + "</td></tr>"
             for plan in p["plans"]
         )
         parts.append(head + f"<table><tr><th>Plan</th><th>Price</th><th>Billing</th><th>Includes</th></tr>{rows}</table>")
+        for table in p.get("tables") or []:
+            header = "".join(f"<th>{esc(column)}</th>" for column in table["columns"])
+            body = "".join(f"<tr><td>{esc(row['label'])}</td>" + "".join(f"<td>{esc(v)}</td>" for v in row["values"]) + "</tr>"
+                           for row in table["rows"])
+            parts.append(f"<h3>{esc(p['competitor'])}: {esc(table['title'])}</h3><table><tr><th></th>{header}</tr>{body}</table>")
     note = "<p class='meta'>As written on each competitor's page; no conversion between their units.</p>"
     return page("Current pricing", note + "".join(parts))
 
@@ -124,11 +134,11 @@ def runs():
     rows = ""
     for result in store().runs(100):
         run = result["run"]
-        pages = ", ".join(f"{p['competitor']} {'ok' if p['ok'] else 'FAILED'}" for p in run.get("pages", []))
+        pages = ", ".join(f"{label(p)} {'ok' if p['ok'] else 'FAILED'}" for p in run.get("pages", []))
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
         rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
-    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about a minute'\">"
+    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
             "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
     table = f"<table><tr><th>Started</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))

@@ -21,7 +21,8 @@ from .core import process
 from .core.text import unsupported_numbers
 from .live import compare_and_report
 from .store import Store
-from .sources.extract import unquoted
+from .sources.extract import checked_table, unquoted
+from .sources.fetch import label
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "fixtures" / "sample-cases.json"
@@ -82,14 +83,17 @@ def prove_recorded(check):
             print(f" {path.name}: recorded at {run['recorded_at']}, spent ${run['cost_usd']:.4f} then")
             bad = [p["competitor"] for p in pages for plan in p["plans"] if unquoted(plan, p["text"])]
             check(not bad, "every recorded plan is quoted word for word from its recorded page" + (f" (not: {bad})" if bad else ""))
+            tables = [(p["competitor"], t) for p in pages for t in p.get("tables") or []]
+            bad = [f"{c}: {t['title']}" for c, t in tables if checked_table(t, next(p["text"] for p in pages if t in (p.get("tables") or []))) != t]
+            check(not bad, f"every recorded table row ({sum(len(t['rows']) for _, t in tables)}) is on its page as written" + (f" (not: {bad})" if bad else ""))
             # Replaying spends nothing: cost 0, readings as recorded.
-            result, signals = compare_and_report(pages, 0.0, store, run["recorded_at"])
-            failed = [p["competitor"] for p in pages if not p["ok"]]
+            result, signals = compare_and_report(pages, 0.0, store, run["recorded_at"], run.get("rumors") or [], run.get("rumor_errors") or [])
+            failed = [label(p) for p in pages if not p["ok"]]
             check(all(any(e.startswith(f"{c}:") for e in result["run"]["errors"]) for c in failed),
                   f"failed pages are reported, not compared ({', '.join(failed) or 'none failed'})")
             check_result(check, result, [signal["id"] for signal in signals])
             readers = Counter(p["reader"] for p in pages if p["ok"])
-            print(f"    {sum(len(p['plans']) for p in pages)} plans read ({dict(readers)}), {len(signals)} changes since the previous run")
+            print(f"    {sum(len(p['plans']) for p in pages)} plans in {len(pages)} page views ({dict(readers)}), {len(signals)} changes since the previous run")
     return result
 
 

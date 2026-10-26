@@ -47,8 +47,18 @@ For each plan card (in page order), return:
 - quotes: the lines of the page that hold all of the above, copied character for
   character, including the ~~ marks. Every value above must appear inside these quotes.
 
-Copy, never rephrase, round, convert or calculate. Only plan cards: skip FAQs,
-comparison tables and footnotes. If you can't find plans, return an empty list."""
+Copy, never rephrase, round, convert or calculate. Plans come only from plan cards:
+skip FAQs and footnotes. If you can't find plans, return an empty list.
+
+When asked for tables, also list the page's tables of plan limits or prices (e.g. a
+plan comparison table, or per-model usage rates), each with:
+- title: the table's heading, exactly as written.
+- columns: the headers of the value columns (e.g. the plan names), copied exactly. Not
+  the header of the column that holds the row labels.
+- rows: one per row that has a value in every column: its label and its values in
+  column order, each copied exactly as its own line on the page (e.g. "—Not included").
+  Skip section headings that have no values.
+Otherwise, or if there are none, return an empty list of tables."""
 
 SCHEMA = {
     "type": "object",
@@ -68,9 +78,30 @@ SCHEMA = {
                 "required": ["name", "price", "list_price", "billing", "includes", "quotes"],
                 "additionalProperties": False,
             },
-        }
+        },
+        "tables": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "columns": {"type": "array", "items": {"type": "string"}},
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {"label": {"type": "string"}, "values": {"type": "array", "items": {"type": "string"}}},
+                            "required": ["label", "values"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
+                "required": ["title", "columns", "rows"],
+                "additionalProperties": False,
+            },
+        },
     },
-    "required": ["plans"],
+    "required": ["plans", "tables"],
     "additionalProperties": False,
 }
 
@@ -97,25 +128,25 @@ def cost_usd(usage, model=MODEL):
     return (usage.input_tokens * input_price + usage.output_tokens * output_price) / 1_000_000
 
 
-def ask_model(client, text, model=MODEL):
-    """Return (plans as the model gave them, cost in USD)."""
+def ask_model(client, text, tables=False, model=MODEL):
+    """Return (the model's answer: {"plans": [...], "tables": [...]}, cost in USD)."""
     response = client.messages.create(
         model=model,
         max_tokens=16000,
         system=SYSTEM,
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
-        messages=[{"role": "user", "content": f"<page>\n{text}\n</page>"}],
+        messages=[{"role": "user", "content": f"<page>\n{text}\n</page>\n\n" + ("List the plans and the tables." if tables else "List the plans. No tables.")}],
     )
     cost = cost_usd(response.usage, model)
     if response.stop_reason != "end_turn":
         raise RuntimeError(f"model stopped early ({response.stop_reason})")
     answer = next(block.text for block in response.content if block.type == "text")
-    return json.loads(answer)["plans"], cost
+    return json.loads(answer), cost
 
 
 def _fallback(page, reason, cost):
     result = extract.read_page(page)
-    result.update(reader="plain", ai_error=reason, cost_usd=round(cost, 6))
+    result.update(reader="plain", ai_error=reason, cost_usd=round(cost, 6), tables=[])
     return result
 
 
@@ -123,14 +154,15 @@ def read_page(page, client):
     """Add plans to a fetched page (fetch.fetch_page). client: from make_client(); None reads without AI."""
     if not page.get("ok"):
         result = extract.read_page(page)
-        result.update(reader=None, ai_error=None, cost_usd=0.0)
+        result.update(reader=None, ai_error=None, cost_usd=0.0, tables=[])
         return result
     if client is None:
         return _fallback(page, None, 0.0)
 
     cost = 0.0
     try:
-        plans, cost = ask_model(client, page["text"])
+        answer, cost = ask_model(client, page["text"], tables=not page.get("view_index"))
+        plans = answer["plans"]
     except Exception as exc:  # API errors, timeouts, refusals, malformed answers
         return _fallback(page, f"{exc.__class__.__name__}: {str(exc)[:200]}", cost)
 
@@ -139,7 +171,8 @@ def read_page(page, client):
         return _fallback(page, f"none of the AI's {len(plans)} plans passed the quote check", cost)
 
     result = {key: value for key, value in page.items() if key != "html"}
-    result.update(plans=kept, reader="ai", cost_usd=round(cost, 6), ai_error=None)
+    tables = [table for table in (extract.checked_table(t, page["text"]) for t in answer.get("tables") or []) if table]
+    result.update(plans=extract.with_options(kept, page), tables=tables, reader="ai", cost_usd=round(cost, 6), ai_error=None)
     dropped = len(plans) - len(kept)
     if dropped:
         result["ai_error"] = f"{dropped} plan(s) dropped: a value wasn't quoted word for word"

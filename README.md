@@ -71,14 +71,14 @@ The last replayed result is written to `proof-result.json`.
 
 ## Live run (in progress)
 
-Downloads the four pricing pages as they look on first load (D14) and saves the raw HTML plus the visible text:
+Downloads the four pricing pages, in every billing view they offer (D23), and saves the raw HTML plus the visible text:
 
 ```
 pip install -e ".[live]" && playwright install chromium
 python -m pricewatch.sources.fetch            # saves to data/pages/<time>/
 ```
 
-Bolt, Replit and v0 are fetched over plain HTTP; Lovable is rendered in headless Chromium because its plans are built by JavaScript. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Crossed-out prices (`<del>`, or a `line-through` class) are kept as `~~$90~~`.
+Replit and v0 are fetched over plain HTTP. Lovable (plans built by JavaScript) and Bolt are rendered in headless Chromium, which clicks each side of their Monthly/Yearly toggle, so each becomes two page views, read and compared separately; which view a page opens on is recorded too. On Lovable it also opens each plan's credit dropdown and keeps every option as written (11 credit amounts and prices per plan, per billing period). Replit blocks headless browsers, so it stays on HTTP; its monthly price is the struck-through one beside the yearly price. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Crossed-out prices (`<del>`, or a `line-through` class) are kept as `~~$90~~`.
 
 `pricewatch.sources.extract.read_page` then reads each plan's name, price, crossed-out list price, billing wording and what's included. Every value is a line of the page, so it is its own word-for-word quote; a value whose quote isn't on the page is rejected, and a page with no readable plans is marked failed. It's tested on the real pages saved in `fixtures/pages/2026-10-25/`.
 
@@ -97,6 +97,8 @@ Each run saves a snapshot to the store (every page's plans, or why it couldn't b
 
 - A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
 - AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
+- Tables of limits or prices on a page (Bolt's plan comparison, v0's per-model token rates) are read by the AI too, and every row is checked against the page: its label and values must be consecutive lines of the page, in column order, or the row is dropped. A changed table is one signal listing the changed rows.
+- A live run also searches Hacker News (Algolia's public search API, no key) for pricing claims about each competitor from the last 7 days: a sentence that names the competitor and states an amount or percentage next to a pricing word, quoted as written with its link. Each becomes an item labelled **unverified**, confidence 0.2, "don't act yet" (D10, D24), and is reported once.
 - `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
 
 ## Web app
