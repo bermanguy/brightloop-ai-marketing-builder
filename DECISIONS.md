@@ -279,6 +279,14 @@ Toggles and dropdowns are not clicked.
 
 **Alternatives.** Spend one of Maya's 15 messages asking what she updates first (her earlier answers to similar questions were the fallback reply); add a slot for Brightloop's own prices (no data to fill it).
 
+## D27 — Claude (MCP) access to the pricing data: after Base44, if time remains · 2026-10-26 · [Guy]
+
+**Decision.** Guy proposed letting Maya ask Claude about the data over MCP (recent changes, analysis, trends). It's built only after the Base44 app, the README and the recording, and only if time remains on Wednesday; otherwise the README describes it as the next step.
+
+**Plan if built.** A read-only MCP server on the same app: recent changes, current pricing, a competitor's history, the run log. Every value is returned with its quote and link.
+
+**Known limit (Claude).** Once Claude does the analysis, "no link, no number" is guidance in the tool descriptions, not enforced by our code: Claude could still write a figure that isn't in a source. History starts on 2026-10-26, so there is little to analyse by Thursday.
+
 ---
 
 ## Open questions
