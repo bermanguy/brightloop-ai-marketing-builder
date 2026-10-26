@@ -23,6 +23,13 @@ Rules, not AI (D13):
 - Only pages read successfully in both snapshots are compared. A failed page
   never reads as "every plan removed" (D12); the caller reports it instead.
 
+Each signal also says, as fields, what kind of change it is ("change"), which
+plan or table ("plan"), and its value before and after ("was", "now") as the
+page shows them. The core writes Maya's headline and action from those; every
+figure in them is in the quoted text. A price is "price_up" or "price_down" only
+when both prices are plain amounts ("$25") billed the same way; anything else
+("Custom", a new billing period) is "price".
+
 "The plan's lines" are its quotes, the page lines the reader says the plan's
 values came from, plus its dropdown options (Lovable's credit ladder). They're compared instead of the reader's billing/includes
 fields because the AI files the same line under either field from one run to
@@ -33,6 +40,7 @@ lines themselves only change when the page does.
 import re
 
 PRICE_FIELDS = ("price", "list_price")
+AMOUNT = re.compile(r"\$\s?(\d+(?:\.\d+)?)\*?")
 PERIOD = re.compile(r"billed (monthly|annually|yearly)", re.IGNORECASE)
 MAX_LINES = 4  # changed lines quoted per signal; the rest are counted
 
@@ -72,11 +80,20 @@ def _plan(page, name):
     return f"{name} plan ({page['view']} view)" if page.get("view") else f"{name} plan"
 
 
+def _direction(was, plan):
+    """"price_up", "price_down", or "price" when the two prices can't be put side by side."""
+    old, new = AMOUNT.fullmatch(was["price"] or ""), AMOUNT.fullmatch(plan["price"] or "")
+    if not (old and new) or was.get("billing") != plan.get("billing"):
+        return "price"
+    old, new = float(old.group(1)), float(new.group(1))
+    return "price_up" if new > old else "price_down" if new < old else "price"
+
+
 def _row(columns, values):
     return "; ".join(f"{column}: {value}" for column, value in zip(columns, values))
 
 
-def _signal(page, subject, kind, text):
+def _signal(page, subject, kind, text, change=None, plan=None, was=None, now=None, billing=None):
     stamp = re.sub(r"[^0-9]", "", page["fetched_at"] or "")
     view = f"{_slug(page['view'])}-" if page.get("view") else ""
     return {
@@ -86,6 +103,11 @@ def _signal(page, subject, kind, text):
         "source": page["url"],
         "ts": page["fetched_at"],
         "text": text,
+        "change": change or kind,
+        "plan": plan,
+        "was": was,
+        "now": now,
+        "billing": billing,
     }
 
 
@@ -99,7 +121,8 @@ def compare_page(before, after):
     for name, plan in new.items():
         if name not in old:
             where = f" ({after['view']} view)" if after.get("view") else ""
-            signals.append(_signal(after, name, "added", f"New plan on the pricing page{where}: {name}, {_price_words(plan)}."))
+            signals.append(_signal(after, name, "added", f"New plan on the pricing page{where}: {name}, {_price_words(plan)}.",
+                                   plan=_plan(after, name), now=_price_words(plan)))
             continue
         was = old[name]
         price_changed = any(was.get(field) != plan.get(field) for field in PRICE_FIELDS)
@@ -109,13 +132,13 @@ def compare_page(before, after):
                 f"The pricing page now opens on {after_period} billing, not {before_period} {since}: "
                 f"{_plan(after, name)} now shows {_price_words(plan)}; it showed {_price_words(was)}. "
                 "This is a change in which billing period the page shows first, not necessarily a price change."
-            )))
+            ), plan=_plan(after, name), was=before_period, now=after_period))
             continue
         old_lines = was["quotes"] + (was.get("options") or [])
         new_lines = plan["quotes"] + (plan.get("options") or [])
-        changes, kind = [], "details"
+        changes, kind, change = [], "details", "details"
         if price_changed:
-            kind = "price"
+            kind, change = "price", _direction(was, plan)
             changes.append(f"now shows {_price_words(plan)}; it showed {_price_words(was)}")
             # The price lines are covered by that, so they aren't listed as changed lines too.
             old_lines = [line for line in old_lines if not (was["price"] and was["price"] in line)]
@@ -127,12 +150,19 @@ def compare_page(before, after):
         if removed:
             changes.append(f"no longer shows {_lines(removed)}")
         if changes:
-            signals.append(_signal(after, name, kind, f"{_plan(after, name)} {' and '.join(changes)} {since}."))
+            text = f"{_plan(after, name)} {' and '.join(changes)} {since}."
+            if change in ("price_up", "price_down"):  # same billing on both sides: "from $25 to $30 (/ month)"
+                signals.append(_signal(after, name, kind, text, change, plan=_plan(after, name), was=was["price"],
+                                       now=plan["price"], billing=plan.get("billing")))
+            else:
+                signals.append(_signal(after, name, kind, text, change, plan=_plan(after, name), was=_price_words(was),
+                                       now=_price_words(plan)))
 
     for name, plan in old.items():
         if name not in new:
             signals.append(
-                _signal(after, name, "removed", f"{_plan(after, name)} ({_price_words(plan)}) is no longer on the pricing page {since}.")
+                _signal(after, name, "removed", f"{_plan(after, name)} ({_price_words(plan)}) is no longer on the pricing page {since}.",
+                        plan=_plan(after, name), was=_price_words(plan))
             )
 
     for title, table in {t["title"]: t for t in after.get("tables") or []}.items():
@@ -150,13 +180,14 @@ def compare_page(before, after):
         if changed:
             more = len(changed) - MAX_LINES
             listed = "; and ".join(changed[:MAX_LINES]) + (f"; and {more} more" if more > 0 else "")
-            signals.append(_signal(after, title, "limits", f'The "{title}" table on the pricing page changed {since}: {listed}.'))
+            signals.append(_signal(after, title, "limits", f'The "{title}" table on the pricing page changed {since}: {listed}.',
+                                   plan=f'"{title}" table'))
 
     if after.get("view_index") == 0 and before.get("opens_on") and after.get("opens_on") and before["opens_on"] != after["opens_on"]:
         signals.append(_signal(after, "page", "opens", (
             f"The pricing page now opens on its {after['opens_on']} prices, not {before['opens_on']} {since}. "
             "Both are still on the page; this is a change in which prices visitors see first."
-        )))
+        ), was=before["opens_on"], now=after["opens_on"]))
     return signals
 
 

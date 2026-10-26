@@ -31,10 +31,88 @@ def numbers_in(text):
 
 
 def unsupported_numbers(item):
-    """Numbers in an item's action or why that no source quote contains."""
-    quoted = " ".join(source["quote"] for source in item["sources"])
+    """Numbers in an item's headline, action or why that no source contains.
+
+    A source's link counts: a Hacker News link's item id is part of the link, not a claim.
+    """
+    quoted = " ".join(source["quote"] + " " + source["url"] for source in item["sources"])
     supported = set(numbers_in(quoted))
-    return [n for n in numbers_in(item["action"] + " " + item["why"]) if n not in supported]
+    return [n for n in numbers_in(" ".join([item.get("headline", ""), item["action"], item["why"]])) if n not in supported]
+
+
+# What each kind of change on a competitor's own pricing page means for Brightloop's
+# trial starts, and what to do about it (R6). We don't hold Brightloop's own prices,
+# so the action says where to compare, never which is cheaper.
+CHANGES = {
+    "price_up": (
+        "{c} raised its {plan} from {was} to {now}{billing}.",
+        "Put our price next to {c}'s on the comparison page this week. If ours now looks better, lead with it in "
+        "this week's trial-start ads.",
+        "A price rise sends some of {c}'s prospects comparing alternatives, the moment they decide where to start a trial.",
+    ),
+    "price_down": (
+        "{c} cut its {plan} from {was} to {now}{billing}.",
+        "Update our comparison page today, and check that this week's trial-start ads still hold up against {c}'s "
+        "new price. Don't claim we're cheaper until that's checked.",
+        "A lower price makes {c} the easier pick for prospects comparing on price, which can cost us trial starts.",
+    ),
+    "price": (
+        "{c} changed the price of its {plan}: it now shows {now}; it showed {was}.",
+        "Update our comparison page with {c}'s new price this week.",
+        "Prospects compare prices before they start a trial.",
+    ),
+    "details": (
+        "{c} changed what its {plan} includes, at the same price.",
+        "Read the change below and update our comparison page. If {c} now gives less for the same price, say what "
+        "we include in this week's trial-start campaign.",
+        "Prospects compare what each plan includes, not only the price.",
+    ),
+    "limits": (
+        "{c} changed limits in its {plan}.",
+        "Read the change below and update our comparison page. If {c} now gives less, say what we include in this "
+        "week's trial-start campaign.",
+        "Limits like tokens and requests are what prospects hit first on a trial, so they compare them.",
+    ),
+    "added": (
+        "{c} added a {plan}, at {now}.",
+        "Add it to our comparison page and decide which of our plans it competes with.",
+        "A new plan, especially a cheaper way in, gives prospects a new reason to start a trial at {c}.",
+    ),
+    "removed": (
+        "{c} removed its {plan}. It was {was}.",
+        "Update our comparison page. Prospects who wanted that plan need another option: consider pointing this "
+        "week's trial-start campaign at them.",
+        "People who wanted the plan that's gone are looking for a replacement.",
+    ),
+    "opens": (
+        "{c}'s pricing page now shows its {now} prices first, not {was}.",
+        "No price changed. Wherever our ads or comparison page quote {c}'s price, say which billing period it is.",
+        "Yearly prices look lower per month, so the same plan can look cheaper or dearer depending on which view "
+        "prospects see first.",
+    ),
+    "view": (
+        "{c}'s pricing page now opens on {now} billing, not {was}, for its {plan}.",
+        "No price changed. Wherever our ads or comparison page quote {c}'s price, say which billing period it is.",
+        "Yearly prices look lower per month, so the same plan can look cheaper or dearer depending on which view "
+        "prospects see first.",
+    ),
+}
+
+
+def change_text(competitor, signal):
+    """(headline, action, why, cta) for a known change on the competitor's own pricing page, else None."""
+    template = CHANGES.get(signal.get("change"))
+    if not template:
+        return None
+    values = {key: visible_text(signal.get(key)) for key in ("plan", "was", "now")}
+    values["c"] = competitor
+    billing = visible_text(signal.get("billing"))
+    # "$30 / month", or "$30 (billed annually)" when the billing words don't start with the unit.
+    values["billing"] = (f" {billing}" if billing.startswith("/") else f" ({billing})") if billing else ""
+    if any(f"{{{key}}}" in part and not values[key] for part in template for key in ("plan", "was", "now")):
+        return None
+    headline, action, why = (part.format(**values) for part in template)
+    return headline, action, why, "Update the comparison page"
 
 
 def verified_text(competitor, url, quote, own_pricing_page):
@@ -59,16 +137,35 @@ def verified_text(competitor, url, quote, own_pricing_page):
     return action, why, cta
 
 
-def unverified_text(competitor, source, quote, kind):
+def unverified_text(competitor, source, quote, kind, page_check=None):
+    """page_check: what the competitor's own pricing page showed at the same check, {url, quote, checked_at}."""
     pricing = pricing_page_name(competitor)
     described = "a sponsored, ad, forum or anonymous source" if kind == "sponsored_or_anonymous" else "a third party"
-    action = (
-        f"Don't act yet: this isn't on {competitor}'s own pricing page. Check {pricing} "
-        "before changing campaigns or the comparison page, or repeating it to leadership."
+    if page_check:
+        action = (
+            f"Don't act yet. Compare the claim with what {competitor}'s own pricing page showed at this same check "
+            "(below), and act only on what the page shows. Don't repeat the claim in campaigns or to leadership."
+        )
+    else:
+        action = (
+            f"Don't act yet: this isn't on {competitor}'s own pricing page. Check {pricing} "
+            "before changing campaigns or the comparison page, or repeating it to leadership."
+        )
+    why = (
+        f"It comes from {described}, not {competitor}'s own website. A claim like this, taken as fact, is how last "
+        "quarter's wrong price-cut story reached leadership."
     )
-    why = f'Unverified. The claim comes from {described} ({source}), not {competitor}\'s own website: "{quote}"'
     cta = "Don't act yet"
     return action, why, cta
+
+
+def headline_text(competitor, source, quote, unverified):
+    """A one-line summary for an item no change template covers (e.g. a cases.json signal)."""
+    if unverified:
+        host = re.sub(r"^(https?://)?(www\.)?", "", source).split("/")[0] or "an unknown source"
+        return f"Unverified claim about {competitor}'s pricing, from {host}."
+    short = quote if len(quote) <= 140 else quote[:139].rsplit(" ", 1)[0] + " …"
+    return f"{competitor}: {short}"
 
 
 def pricing_page_name(competitor):

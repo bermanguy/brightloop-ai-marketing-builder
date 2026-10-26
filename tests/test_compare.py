@@ -127,7 +127,7 @@ def test_a_page_that_fails_is_reported_then_compared_again_when_back(tmp_path):
     # Back, with a change since the last good reading (run 1).
     back = live(tmp_path, "run3", "2026-10-25T18:00:00Z", {"bolt": [("$18", "$20")]})
     assert [item["competitor"] for item in back["items"]] == ["Bolt"]
-    assert "since 2026-10-25T06:00:00Z" in back["items"][0]["why"]
+    assert "since 2026-10-25T06:00:00Z" in back["items"][0]["sources"][0]["quote"]
 
 
 def test_readings_by_different_readers_are_not_compared(tmp_path):
@@ -284,3 +284,13 @@ def test_view_changes_become_items_with_their_numbers_quoted(tmp_path):
     assert item["competitor"] == "Lovable" and item["confidence"] == 0.9 and not item["unverified"]
     assert "$45/mo" in item["sources"][0]["quote"] and result["run"]["notes"] == []
     assert [p["view"] for p in result["run"]["pages"]] == ["Monthly", "Yearly", "Monthly", "Yearly", None, None]
+
+
+def test_each_kind_of_change_gets_its_own_headline_and_action(tmp_path):
+    live(tmp_path, "run1", "2026-10-25T06:00:00Z")
+    result = live(tmp_path, "run2", "2026-10-25T12:00:00Z", {"lovable": [("$25", "$30")], "bolt": [("$18", "$15")]})
+    by = {item["competitor"]: item for item in result["items"]}
+    assert by["Lovable"]["headline"].startswith("Lovable raised its Pro plan from $25 to $30")
+    assert by["Lovable"]["action"].startswith("Put our price next to Lovable's")
+    assert by["Bolt"]["headline"].startswith("Bolt cut its Pro plan from $18 to $15")
+    assert "Don't claim we're cheaper" in by["Bolt"]["action"]

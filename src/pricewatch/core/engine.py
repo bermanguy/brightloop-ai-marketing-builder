@@ -86,10 +86,20 @@ def _pricing_item(sid, signal, default_tz, cta_wanted, errors):
     quote = text.visible_text(signal.get("text"))
     kind, confidence, unverified = trust.classify(signal.get("source"), signal.get("competitor"))
 
-    if unverified:
-        action, why, cta = text.unverified_text(competitor, source, quote, kind)
+    sources = [{"url": source, "quote": quote}]
+    # The kind of change (live signals only) is set by our comparison rules, never read from the text (D1).
+    known = text.change_text(competitor, signal) if kind == "own_pricing_page" else None
+    if known:
+        headline, action, why, cta = known
+    elif unverified:
+        page_check = signal.get("page_check") if isinstance(signal.get("page_check"), dict) else None
+        action, why, cta = text.unverified_text(competitor, source, quote, kind, page_check)
+        headline = text.headline_text(competitor, source, quote, True)
+        if page_check:
+            sources.append({"url": text.visible_text(page_check.get("url")), "quote": text.visible_text(page_check.get("quote"))})
     else:
         action, why, cta = text.verified_text(competitor, source, quote, kind == "own_pricing_page")
+        headline = text.headline_text(competitor, source, quote, False)
 
     seen_at = to_utc(signal.get("ts"), default_tz)
     if signal.get("ts") is not None and seen_at is None:
@@ -99,12 +109,13 @@ def _pricing_item(sid, signal, default_tz, cta_wanted, errors):
         "id": f"item-{sid}",
         "source_ids": [sid],
         "confidence": confidence,
+        "headline": headline,
         "action": action,
         "why": why,
         "competitor": competitor,
         "unverified": unverified,
         "source_kind": kind,
-        "sources": [{"url": source, "quote": quote}],
+        "sources": sources,
         "seen_at": seen_at,
     }
     if cta_wanted:
@@ -115,6 +126,7 @@ def _pricing_item(sid, signal, default_tz, cta_wanted, errors):
     missing = text.unsupported_numbers(item)
     if missing:
         errors.append(f"{item['id']}: numbers {missing} aren't in its sources; text replaced.")
+        item["headline"] = f"{competitor}: see the source quote."
         item["why"] = "See the source quote."
     return item
 

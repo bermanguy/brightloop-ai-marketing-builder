@@ -39,6 +39,17 @@ def collect(pages_dir=None, use_ai=True):
     return ai_extract.read_pages(pages, ai_extract.make_client() if use_ai else None)
 
 
+def with_page_check(rumor, read):
+    """The rumor, plus what the competitor's own pricing page showed in this run (the view it opens on),
+    so Maya sees the claim and the page side by side. Unchanged if the page wasn't read."""
+    page = next((p for p in read if p["competitor"] == rumor["competitor"] and p["ok"] and not p.get("view_index")), None)
+    if not page or not page["plans"]:
+        return rumor
+    shown = "; ".join(f"{plan['name']}: {compare._price_words(plan)}" for plan in page["plans"])
+    view = f" ({page['view']} view)" if page.get("view") else ""
+    return dict(rumor, page_check={"url": page["url"], "checked_at": page["fetched_at"], "quote": f"Plans on the page{view}: {shown}."})
+
+
 def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_errors=()):
     """Compare readings with the last snapshot, save them as a snapshot, run the core, log the run.
 
@@ -49,7 +60,7 @@ def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_er
     label = fetch.label
     previous = {label(page): good.get((page["competitor"], page.get("view"), page["reader"])) for page in read}
     previous = {name: page for name, page in previous.items() if page}
-    signals = compare.compare(previous, {label(page): page for page in read}) + list(rumor_signals)
+    signals = compare.compare(previous, {label(page): page for page in read}) + [with_page_check(s, read) for s in rumor_signals]
     store.save_snapshot(started_at, read, rumors=[s["hn_id"] for s in rumor_signals if s.get("hn_id")])
 
     result = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=cost)
