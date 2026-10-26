@@ -49,7 +49,7 @@ TEST:  cases.json ────────────────────�
 | Web app | **FastAPI**, plain server-rendered HTML | Small; no front-end build step; no UI polish needed |
 | Fetching | `httpx` for Bolt, Replit and v0; **Playwright** for Lovable only (pricing check 2, D14) | Lovable's plans are rendered by JavaScript; the other three are in the server's HTML |
 | Storage | **Postgres** (Neon free tier) in production; **SQLite** locally and for the keyless proof | Snapshots and the run log must survive restarts |
-| Hosting | **Render** web service (free tier) | Public URL, deploys from GitHub. Sleeps when idle, so the first request after a pause is a real cold start |
+| Hosting | **Render** web service (Starter plan since D22; free tier before) | Public URL, deploys from GitHub. Always awake, so Maya never waits for a cold start |
 | Schedule | **GitHub Actions** cron every 6 hours calls the app's protected `/run` endpoint | Keeps the schedule in the repo and wakes the sleeping app. "Check now" calls the same endpoint |
 | Tests and CI | **pytest** + GitHub Actions on every push | Includes the keyless proof run |
 

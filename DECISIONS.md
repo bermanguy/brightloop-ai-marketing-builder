@@ -225,6 +225,14 @@ Toggles and dropdowns are not clicked.
 
 **Alternatives considered.** Waiting to see whether drops repeat. An external cron service (another account, and its setup isn't in the repo).
 
+## D22 — Keep the app always awake: Render Starter plan · 2026-10-26 · [Guy]
+
+**Decision.** The Render web service moves from the free plan to Starter ($7/month, prorated), which doesn't sleep.
+
+**Why (Guy).** The app should be available all the time until the assignment is assessed, so that the Render app, and later a Base44 front end built on it, is a delightful experience.
+
+**Supersedes.** D13's accepted trade-off of a free-tier cold start of about a minute.
+
 ---
 
 ## Open questions
