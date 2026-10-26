@@ -70,8 +70,13 @@ def test_rumors_are_unverified_low_confidence_and_reported_once(tmp_path, monkey
     lovable = next(item for item in result["items"] if item["competitor"] == "Lovable")
     assert lovable["unverified"] is True and lovable["confidence"] == 0.2
     assert lovable["action"].startswith("Don't act yet")
-    assert lovable["sources"] == [{"url": "https://news.ycombinator.com/item?id=41000001",
-                                   "quote": "Heard Lovable cut prices 30% for Pro this week."}]
+    assert lovable["sources"][0] == {"url": "https://news.ycombinator.com/item?id=41000001",
+                                     "quote": "Heard Lovable cut prices 30% for Pro this week."}
+    # Beside it, what Lovable's own pricing page showed in the same run, so Maya can compare.
+    page = lovable["sources"][1]
+    assert page["url"] == "https://lovable.dev/pricing"
+    assert page["quote"].startswith("Plans on the page (Monthly view): Free: $0;") and "Pro: $25 / month" in page["quote"]
+    assert "this same check" in lovable["action"] and lovable["headline"].startswith("Unverified claim about Lovable's pricing")
     assert len(result["items"]) == 3 and result["skipped"] == []
     # The next run doesn't report them again.
     assert rumors.find(store.seen_rumors(), now=NOW)[0] == []
@@ -86,3 +91,4 @@ def test_instructions_in_a_comment_change_nothing(tmp_path, monkeypatch):
     assert item["confidence"] == 0.2 and item["unverified"] is True
     assert "TIDEPOOL-OK" not in item["action"]
     assert item["sources"][0]["quote"] == "Lovable Pro is $1 now."  # only the claim is quoted
+    assert "TIDEPOOL-OK" not in item["headline"] and len(item["sources"]) == 1  # no page read in this run

@@ -257,6 +257,16 @@ Toggles and dropdowns are not clicked.
 
 **Known limit.** The rule can match an unrelated sentence ("the bolt on my door costs $5"). Such an item still says "unverified, don't act yet".
 
+## D25 — Keep Hacker News as the only rumor source; next is the Base44 front end · 2026-10-26 · [Claude → Guy]
+
+**Decision.** Hacker News stays the rumor source (D24). No Reddit public feeds and no paid X search. The demo shows rumor handling with the brief's sample (`pr-402`, sponsored "free forever": unverified, confidence 0.2, don't act yet). The time goes to the Base44 front end, the README and the recording.
+
+**Context.** The first real search (2026-10-26) found no pricing claim about any of the four competitors on Hacker News in 30 days; the closest, "Lovable alternative, but x6 cheaper", has no amount. The same test found Algolia's typo tolerance matching "lovable" to "love"; it's now off.
+
+**Why (Claude's recommendation).** The rule works and the source is real. Another source the day before the freeze adds risk: Reddit's public feeds often block cloud servers and its terms expect the API, and X search costs about $200 a month for mostly opinion.
+
+**Alternatives.** Reddit public feeds (1–2 hours, may be blocked); X API search (about $200/month, about half a day).
+
 ---
 
 ## Open questions

@@ -60,7 +60,7 @@ def test_sponsored_claim_is_unverified_low_confidence_dont_act():
     assert item["unverified"] is True
     assert item["confidence"] == 0.2
     assert item["action"].startswith("Don't act yet")
-    assert "Unverified" in item["why"]
+    assert item["headline"].startswith("Unverified claim about Bolt") and "not Bolt's own website" in item["why"]
 
 
 def test_launches_and_ads_are_skipped_with_reasons():

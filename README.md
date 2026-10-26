@@ -45,6 +45,7 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 
 | Field | Meaning |
 | --- | --- |
+| `headline` | One line saying what happened, e.g. "Lovable raised its Pro plan from $25 to $30 / month." In a live run it's written by rule for each kind of change (price up or down, contents, limits table, plan added or removed, which prices the page shows first); numbers in it come from the quote. An unverified claim's headline says where it came from. |
 | `sources` | `[{url, quote}]`: where the claim came from and its visible text (HTML comments and tags removed). Every number in `action` and `why` appears in a quote, checked on every run. |
 | `competitor` | As given in the signal. |
 | `unverified` | `true` when the claim isn't from the competitor's own website. The action is then "Don't act yet". |
@@ -98,7 +99,7 @@ Each run saves a snapshot to the store (every page's plans, or why it couldn't b
 - A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
 - AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
 - Tables of limits or prices on a page (Bolt's plan comparison, v0's per-model token rates) are read by the AI too, and every row is checked against the page: its label and values must be consecutive lines of the page, in column order, or the row is dropped. A changed table is one signal listing the changed rows.
-- A live run also searches Hacker News (Algolia's public search API, no key) for pricing claims about each competitor from the last 7 days: a sentence that names the competitor and states an amount or percentage next to a pricing word, quoted as written with its link. Each becomes an item labelled **unverified**, confidence 0.2, "don't act yet" (D10, D24), and is reported once.
+- A live run also searches Hacker News (Algolia's public search API, no key) for pricing claims about each competitor from the last 7 days: a sentence that names the competitor and states an amount or percentage next to a pricing word, quoted as written with its link. Each becomes an item labelled **unverified**, confidence 0.2, "don't act yet" (D10, D24), and is reported once. A second source quotes what the competitor's own pricing page showed in the same run, so the claim and the page sit side by side.
 - `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
 
 ## Web app
@@ -112,6 +113,8 @@ uvicorn pricewatch.web:app        # http://localhost:8000
 - **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page, with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
 - **Run log** (`/runs`): start time, pages read or failed, changes found, errors and cost per run, plus the **Check now** button.
 - **Test upload** (`/test`): upload a cases.json, get result.json back from the same core as `./run`.
+
+The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes` (items from recent runs, newest first, plus the last check and any page that failed), `GET /api/pricing` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs`. They're read-only, and any site may read them (CORS allows GET only).
 
 `POST /run` starts a live run. It needs `RUN_TOKEN`, sent as `Authorization: Bearer …` or typed into Check now; with no `RUN_TOKEN` set, runs are switched off.
 
