@@ -98,6 +98,7 @@ Each run saves a snapshot to the store (every page's plans, or why it couldn't b
 - A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
 - AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
 - Tables of limits or prices on a page (Bolt's plan comparison, v0's per-model token rates) are read by the AI too, and every row is checked against the page: its label and values must be consecutive lines of the page, in column order, or the row is dropped. A changed table is one signal listing the changed rows.
+- A live run also searches Hacker News (Algolia's public search API, no key) for pricing claims about each competitor from the last 7 days: a sentence that names the competitor and states an amount or percentage next to a pricing word, quoted as written with its link. Each becomes an item labelled **unverified**, confidence 0.2, "don't act yet" (D10, D24), and is reported once.
 - `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
 
 ## Web app

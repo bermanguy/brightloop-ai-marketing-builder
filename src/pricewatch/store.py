@@ -51,8 +51,10 @@ class Store:
 
     # Snapshots
 
-    def save_snapshot(self, taken_at, pages):
-        self._add("snapshots", taken_at, {"taken_at": taken_at, "pages": [{k: p.get(k) for k in PAGE_FIELDS} for p in pages]})
+    def save_snapshot(self, taken_at, pages, rumors=()):
+        """rumors: the Hacker News ids reported in this run, so later runs don't report them again."""
+        self._add("snapshots", taken_at, {"taken_at": taken_at, "pages": [{k: p.get(k) for k in PAGE_FIELDS} for p in pages],
+                                          "rumors": sorted(set(rumors))})
 
     def snapshots(self, limit=None):
         return self._newest("snapshots", limit)
@@ -66,6 +68,9 @@ class Store:
                 if page.get("ok") and key not in found:
                     found[key] = page
         return found
+
+    def seen_rumors(self):
+        return {hn_id for snapshot in self.snapshots() for hn_id in snapshot.get("rumors") or []}
 
     # Run log
 

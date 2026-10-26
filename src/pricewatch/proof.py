@@ -87,7 +87,7 @@ def prove_recorded(check):
             bad = [f"{c}: {t['title']}" for c, t in tables if checked_table(t, next(p["text"] for p in pages if t in (p.get("tables") or []))) != t]
             check(not bad, f"every recorded table row ({sum(len(t['rows']) for _, t in tables)}) is on its page as written" + (f" (not: {bad})" if bad else ""))
             # Replaying spends nothing: cost 0, readings as recorded.
-            result, signals = compare_and_report(pages, 0.0, store, run["recorded_at"])
+            result, signals = compare_and_report(pages, 0.0, store, run["recorded_at"], run.get("rumors") or [], run.get("rumor_errors") or [])
             failed = [label(p) for p in pages if not p["ok"]]
             check(all(any(e.startswith(f"{c}:") for e in result["run"]["errors"]) for c in failed),
                   f"failed pages are reported, not compared ({', '.join(failed) or 'none failed'})")
