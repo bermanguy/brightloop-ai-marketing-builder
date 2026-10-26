@@ -71,3 +71,23 @@ def test_test_upload_returns_the_same_result_as_run(client):
 def test_page_text_is_escaped(client):
     assert "<script>" not in web.esc("<script>alert(1)</script>")
     assert web.link("javascript:alert(1)") == "javascript:alert(1)"
+
+
+def test_a_second_run_while_one_is_going_is_refused(client):
+    assert web._running.acquire(blocking=False)
+    try:
+        response = client.post("/run", headers={"Authorization": "Bearer test-token"})
+        assert response.status_code == 409
+    finally:
+        web._running.release()
+
+
+def test_a_run_that_crashes_does_not_block_the_next_one(client, monkeypatch):
+    def crash(store):
+        raise RuntimeError("database unreachable")
+
+    monkeypatch.setattr(web, "run_live", crash)
+    crashing = TestClient(web.app, raise_server_exceptions=False)
+    assert crashing.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 500
+    monkeypatch.setattr(web, "run_live", lambda store: store.runs(1)[0])
+    assert client.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 200
