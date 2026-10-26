@@ -54,7 +54,8 @@ def claims_in(text, competitor):
 def _search(query, since):
     import httpx
 
-    params = {"query": query, "tags": "(story,comment)", "numericFilters": f"created_at_i>{int(since.timestamp())}",
+    # typoTolerance off: otherwise "lovable" also matches "love" and fills the page with noise.
+    params = {"query": query, "tags": "(story,comment)", "typoTolerance": "false", "numericFilters": f"created_at_i>{int(since.timestamp())}",
               "hitsPerPage": 100}
     response = httpx.get(SEARCH, params=params, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_S)
     response.raise_for_status()
