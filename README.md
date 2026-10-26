@@ -113,6 +113,8 @@ uvicorn pricewatch.web:app        # http://localhost:8000
 - **Run log** (`/runs`): start time, pages read or failed, changes found, errors and cost per run, plus the **Check now** button.
 - **Test upload** (`/test`): upload a cases.json, get result.json back from the same core as `./run`.
 
+The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes` (items from recent runs, newest first, plus the last check and any page that failed), `GET /api/pricing` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs`. They're read-only, and any site may read them (CORS allows GET only).
+
 `POST /run` starts a live run. It needs `RUN_TOKEN`, sent as `Authorization: Bearer …` or typed into Check now; with no `RUN_TOKEN` set, runs are switched off.
 
 ## Deploy (Render + Neon)

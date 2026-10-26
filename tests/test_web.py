@@ -119,3 +119,26 @@ def test_pricing_page_shows_every_view_its_dropdown_options_and_tables(tmp_path,
         assert f"<h2>{name}</h2>" in body
     assert "11 options in the page's dropdown" in body and "10,000 credits Save 11% $1875/mo" in body
     assert "Bolt: Pro plan comparison" in body and "Daily Token Limit" in body and "v0: Model pricing" in body
+
+
+def test_the_json_api_gives_the_same_data_as_the_pages(client):
+    changes = client.get("/api/changes", headers={"Origin": "https://example.base44.app"})
+    assert changes.headers["access-control-allow-origin"] == "*"
+    data = changes.json()
+    assert data["last_check"] == "2026-10-25T12:00:00Z" and data["failed_pages"] == ["Replit"]
+    assert len(data["items"]) == 1 and data["items"][0]["sources"][0]["url"] == "https://lovable.dev/pricing"
+
+    pricing = client.get("/api/pricing").json()
+    replit = next(p for p in pricing["pages"] if p["competitor"] == "Replit")
+    assert replit["ok"] is False and replit["plans"] == [] and "html" not in replit and "text" not in replit
+    lovable = next(p for p in pricing["pages"] if p["competitor"] == "Lovable")
+    assert any(plan["price"] == "$30" for plan in lovable["plans"]) and lovable["label"] == "Lovable"
+
+    runs = client.get("/api/runs").json()
+    assert [r["started_at"] for r in runs] == ["2026-10-25T12:00:00Z", "2026-10-25T06:00:00Z"]
+    assert {"label": "Replit", "ok": False} in runs[0]["pages"] and runs[0]["changes"] == 1
+
+
+def test_the_json_api_is_read_only_from_other_sites(client):
+    preflight = client.options("/run", headers={"Origin": "https://example.base44.app", "Access-Control-Request-Method": "POST"})
+    assert preflight.status_code == 400 and "POST" not in preflight.headers.get("access-control-allow-methods", "")

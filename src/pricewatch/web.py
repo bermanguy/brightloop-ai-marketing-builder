@@ -12,6 +12,10 @@ runs are switched off and the app only shows what's stored.
 GitHub delays and sometimes drops scheduled workflows, so the schedule calls
 every hour with ?unless_ran_within_hours=5.5 and the app keeps the 6-hour pace:
 a dropped call costs an hour, not six.
+
+/api/changes, /api/pricing and /api/runs give the same data as JSON, read-only,
+for a front end hosted elsewhere (the Base44 app). Any site may read them: they
+show only what the HTML pages already show.
 """
 
 import hmac
@@ -23,6 +27,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Form, Header, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from .core import process
@@ -31,6 +36,7 @@ from .sources.fetch import label
 from .store import Store
 
 app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
 _store = None
 _running = threading.Lock()
 RECENT_RUNS = 30
@@ -83,10 +89,17 @@ def render_item(item):
     )
 
 
+def recent_items(runs):
+    return sorted((item for run in runs for item in run["items"]), key=lambda i: i.get("seen_at") or "", reverse=True)
+
+
+PAGE_FIELDS = ("competitor", "view", "url", "fetched_at", "ok", "error", "opens_on", "plans", "tables")
+
+
 @app.get("/", response_class=HTMLResponse)
 def changes():
     runs = store().runs(RECENT_RUNS)
-    items = sorted((item for run in runs for item in run["items"]), key=lambda i: i.get("seen_at") or "", reverse=True)
+    items = recent_items(runs)
     if not runs:
         body = "<p>No runs yet.</p>"
     else:
@@ -187,6 +200,36 @@ async def test_upload(cases: UploadFile):
         result["run"]["errors"].insert(0, error)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
+
+
+@app.get("/api/changes")
+def api_changes():
+    runs = store().runs(RECENT_RUNS)
+    last = runs[0]["run"] if runs else None
+    return {
+        "last_check": last["started_at"] if last else None,
+        "failed_pages": [label(p) for p in last.get("pages", []) if not p["ok"]] if last else [],
+        "items": recent_items(runs),
+    }
+
+
+@app.get("/api/pricing")
+def api_pricing():
+    latest = store().snapshots(1)
+    pages = latest[0]["pages"] if latest else []
+    return {
+        "taken_at": latest[0].get("taken_at") if latest else None,
+        "pages": [dict({key: p.get(key) for key in PAGE_FIELDS}, label=label(p)) for p in pages],
+    }
+
+
+@app.get("/api/runs")
+def api_runs():
+    return [
+        {"started_at": r["run"]["started_at"], "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
+         "errors": r["run"]["errors"], "pages": [{"label": label(p), "ok": p["ok"]} for p in r["run"].get("pages", [])]}
+        for r in store().runs(100)
+    ]
 
 
 @app.get("/health")
