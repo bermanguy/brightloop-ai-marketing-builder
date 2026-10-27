@@ -111,6 +111,7 @@ def _pricing_item(sid, signal, default_tz, cta_wanted, errors):
         "confidence": confidence,
         "headline": headline,
         "action": action,
+        "steps": text.steps(action),
         "why": why,
         "competitor": competitor,
         "unverified": unverified,

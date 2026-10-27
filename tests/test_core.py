@@ -316,3 +316,18 @@ def test_a_long_quote_is_cut_between_words_so_no_figure_is_cut_short():
     shown = text.visible_text(quote)
     assert len(shown) <= text.MAX_QUOTE and shown.endswith(" …")
     assert shown[:-2].split()[-1] in quote.split()  # the last word shown is a whole word of the quote
+
+
+def test_steps_split_the_action_into_bullets():
+    from pricewatch.core.text import steps
+
+    action = (
+        "Anything we publish that quotes the price of Lovable's Pro (comparison pages, ads, sales material) now "
+        "shows the old $25: update it. Then decide with whoever owns our pricing whether to push our trial."
+    )
+    assert steps(action) == [
+        "Anything we publish that quotes the price of Lovable's Pro (comparison pages, ads, sales material) now "
+        "shows the old $25: update it.",
+        "Then decide with whoever owns our pricing whether to push our trial.",
+    ]
+    assert steps("Don't act yet: this isn't on the page.") == ["Don't act yet: this isn't on the page."]

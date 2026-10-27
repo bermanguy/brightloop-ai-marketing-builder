@@ -46,6 +46,7 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 | Field | Meaning |
 | --- | --- |
 | `headline` | One line saying what happened, e.g. "Lovable raised its Pro plan from $25 to $30 / month." In a live run it's written by rule for each kind of change (price up or down, contents, limits table, plan added or removed, which prices the page shows first); numbers in it come from the quote. An unverified claim's headline says where it came from. |
+| `steps` | `action` split into its next steps, one per sentence, for showing as bullets. Same text as `action`. |
 | `sources` | `[{url, quote}]`: where the claim came from and its visible text (HTML comments and tags removed). Every number in `action` and `why` appears in a quote, checked on every run. |
 | `competitor` | As given in the signal. |
 | `unverified` | `true` when the claim isn't from the competitor's own website. The action is then "Don't act yet". |

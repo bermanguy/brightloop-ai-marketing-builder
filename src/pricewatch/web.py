@@ -102,7 +102,8 @@ def render_item(item):
         f'{badge}confidence {item["confidence"]}</div><h3>{esc(item.get("headline"))}</h3>'
         f"<p class='label'>{changed}</p><ul class='sources'>{sources}</ul>"
         f'<p class="why"><b>Why it matters:</b> {esc(item["why"])}</p>'
-        f'<p><b>Recommended next steps:</b> {esc(item["action"])}</p></div>'
+        f"<p class='label'>Recommended next steps</p><ul class='steps'>"
+        + "".join(f"<li>{esc(step)}</li>" for step in item.get("steps") or [item["action"]]) + "</ul></div>"
     )
 
 

@@ -178,6 +178,12 @@ def unverified_text(competitor, source, quote, kind, page_check=None):
     return action, why, cta
 
 
+def steps(action):
+    """The action as a list of next steps, one per sentence. The action is always one of our
+    templates (never signal text), so splitting on sentence ends is safe."""
+    return [step for step in re.split(r"(?<=[.:])\s+(?=[A-Z])", action) if step]
+
+
 def headline_text(competitor, source, quote, unverified):
     """A one-line summary for an item no change template covers (e.g. a cases.json signal)."""
     if unverified:
