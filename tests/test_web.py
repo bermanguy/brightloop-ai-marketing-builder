@@ -245,3 +245,10 @@ def test_check_now_needs_no_token_but_runs_at_most_every_30_minutes(client, monk
 def test_check_now_is_off_without_run_token(client, monkeypatch):
     monkeypatch.delenv("RUN_TOKEN")
     assert "switched off" in client.post("/check").text
+
+
+def test_run_log_rows_expand_to_what_the_run_read_found_and_decided(client):
+    body = client.get("/runs").text
+    assert "<details><summary>Details</summary>" in body
+    assert "<b>Read.</b>" in body and "plans" in body and "<b>Found</b>" in body
+    assert "<b>Decided.</b>" in body and "so confidence 0.9" in body  # the rule behind a pricing-page change

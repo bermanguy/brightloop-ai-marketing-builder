@@ -147,6 +147,15 @@ def compare_page(before, after):
             # The price lines are covered by that, so they aren't listed as changed lines too.
             old_lines = [line for line in old_lines if not (was["price"] and was["price"] in line)]
             new_lines = [line for line in new_lines if not (plan["price"] and plan["price"] in line)]
+        # A plan that gains a dropdown of choices (Replit's credit tiers) is its own change, listed in
+        # full, so the headline can name every option instead of "and 1 more". A change within an
+        # existing dropdown stays a "details" change.
+        new_options = plan.get("options") or []
+        if new_options and not was.get("options") and not price_changed:
+            signals.append(_signal(after, name, "options", (
+                f"{_plan(after, name)} now offers a choice of {len(new_options)} options: {'; '.join(new_options)} {since}."
+            ), "options", plan=_plan(after, name), now="; ".join(new_options)))
+            new_lines = [line for line in new_lines if line not in new_options]
         added = [line for line in new_lines if line not in old_lines]
         removed = [line for line in old_lines if line not in new_lines]
         if added:
