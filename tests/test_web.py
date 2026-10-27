@@ -252,3 +252,11 @@ def test_run_log_rows_expand_to_what_the_run_read_found_and_decided(client):
     assert "<details><summary>Details</summary>" in body
     assert "<b>Read.</b>" in body and "plans" in body and "<b>Found</b>" in body
     assert "<b>Decided.</b>" in body and "so confidence 0.9" in body  # the rule behind a pricing-page change
+
+
+def test_api_runs_carries_the_same_details_as_the_run_log(client):
+    [latest, _] = client.get("/api/runs").json()
+    details = latest["details"]
+    assert details["found"].startswith("1 change on the pricing pages")
+    assert details["decided"][0]["rule"].endswith("so confidence 0.9.") and details["decided"][0]["next_step"]
+    assert any("couldn't read" in line for line in details["read"])
