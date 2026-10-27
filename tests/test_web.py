@@ -68,6 +68,16 @@ def test_test_upload_returns_the_same_result_as_run(client):
     assert "bl_demo_4c19e2" not in response.text
 
 
+def test_test_upload_matches_the_run_command_byte_for_byte(client, tmp_path):
+    from pricewatch import cli
+
+    for cases in ("fixtures/sample-cases.json", "tests/cases/tricky-cases.json"):
+        out = tmp_path / "result.json"
+        cli.main(["--input", cases, "--output", str(out)])
+        response = client.post("/test", files={"cases": ("cases.json", open(cases, "rb").read())})
+        assert response.text == out.read_text(encoding="utf-8")
+
+
 def test_page_text_is_escaped(client):
     assert "<script>" not in web.esc("<script>alert(1)</script>")
     assert web.link("javascript:alert(1)") == "javascript:alert(1)"
