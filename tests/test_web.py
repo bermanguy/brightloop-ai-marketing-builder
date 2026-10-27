@@ -206,3 +206,24 @@ def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
     assert "appears more than once" in page and "Download result.json" in page
     assert "bl_demo_test" not in page and "TIDEPOOL-OK" not in page
     assert len(web.store().runs(100)) == before
+
+
+def test_changes_filter_by_time_range_and_company(client):
+    runs = web.store().runs()
+    later = web.datetime(2026, 11, 20, tzinfo=web.timezone.utc)  # the fixture's runs are from 2026-10-25
+    assert web.changes_in(runs, "7", now=later) == [] and web.changes_in(runs, "30", now=later)
+    assert web.changes_in(runs, "all", now=later) == web.changes_in(runs, "nonsense", now=web.datetime(2026, 10, 26, tzinfo=web.timezone.utc))
+    everyone = web.changes_in(runs, "all")
+    one = everyone[0]["competitor"]
+    assert web.changes_in(runs, "all", one) == [i for i in everyone if i["competitor"] == one]
+    assert web.changes_in(runs, "all", "Nobody") == []
+
+
+def test_filters_on_the_pages_and_the_api(client):
+    page = client.get("/?days=all&competitor=Lovable").text
+    assert "<option value='all' selected>" in page and "<option value='Lovable' selected>" in page
+    assert client.get("/api/changes?days=all&competitor=Nobody").json()["items"] == []
+    assert "Lovable" in client.get("/api/changes").json()["competitors"]
+    pricing = client.get("/api/pricing?competitor=Lovable").json()["pages"]
+    assert pricing and {p["competitor"] for p in pricing} == {"Lovable"}
+    assert "Bolt" not in client.get("/pricing?competitor=Lovable").text.split("</form>", 1)[1]
