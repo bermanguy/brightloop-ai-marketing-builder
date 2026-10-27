@@ -112,7 +112,7 @@ uvicorn pricewatch.web:app        # http://localhost:8000
 
 - **Changes** (`/`): the items from recent runs, newest first, with action, why, confidence, the unverified label and source links.
 - **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page, with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
-- **Run log** (`/runs`): start time, pages read or failed, changes found, errors and cost per run, plus the **Check now** button.
+- **Run log** (`/runs`): start time, what started it (schedule, manual Check now, backup schedule, API or command line; blank for runs from before 27 Oct), pages read or failed, changes found, errors and cost per run, plus the **Check now** button.
 - **Test upload** (`/test`): upload a cases.json and see what each input id led to (item or skip reason), any errors, and the items as cards, with result.json to download. Same core as `./run`; nothing is saved, so the other tabs don't change. `POST /test?format=json` returns the file directly.
 
 The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes` (items from recent runs, newest first, plus the last check and any page that failed), `GET /api/pricing` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs`. They're read-only, and any site may read them (CORS allows GET only).

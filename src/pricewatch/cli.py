@@ -29,7 +29,7 @@ def main(argv=None):
         from .live import run_live
         from .store import Store
 
-        result = run_live(Store(args.db), args.pages, use_ai=not args.no_ai)
+        result = run_live(Store(args.db), args.pages, use_ai=not args.no_ai, trigger="command line")
     else:
         cases, error = read_cases(args.input)
         result = process(cases)

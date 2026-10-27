@@ -50,7 +50,7 @@ def with_page_check(rumor, read):
     return dict(rumor, page_check={"url": page["url"], "checked_at": page["fetched_at"], "quote": f"Plans on the page{view}: {shown}."})
 
 
-def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_errors=()):
+def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_errors=(), trigger=None):
     """Compare readings with the last snapshot, save them as a snapshot, run the core, log the run.
 
     rumor_signals: pricing claims found elsewhere (rumors.find), reported alongside.
@@ -65,6 +65,8 @@ def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_er
 
     result = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=cost)
     result["run"]["notes"] = []
+    if trigger:
+        result["run"]["trigger"] = trigger  # what started the run: schedule, manual, backup schedule, API, command line
     result["run"]["errors"].extend(rumor_errors)
     for page in read:
         if not page["ok"]:
@@ -83,7 +85,7 @@ def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_er
     return result, signals
 
 
-def run_live(store, pages_dir=None, use_ai=True, started_at=None):
+def run_live(store, pages_dir=None, use_ai=True, started_at=None, trigger=None):
     """One run, saved to the store. Returns the result, in the same shape as ./run's output.
 
     A live run also searches Hacker News for pricing claims; a run from saved pages doesn't.
@@ -91,4 +93,4 @@ def run_live(store, pages_dir=None, use_ai=True, started_at=None):
     started_at = started_at or now_utc()
     read, cost = collect(pages_dir, use_ai)
     found, errors = ([], []) if pages_dir else rumors.find(store.seen_rumors())
-    return compare_and_report(read, cost, store, started_at, found, errors)[0]
+    return compare_and_report(read, cost, store, started_at, found, errors, trigger)[0]

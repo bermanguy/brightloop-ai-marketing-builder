@@ -129,7 +129,7 @@ def run_if_due(every_hours, now=None):
     if not _running.acquire(blocking=False):
         return "busy"
     try:
-        run_live(store())
+        run_live(store(), trigger="schedule")
     except Exception as exc:  # never kill the scheduler; the run log shows the gap
         print(f"scheduled run failed: {exc.__class__.__name__}: {exc}", flush=True)
     finally:
@@ -196,11 +196,11 @@ def runs():
         run = result["run"]
         pages = ", ".join(f"{label(p)} {'ok' if p['ok'] else 'FAILED'}" for p in run.get("pages", []))
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
-        rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
+        rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(run.get('trigger') or '—')}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
     form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
             "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
-    table = f"<table><tr><th>Started</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
+    table = f"<table><tr><th>Started</th><th>Started by</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))
 
 
@@ -218,7 +218,9 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     if not _running.acquire(blocking=False):
         return JSONResponse({"error": "a run is already in progress"}, status_code=409)
     try:
-        result = run_live(store())
+        # The Check now form sends the token as a field; GitHub's backup workflow asks to skip a recent run.
+        trigger = "manual" if token else "backup schedule" if unless_ran_within_hours is not None else "API"
+        result = run_live(store(), trigger=trigger)
     finally:
         _running.release()
     if token:  # the Check now form
@@ -341,7 +343,7 @@ def api_pricing():
 @app.get("/api/runs")
 def api_runs():
     return [
-        {"started_at": r["run"]["started_at"], "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
+        {"started_at": r["run"]["started_at"], "trigger": r["run"].get("trigger"), "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
          "errors": r["run"]["errors"], "pages": [{"label": label(p), "ok": p["ok"]} for p in r["run"].get("pages", [])]}
         for r in store().runs(100)
     ]
