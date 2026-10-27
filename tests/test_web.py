@@ -186,8 +186,10 @@ def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
     before = len(web.store().runs(100))
     response = client.post("/test", files={"cases": ("cases.json", open("tests/cases/tricky-cases.json", "rb").read())})
     page = response.text
-    assert response.status_code == 200 and "Test result" in page
-    assert "<td>t-05</td>" in page and "Skipped:" in page  # the ad
+    assert response.status_code == 200 and "What each input led to" in page and "<form" in page
+    assert "so confidence 0.2 and labelled unverified" in page  # the rule behind t-03
+    assert "hidden comment" in page  # t-02's injection, noted and not followed
+    assert "<td>t-05</td>" in page and "<b>Skipped</b>" in page  # the ad
     assert "<td>t-03</td>" in page and "unverified" in page  # the rumor
     assert "appears more than once" in page and "Download result.json" in page
     assert "bl_demo_test" not in page and "TIDEPOOL-OK" not in page
