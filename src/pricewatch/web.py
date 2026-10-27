@@ -5,8 +5,9 @@
 Plain server-rendered HTML, no front-end build. Every value shown comes from the
 store (snapshots and run results), written as it appears on the competitor's page.
 
-POST /run starts a live run. It needs RUN_TOKEN (as "Authorization: Bearer ..."
-from the schedule, or typed into the Check now form); without RUN_TOKEN set,
+POST /check is the Check now button: anyone may press it, but it starts at most one run
+every 30 minutes (D29). POST /run starts a live run for scripts, such as GitHub's backup
+schedule, and needs RUN_TOKEN as "Authorization: Bearer ..."; without RUN_TOKEN set,
 runs are switched off and the app only shows what's stored.
 
 The app schedules its own runs: with SCHEDULE_EVERY_HOURS set (6 on Render), a
@@ -52,7 +53,6 @@ app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None, l
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
 _store = None
 _running = threading.Lock()
-RECENT_RUNS = 30
 CHECK_EVERY_S = 300
 
 
@@ -80,7 +80,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .filters{margin:8px 0} .filters select{margin-right:6px} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -112,6 +112,33 @@ def recent_items(runs):
     return sorted((item for run in runs for item in run["items"]), key=lambda i: i.get("seen_at") or "", reverse=True)
 
 
+# Filters, shared by the pages and the API so every front end filters the same way.
+RANGES = {"7": "Last 7 days", "30": "Last 30 days", "all": "All time"}
+
+
+def changes_in(runs, days="7", competitor=None, now=None):
+    """Items from runs started in the last `days` days ("all" for every run), for one competitor or all."""
+    days = days if days in RANGES else "7"
+    if days != "all":
+        since = ((now or datetime.now(timezone.utc)) - timedelta(days=int(days))).strftime("%Y-%m-%dT%H:%M:%SZ")
+        runs = [r for r in runs if r["run"]["started_at"] >= since]
+    items = recent_items(runs)
+    return [i for i in items if i.get("competitor") == competitor] if competitor else items
+
+
+def competitors_in(runs, snapshot):
+    names = {i.get("competitor") for r in runs for i in r["items"]} | {p["competitor"] for p in (snapshot or {}).get("pages", [])}
+    return sorted((n for n in names if n), key=str.lower)
+
+
+def filter_form(action, competitors, competitor, days=None):
+    """A plain GET form: a company dropdown, and on Changes a time range (default last 7 days)."""
+    option = lambda value, text, chosen: f"<option value='{esc(value)}'{' selected' if chosen else ''}>{esc(text)}</option>"  # noqa: E731
+    names = option("", "All companies", not competitor) + "".join(option(n, n, n == competitor) for n in competitors)
+    period = ("<select name='days'>" + "".join(option(k, v, k == days) for k, v in RANGES.items()) + "</select> ") if days else ""
+    return f"<form class='filters' method='get' action='{action}'>{period}<select name='competitor'>{names}</select> <button>Show</button></form>"
+
+
 PAGE_FIELDS = ("competitor", "view", "url", "fetched_at", "ok", "error", "opens_on", "plans", "tables")
 
 
@@ -129,7 +156,7 @@ def run_if_due(every_hours, now=None):
     if not _running.acquire(blocking=False):
         return "busy"
     try:
-        run_live(store())
+        run_live(store(), trigger="schedule")
     except Exception as exc:  # never kill the scheduler; the run log shows the gap
         print(f"scheduled run failed: {exc.__class__.__name__}: {exc}", flush=True)
     finally:
@@ -144,26 +171,31 @@ def _schedule(every_hours):
 
 
 @app.get("/", response_class=HTMLResponse)
-def changes():
-    runs = store().runs(RECENT_RUNS)
-    items = recent_items(runs)
+def changes(days: str = "7", competitor: str = None):
+    days = days if days in RANGES else "7"
+    runs = store().runs()
     if not runs:
-        body = "<p>No runs yet.</p>"
-    else:
-        last = runs[0]["run"]
-        failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
-        status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
-        body = f'<p class="meta">{status}</p>' + ("".join(map(render_item, items)) or "<p>No pricing changes found yet.</p>")
+        return page("What changed in competitors' pricing", "<p>No runs yet.</p>")
+    items = changes_in(runs, days, competitor)
+    last = runs[0]["run"]
+    failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
+    status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
+    shown = f"{len(items)} change{'s' if len(items) != 1 else ''} · {RANGES[days].lower()} · {esc(competitor or 'all companies')}"
+    empty = "<p>No pricing changes for this filter. Try a longer time range.</p>"
+    body = (HOW_CHANGES + filter_form("/", competitors_in(runs, (store().snapshots(1) or [None])[0]), competitor, days)
+            + f'<p class="meta">{status} · {shown}</p>' + ("".join(map(render_item, items)) or empty))
     return page("What changed in competitors' pricing", body)
 
 
 @app.get("/pricing", response_class=HTMLResponse)
-def pricing():
+def pricing(competitor: str = None):
     latest = store().snapshots(1)
     if not latest:
         return page("Current pricing", "<p>No runs yet.</p>")
-    parts = []
+    parts = [filter_form("/pricing", competitors_in([], latest[0]), competitor)]
     for p in latest[0]["pages"]:
+        if competitor and p["competitor"] != competitor:
+            continue
         opens = f" · the page opens on this view" if p.get("view") and p.get("opens_on") == p["view"] else ""
         head = f"<h2>{esc(label(p))}</h2><p class='meta'>{link(p['url'])} · checked {esc(p['fetched_at'])}{opens}</p>"
         if not p["ok"]:
@@ -196,12 +228,35 @@ def runs():
         run = result["run"]
         pages = ", ".join(f"{label(p)} {'ok' if p['ok'] else 'FAILED'}" for p in run.get("pages", []))
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
-        rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
+        rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(run.get('trigger') or '—')}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
-    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
-            "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
-    table = f"<table><tr><th>Started</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
+    form = ("<form method='post' action='/check' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
+            f"<button>Check now</button> <span class='meta'>Anyone can start a check, at most once every {CHECK_NOW_EVERY_MIN} minutes.</span></form>")
+    table = f"<table><tr><th>Started</th><th>Started by</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))
+
+
+CHECK_NOW_EVERY_MIN = 30
+
+
+@app.post("/check", response_class=HTMLResponse)
+def check_now():
+    """The Check now button: no token, so reviewers can try it, but at most one run every
+    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29)."""
+    if not os.environ.get("RUN_TOKEN"):
+        return page("Check now", "<p>Runs are switched off on this server.</p>")
+    if not _running.acquire(blocking=False):
+        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+    try:
+        last = store().runs(1)
+        recent = (datetime.now(timezone.utc) - timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if last and last[0]["run"]["started_at"] > recent:
+            return page("Check now", f"<p>The last check started at {esc(last[0]['run']['started_at'])}. Check now works at most once "
+                        f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
+        run_live(store(), trigger="manual")
+    finally:
+        _running.release()
+    return RedirectResponse("/", status_code=303)
 
 
 @app.post("/run")
@@ -218,7 +273,9 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     if not _running.acquire(blocking=False):
         return JSONResponse({"error": "a run is already in progress"}, status_code=409)
     try:
-        result = run_live(store())
+        # The Check now form sends the token as a field; GitHub's backup workflow asks to skip a recent run.
+        trigger = "manual" if token else "backup schedule" if unless_ran_within_hours is not None else "API"
+        result = run_live(store(), trigger=trigger)
     finally:
         _running.release()
     if token:  # the Check now form
@@ -228,8 +285,23 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     return JSONResponse(summary)
 
 
-TEST_INTRO = ("<p>Upload a cases.json to see what it leads to, from the same core as <code>./run</code>. "
-              "Rules, not AI, decide each result. Nothing is saved: the other tabs don't change.</p>"
+# How confidence is set, the same for live runs and test uploads (core/trust.py).
+CONFIDENCE = ("<li><b>Confidence comes only from where a claim was seen</b>, never from guessing whether it's true: "
+              "the competitor's own pricing page 0.9; another page on their site 0.6; a third party 0.4, unverified; "
+              "a sponsored, ad, forum or anonymous source 0.2, unverified.</li>")
+
+HOW_CHANGES = ("<div class='how'><b>How this works</b><ul>"
+               "<li>Every 6 hours the app reads each competitor's pricing page and compares it with the last check. "
+               "Each difference becomes a card, quoted from the page.</li>"
+               "<li>It also looks for pricing rumors on Hacker News. Those cards are unverified and show what the "
+               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></div>")
+
+TEST_INTRO = ("<div class='how'><b>How this works</b><ul>"
+              "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
+              "<li>Each signal is a claim someone saw, already saying what changed. So the test doesn't compare with the "
+              "current pricing pages, and the same file always gives the same result.</li>" + CONFIDENCE +
+              "<li>Pricing signals become cards; ads and launches are skipped with a reason.</li>"
+              "<li>Nothing is saved: the other tabs don't change.</li></ul></div>"
               "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
               "<button>Run</button></form>")
 
@@ -303,20 +375,22 @@ def test_results(data, result, body):
 
 
 @app.get("/api/changes")
-def api_changes():
-    runs = store().runs(RECENT_RUNS)
+def api_changes(days: str = "7", competitor: str = None):
+    """?days=7|30|all (default 7) and ?competitor=Lovable, as on the Changes page."""
+    runs = store().runs()
     last = runs[0]["run"] if runs else None
     return {
         "last_check": last["started_at"] if last else None,
         "failed_pages": [label(p) for p in last.get("pages", []) if not p["ok"]] if last else [],
-        "items": recent_items(runs),
+        "competitors": competitors_in(runs, (store().snapshots(1) or [None])[0]),
+        "items": changes_in(runs, days, competitor),
     }
 
 
 @app.get("/api/pricing")
-def api_pricing():
+def api_pricing(competitor: str = None):
     latest = store().snapshots(1)
-    pages = latest[0]["pages"] if latest else []
+    pages = [p for p in (latest[0]["pages"] if latest else []) if not competitor or p["competitor"] == competitor]
     return {
         "taken_at": latest[0].get("taken_at") if latest else None,
         "pages": [dict({key: p.get(key) for key in PAGE_FIELDS}, label=label(p)) for p in pages],
@@ -326,7 +400,7 @@ def api_pricing():
 @app.get("/api/runs")
 def api_runs():
     return [
-        {"started_at": r["run"]["started_at"], "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
+        {"started_at": r["run"]["started_at"], "trigger": r["run"].get("trigger"), "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
          "errors": r["run"]["errors"], "pages": [{"label": label(p), "ok": p["ok"]} for p in r["run"].get("pages", [])]}
         for r in store().runs(100)
     ]

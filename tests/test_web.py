@@ -43,6 +43,16 @@ def test_pricing_page_shows_latest_plans_and_never_old_data_for_a_failed_page(cl
 def test_run_log_lists_runs_with_cost_and_errors(client):
     body = client.get("/runs").text
     assert "2026-10-25T12:00:00Z" in body and "Replit FAILED" in body and "$0.0000" in body
+    assert "<th>Started by</th>" in body
+
+
+def test_a_run_records_what_started_it(tmp_path):
+    from pricewatch.store import Store
+
+    store = Store(str(tmp_path / "db.sqlite"))
+    run_live(store, write_pages(tmp_path / "p", "2026-10-25T06:00:00Z"), use_ai=False, started_at="2026-10-25T06:00:00Z",
+             trigger="schedule")
+    assert store.runs(1)[0]["run"]["trigger"] == "schedule"
 
 
 def test_run_needs_the_token(client, monkeypatch):
@@ -54,11 +64,12 @@ def test_run_needs_the_token(client, monkeypatch):
 
 def test_run_with_the_token_starts_a_live_run(client, monkeypatch):
     calls = []
-    monkeypatch.setattr(web, "run_live", lambda store: calls.append(store) or store.runs(1)[0])
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger) or store.runs(1)[0])
     response = client.post("/run", headers={"Authorization": "Bearer test-token"})
     assert response.status_code == 200 and response.json()["items"] == 1 and len(calls) == 1
     form = client.post("/run", data={"token": "test-token"}, follow_redirects=False)
     assert form.status_code == 303 and len(calls) == 2
+    assert calls == ["API", "manual"]
 
 
 def test_test_upload_returns_the_same_result_as_run(client):
@@ -96,19 +107,19 @@ def test_a_second_run_while_one_is_going_is_refused(client):
 
 
 def test_a_run_that_crashes_does_not_block_the_next_one(client, monkeypatch):
-    def crash(store):
+    def crash(store, trigger=None):
         raise RuntimeError("database unreachable")
 
     monkeypatch.setattr(web, "run_live", crash)
     crashing = TestClient(web.app, raise_server_exceptions=False)
     assert crashing.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 500
-    monkeypatch.setattr(web, "run_live", lambda store: store.runs(1)[0])
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: store.runs(1)[0])
     assert client.post("/run", headers={"Authorization": "Bearer test-token"}).status_code == 200
 
 
 def test_the_schedule_keeps_the_six_hour_pace(client, monkeypatch):
     calls = []
-    monkeypatch.setattr(web, "run_live", lambda store: calls.append(store) or store.runs(1)[0])
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger) or store.runs(1)[0])
     auth = {"Authorization": "Bearer test-token"}
     # The fixture's last run is from 2026-10-25, long enough ago: this call runs.
     assert "items" in client.post("/run?unless_ran_within_hours=5.5", headers=auth).json() and len(calls) == 1
@@ -118,6 +129,7 @@ def test_the_schedule_keeps_the_six_hour_pace(client, monkeypatch):
     assert len(calls) == 1
     # Check now always runs.
     assert client.post("/run", headers=auth).status_code == 200 and len(calls) == 2
+    assert calls == ["backup schedule", "API"]
 
 
 def test_pricing_page_shows_every_view_its_dropdown_options_and_tables(tmp_path, monkeypatch):
@@ -161,10 +173,10 @@ def test_the_app_starts_a_run_every_six_hours_by_itself(client, monkeypatch):
     # The client's last run started at 2026-10-25T12:00:00Z.
     from datetime import datetime, timezone
     calls = []
-    monkeypatch.setattr(web, "run_live", lambda store: calls.append(store))
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger))
     at = lambda text: datetime.fromisoformat(text).replace(tzinfo=timezone.utc)  # noqa: E731
     assert web.run_if_due(6, at("2026-10-25T17:30:00")) == "not due" and calls == []
-    assert web.run_if_due(6, at("2026-10-25T17:56:00")) == "ran" and len(calls) == 1  # within 5 minutes counts
+    assert web.run_if_due(6, at("2026-10-25T17:56:00")) == "ran" and calls == ["schedule"]  # within 5 minutes counts
     web._running.acquire()
     try:
         assert web.run_if_due(6, at("2026-10-25T18:30:00")) == "busy"
@@ -173,7 +185,7 @@ def test_the_app_starts_a_run_every_six_hours_by_itself(client, monkeypatch):
 
 
 def test_a_scheduled_run_that_crashes_does_not_stop_the_schedule(client, monkeypatch):
-    def crash(store):
+    def crash(store, trigger=None):
         raise RuntimeError("browser died")
     monkeypatch.setattr(web, "run_live", crash)
     from datetime import datetime, timezone
@@ -194,3 +206,42 @@ def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
     assert "appears more than once" in page and "Download result.json" in page
     assert "bl_demo_test" not in page and "TIDEPOOL-OK" not in page
     assert len(web.store().runs(100)) == before
+
+
+def test_changes_filter_by_time_range_and_company(client):
+    runs = web.store().runs()
+    later = web.datetime(2026, 11, 20, tzinfo=web.timezone.utc)  # the fixture's runs are from 2026-10-25
+    assert web.changes_in(runs, "7", now=later) == [] and web.changes_in(runs, "30", now=later)
+    assert web.changes_in(runs, "all", now=later) == web.changes_in(runs, "nonsense", now=web.datetime(2026, 10, 26, tzinfo=web.timezone.utc))
+    everyone = web.changes_in(runs, "all")
+    one = everyone[0]["competitor"]
+    assert web.changes_in(runs, "all", one) == [i for i in everyone if i["competitor"] == one]
+    assert web.changes_in(runs, "all", "Nobody") == []
+
+
+def test_filters_on_the_pages_and_the_api(client):
+    page = client.get("/?days=all&competitor=Lovable").text
+    assert "<option value='all' selected>" in page and "<option value='Lovable' selected>" in page
+    assert client.get("/api/changes?days=all&competitor=Nobody").json()["items"] == []
+    assert "Lovable" in client.get("/api/changes").json()["competitors"]
+    pricing = client.get("/api/pricing?competitor=Lovable").json()["pages"]
+    assert pricing and {p["competitor"] for p in pricing} == {"Lovable"}
+    assert "Bolt" not in client.get("/pricing?competitor=Lovable").text.split("</form>", 1)[1]
+
+
+def test_check_now_needs_no_token_but_runs_at_most_every_30_minutes(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger))
+    # The fixture's last run is from 2026-10-25, long ago: the button runs, with no token.
+    response = client.post("/check", follow_redirects=False)
+    assert response.status_code == 303 and calls == ["manual"]
+    now = web.datetime.now(web.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    web.store().save_run({"items": [], "skipped": [], "run": {"started_at": now, "errors": [], "cost_usd": 0.0}})
+    again = client.post("/check?now=2030-01-01T00:00:00", follow_redirects=False)
+    assert again.status_code == 200 and "at most once every 30 minutes" in again.text and calls == ["manual"]
+    assert "name='token'" not in client.get("/runs").text
+
+
+def test_check_now_is_off_without_run_token(client, monkeypatch):
+    monkeypatch.delenv("RUN_TOKEN")
+    assert "switched off" in client.post("/check").text

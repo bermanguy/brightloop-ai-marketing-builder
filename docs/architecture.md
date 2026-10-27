@@ -59,7 +59,7 @@ TEST:  cases.json ────────────────────�
 
 - **Changes** page: the latest items, newest first, each with action, why, confidence, unverified label if any, and source links.
 - **Current pricing** page (D12): one table per competitor, with source link and check time per row, and failed pages marked as failed.
-- **Check now** button.
+- **Check now** button: no token, at most one run every 30 minutes (D29).
 - **Run log** page: start time, pages fetched, errors, cost.
 - **Test upload** page: upload `cases.json`, see what each input id led to and the items, download `result.json`. Same core as the command; nothing is saved.
 
