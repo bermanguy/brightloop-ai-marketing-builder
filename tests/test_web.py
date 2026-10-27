@@ -62,7 +62,7 @@ def test_run_with_the_token_starts_a_live_run(client, monkeypatch):
 
 def test_test_upload_returns_the_same_result_as_run(client):
     sample = open("fixtures/sample-cases.json", "rb").read()
-    response = client.post("/test", files={"cases": ("cases.json", sample)})
+    response = client.post("/test?format=json", files={"cases": ("cases.json", sample)})
     result = response.json()
     assert len(result["items"]) == 2 and len(result["skipped"]) == 6
     assert "bl_demo_4c19e2" not in response.text
@@ -74,7 +74,7 @@ def test_test_upload_matches_the_run_command_byte_for_byte(client, tmp_path):
     for cases in ("fixtures/sample-cases.json", "tests/cases/tricky-cases.json"):
         out = tmp_path / "result.json"
         cli.main(["--input", cases, "--output", str(out)])
-        response = client.post("/test", files={"cases": ("cases.json", open(cases, "rb").read())})
+        response = client.post("/test?format=json", files={"cases": ("cases.json", open(cases, "rb").read())})
         assert response.text == out.read_text(encoding="utf-8")
 
 
@@ -177,3 +177,15 @@ def test_a_scheduled_run_that_crashes_does_not_stop_the_schedule(client, monkeyp
     assert web.run_if_due(6, datetime(2026, 10, 26, tzinfo=timezone.utc)) == "ran"
     assert web._running.acquire(blocking=False)
     web._running.release()
+
+
+def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
+    before = len(web.store().runs(100))
+    response = client.post("/test", files={"cases": ("cases.json", open("tests/cases/tricky-cases.json", "rb").read())})
+    page = response.text
+    assert response.status_code == 200 and "Test result" in page
+    assert "<td>t-05</td>" in page and "Skipped:" in page  # the ad
+    assert "<td>t-03</td>" in page and "unverified" in page  # the rumor
+    assert "appears more than once" in page and "Download result.json" in page
+    assert "bl_demo_test" not in page and "TIDEPOOL-OK" not in page
+    assert len(web.store().runs(100)) == before

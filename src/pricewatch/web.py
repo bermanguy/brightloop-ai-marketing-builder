@@ -20,6 +20,7 @@ for a front end hosted elsewhere (the Base44 app). Any site may read them: they
 show only what the HTML pages already show.
 """
 
+import base64
 import hmac
 import html
 import json
@@ -80,7 +81,7 @@ body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
 .unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} table{border-collapse:collapse;width:100%;margin-bottom:24px}
-td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
+td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
 
@@ -229,13 +230,14 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
 
 @app.get("/test", response_class=HTMLResponse)
 def test_form():
-    return page("Test upload", "<p>Upload a cases.json; you get result.json back, from the same core as <code>./run</code>.</p>"
+    return page("Test upload", "<p>Upload a cases.json to see what it leads to, from the same core as <code>./run</code>. "
+                "Nothing is saved: the other tabs don't change.</p>"
                 "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
                 "<button>Run</button></form>")
 
 
 @app.post("/test")
-async def test_upload(cases: UploadFile):
+async def test_upload(cases: UploadFile, format: str = None):
     try:
         data = json.loads(await cases.read())
         error = None
@@ -245,7 +247,41 @@ async def test_upload(cases: UploadFile):
     if error:
         result["run"]["errors"].insert(0, error)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
-    return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
+    if format == "json":
+        return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
+    return test_results(data, result, body)
+
+
+def test_results(data, result, body):
+    """The test result as a page: what each input id led to, then the items as cards, as on Changes."""
+    signals = data.get("signals") if isinstance(data, dict) and isinstance(data.get("signals"), list) else []
+    item_of = {sid: item for item in result["items"] for sid in item["source_ids"]}
+    skip_of = {s["id"]: s["reason"] for s in result["skipped"]}
+    rows, seen = "", set()
+    for signal in signals:
+        sid = signal.get("id") if isinstance(signal, dict) else None
+        if sid is None or sid in seen:
+            continue  # listed under errors
+        seen.add(sid)
+        item = item_of.get(sid)
+        if item:
+            badge = '<span class="badge unverified">unverified</span> ' if item.get("unverified") else ""
+            outcome = f"Item: {esc(item.get('headline'))}", f"{badge}confidence {item['confidence']}"
+        else:
+            outcome = f"Skipped: {esc(skip_of.get(sid, ''))}", ""
+        rows += (f"<tr><td>{esc(sid)}</td><td>{esc(signal.get('competitor'))}</td><td>{esc(signal.get('type'))}</td>"
+                 f"<td>{outcome[0]}</td><td>{outcome[1]}</td></tr>")
+    errors = result["run"]["errors"]
+    summary = (f"<p class='meta'>{len(signals)} signals in the file → {len(result['items'])} items, "
+               f"{len(result['skipped'])} skipped, {len(errors)} errors. Nothing was saved.</p>")
+    download = (f"<p><a download='result.json' href='data:application/json;base64,"
+                f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a> · <a href='/test'>Test another file</a></p>")
+    parts = [summary, download, "<h2>What each input led to</h2>"]
+    parts.append(f"<table><tr><th>Id</th><th>Competitor</th><th>Type</th><th>Result</th><th></th></tr>{rows}</table>" if rows else "<p>No signals with an id.</p>")
+    if errors:
+        parts.append("<h2>Errors</h2><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
+    parts.append("<h2>Items</h2>" + ("".join(map(render_item, result["items"])) or "<p>No items.</p>"))
+    return page("Test result", "".join(parts))
 
 
 @app.get("/api/changes")

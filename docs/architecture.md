@@ -61,7 +61,7 @@ TEST:  cases.json ────────────────────�
 - **Current pricing** page (D12): one table per competitor, with source link and check time per row, and failed pages marked as failed.
 - **Check now** button.
 - **Run log** page: start time, pages fetched, errors, cost.
-- **Test upload** page: upload `cases.json`, download `result.json`. Same core as the command.
+- **Test upload** page: upload `cases.json`, see what each input id led to and the items, download `result.json`. Same core as the command; nothing is saved.
 
 ## Commands
 
