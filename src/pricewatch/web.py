@@ -228,12 +228,15 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     return JSONResponse(summary)
 
 
+TEST_INTRO = ("<p>Upload a cases.json to see what it leads to, from the same core as <code>./run</code>. "
+              "Rules, not AI, decide each result. Nothing is saved: the other tabs don't change.</p>"
+              "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
+              "<button>Run</button></form>")
+
+
 @app.get("/test", response_class=HTMLResponse)
 def test_form():
-    return page("Test upload", "<p>Upload a cases.json to see what it leads to, from the same core as <code>./run</code>. "
-                "Nothing is saved: the other tabs don't change.</p>"
-                "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
-                "<button>Run</button></form>")
+    return page("Test upload", TEST_INTRO)
 
 
 @app.post("/test")
@@ -252,11 +255,22 @@ async def test_upload(cases: UploadFile, format: str = None):
     return test_results(data, result, body)
 
 
+# Why a source got its confidence: the rule in core/trust.py, in words.
+SOURCE_RULES = {
+    "own_pricing_page": "From {c}'s own pricing page, so confidence 0.9.",
+    "own_site_other_page": "From {c}'s own site but not its pricing page, so confidence 0.6 and \"confirm on the pricing page\".",
+    "third_party": "From a third party, not {c}'s own site, so confidence 0.4 and labelled unverified.",
+    "sponsored_or_anonymous": "From a sponsored, ad, forum or anonymous source, so confidence 0.2 and labelled unverified.",
+}
+
+
 def test_results(data, result, body):
-    """The test result as a page: what each input id led to, then the items as cards, as on Changes."""
+    """The test result under the upload form: a summary, then one row per input id saying what it
+    led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
     signals = data.get("signals") if isinstance(data, dict) and isinstance(data.get("signals"), list) else []
     item_of = {sid: item for item in result["items"] for sid in item["source_ids"]}
     skip_of = {s["id"]: s["reason"] for s in result["skipped"]}
+    errors = result["run"]["errors"]
     rows, seen = "", set()
     for signal in signals:
         sid = signal.get("id") if isinstance(signal, dict) else None
@@ -265,23 +279,27 @@ def test_results(data, result, body):
         seen.add(sid)
         item = item_of.get(sid)
         if item:
-            badge = '<span class="badge unverified">unverified</span> ' if item.get("unverified") else ""
-            outcome = f"Item: {esc(item.get('headline'))}", f"{badge}confidence {item['confidence']}"
+            badge = ' <span class="badge unverified">unverified</span>' if item.get("unverified") else ""
+            outcome = f"<b>Item</b>{badge}<br>{esc(item.get('headline'))}"
+            why = [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]
         else:
-            outcome = f"Skipped: {esc(skip_of.get(sid, ''))}", ""
-        rows += (f"<tr><td>{esc(sid)}</td><td>{esc(signal.get('competitor'))}</td><td>{esc(signal.get('type'))}</td>"
-                 f"<td>{outcome[0]}</td><td>{outcome[1]}</td></tr>")
-    errors = result["run"]["errors"]
-    summary = (f"<p class='meta'>{len(signals)} signals in the file → {len(result['items'])} items, "
-               f"{len(result['skipped'])} skipped, {len(errors)} errors. Nothing was saved.</p>")
+            outcome, why = "<b>Skipped</b>", [skip_of.get(sid, "")]
+        if "<!--" in str(signal.get("text")):
+            why.append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
+        mentions = re.compile(rf"(?<![\w-]){re.escape(str(sid))}(?![\w])|item-{re.escape(str(sid))}\b")
+        why += [e for e in errors if mentions.search(e)]
+        rows += (f"<tr><td>{esc(sid)}</td><td>{esc(signal.get('competitor'))}<br><span class='meta'>{esc(signal.get('type'))}</span></td>"
+                 f"<td>{outcome}</td><td>{'<br>'.join(esc(w) for w in why if w)}</td></tr>")
+    summary = (f"<p><b>{len(signals)} signals in the file → {len(result['items'])} items, {len(result['skipped'])} skipped, "
+               f"{len(errors)} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
     download = (f"<p><a download='result.json' href='data:application/json;base64,"
-                f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a> · <a href='/test'>Test another file</a></p>")
-    parts = [summary, download, "<h2>What each input led to</h2>"]
-    parts.append(f"<table><tr><th>Id</th><th>Competitor</th><th>Type</th><th>Result</th><th></th></tr>{rows}</table>" if rows else "<p>No signals with an id.</p>")
+                f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a></p>")
+    parts = [TEST_INTRO, "<h2>Result</h2>", summary, download, "<h3>What each input led to, and why</h3>"]
+    parts.append(f"<table><tr><th>Id</th><th>Competitor</th><th>Result</th><th>Why</th></tr>{rows}</table>" if rows else "<p>No signals with an id.</p>")
     if errors:
-        parts.append("<h2>Errors</h2><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
-    parts.append("<h2>Items</h2>" + ("".join(map(render_item, result["items"])) or "<p>No items.</p>"))
-    return page("Test result", "".join(parts))
+        parts.append("<h3>Errors in the file</h3><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
+    parts.append("<h3>Items, as Maya would see them</h3>" + ("".join(map(render_item, result["items"])) or "<p>No items.</p>"))
+    return page("Test upload", "".join(parts))
 
 
 @app.get("/api/changes")
