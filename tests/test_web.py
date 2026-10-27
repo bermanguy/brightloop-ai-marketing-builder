@@ -1,3 +1,4 @@
+import re
 """The web app, on a SQLite store filled from the saved pages. No keys, no network."""
 
 import json
@@ -75,7 +76,9 @@ def test_test_upload_matches_the_run_command_byte_for_byte(client, tmp_path):
         out = tmp_path / "result.json"
         cli.main(["--input", cases, "--output", str(out)])
         response = client.post("/test?format=json", files={"cases": ("cases.json", open(cases, "rb").read())})
-        assert response.text == out.read_text(encoding="utf-8")
+        # Same bytes once the start time is set aside: the two runs can straddle a second.
+        same_time = lambda text: re.sub(r'"started_at": "[^"]*"', '"started_at": ""', text)
+        assert same_time(response.text) == same_time(out.read_text(encoding="utf-8"))
 
 
 def test_page_text_is_escaped(client):
