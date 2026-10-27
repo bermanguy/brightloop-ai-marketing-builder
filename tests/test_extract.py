@@ -111,3 +111,11 @@ def test_a_plan_with_an_invented_value_is_rejected():
     # Billing wording and what's included must sit in the quotes too.
     unbacked = dict(invented, price="$25", billing="billed annually", includes=["500 credits"])
     assert unquoted(unbacked, text) == ["500 credits", "billed annually"]
+
+
+def test_a_dropdown_without_a_plan_name_goes_to_the_plan_above_it():
+    from pricewatch.sources.extract import with_options
+    page = {"text": "Core\n$18 / month\nPro\n$90 / month\n$100 credits\n$90 / month\n$2,000 / month\nEnterprise\nCustom",
+            "dropdowns": [{"plan": None, "after_line": 5, "options": ["$90 / month", "$2,000 / month"]}]}
+    plans = [{"name": n, "quotes": [n]} for n in ("Core", "Pro", "Enterprise")]
+    assert [p.get("options") for p in with_options(plans, page)] == [None, ["$90 / month", "$2,000 / month"], None]
