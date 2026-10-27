@@ -82,7 +82,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -174,12 +174,15 @@ def summary_strip(summary, days, competitor, focus):
     kinds = [tile(c["change"], c["count"], "focus", c["change"], "small") for c in summary["by_change"]]
     companies = [] if competitor else [tile(c["competitor"], c["count"], "competitor", c["competitor"], "small")
                                        for c in summary["by_competitor"]]
-    rows = f"<div class='tiles'>{''.join(main)}</div>"
+    more = ""
     if kinds:
-        rows += f"<div class='tiles'><span class='group'>By kind</span>{''.join(kinds)}</div>"
+        more += f"<div class='tiles'><span class='group'>By kind</span>{''.join(kinds)}</div>"
     if companies:
-        rows += f"<div class='tiles'><span class='group'>By company</span>{''.join(companies)}</div>"
-    return f"<div class='strip'>{rows}</div>"
+        more += f"<div class='tiles'><span class='group'>By company</span>{''.join(companies)}</div>"
+    if more:  # the breakdowns are secondary: collapsed, unless one of them is the current filter
+        opened = " open" if focus not in (None, "", "verified", "unverified") else ""
+        more = f"<details class='more'{opened}><summary>Show more stats</summary>{more}</details>"
+    return f"<div class='strip'><div class='tiles'>{''.join(main)}</div>{more}</div>"
 
 
 def competitors_in(runs, snapshot):
