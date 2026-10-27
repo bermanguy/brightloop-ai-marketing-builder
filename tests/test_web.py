@@ -1,7 +1,7 @@
-import re
 """The web app, on a SQLite store filled from the saved pages. No keys, no network."""
 
 import json
+import re
 
 import pytest
 
