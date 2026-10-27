@@ -260,3 +260,25 @@ def test_api_runs_carries_the_same_details_as_the_run_log(client):
     assert details["found"].startswith("1 change on the pricing pages")
     assert details["decided"][0]["rule"].endswith("so confidence 0.9.") and details["decided"][0]["next_step"]
     assert any("couldn't read" in line for line in details["read"])
+
+
+def test_counters_count_the_cards_in_the_filter_and_each_one_shows_its_cards(client):
+    items = [
+        {"competitor": "Lovable", "unverified": False, "change": "price_up"},
+        {"competitor": "Lovable", "unverified": True, "change": None},
+        {"competitor": "Bolt", "unverified": False, "change": "options"},
+    ]
+    summary = web.summary_of(items)
+    assert (summary["total"], summary["verified"], summary["unverified"]) == (3, 2, 1)
+    assert summary["by_competitor"] == [{"competitor": "Lovable", "count": 2}, {"competitor": "Bolt", "count": 1}]
+    assert {c["change"] for c in summary["by_change"]} == {"price up", "new price options"}
+    assert web.focused(items, "unverified") == [items[1]] and web.focused(items, "price up") == [items[0]]
+    assert web.focused(items, "nonsense") == items
+
+
+def test_changes_page_and_api_show_the_counters(client):
+    page = client.get("/?days=all").text
+    assert "class='strip'" in page and "All changes <b>1</b>" in page and "price up <b>1</b>" in page
+    assert "focus=price%20up" in page
+    data = client.get("/api/changes?days=all&focus=unverified").json()
+    assert data["summary"]["total"] == 1 and data["items"] == []

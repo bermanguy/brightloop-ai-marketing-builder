@@ -47,6 +47,7 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 | --- | --- |
 | `headline` | One line saying what happened, e.g. "Lovable raised its Pro plan from $25 to $30 / month." In a live run it's written by rule for each kind of change (price up or down, contents, limits table, plan added or removed, which prices the page shows first); numbers in it come from the quote. An unverified claim's headline says where it came from. |
 | `steps` | `action` split into its next steps, one per sentence, for showing as bullets. Same text as `action`. |
+| `change` | The kind of change, when our comparison rules named it (`price_up`, `price_down`, `details`, `limits`, `added`, `removed`, `options`, …); otherwise null. |
 | `sources` | `[{url, quote}]`: where the claim came from and its visible text (HTML comments and tags removed). Every number in `action` and `why` appears in a quote, checked on every run. |
 | `competitor` | As given in the signal. |
 | `unverified` | `true` when the claim isn't from the competitor's own website. The action is then "Don't act yet". |
@@ -110,12 +111,12 @@ pip install -e ".[live,web]"
 uvicorn pricewatch.web:app        # http://localhost:8000
 ```
 
-- **Changes** (`/`): the items from recent runs, newest first, filtered by time range (last 7 days by default, 30 days or all time) and company, with action, why, confidence, the unverified label and source links.
+- **Changes** (`/`): the items from recent runs, newest first, filtered by time range (last 7 days by default, 30 days or all time) and company, with counters on top (all, verified, rumors, each kind of change, each company; D30) that each show the cards they count, with action, why, confidence, the unverified label and source links.
 - **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page (filter by company), with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
 - **Run log** (`/runs`): start time, what started it (schedule, manual Check now, backup schedule, API or command line; blank for runs from before 27 Oct), pages read or failed, changes found, errors and cost per run, plus the **Check now** button: anyone can press it, with no token, and it starts at most one run every 30 minutes (D29).
 - **Test upload** (`/test`): upload a cases.json and see what each input id led to (item or skip reason), any errors, and the items as cards, with result.json to download. Same core as `./run`; nothing is saved, so the other tabs don't change. `POST /test?format=json` returns the file directly.
 
-The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes?days=7|30|all&competitor=…` (items newest first, last 7 days by default, plus the last check, any page that failed and the list of competitors), `GET /api/pricing?competitor=…` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs` (each run with `details`: what it read, found and decided, as on the run log). They're read-only, and any site may read them (CORS allows GET only).
+The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes?days=7|30|all&competitor=…&focus=…` (items newest first, last 7 days by default, plus the last check, any page that failed, the list of competitors and a `summary` of counts), `GET /api/pricing?competitor=…` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs` (each run with `details`: what it read, found and decided, as on the run log). They're read-only, and any site may read them (CORS allows GET only).
 
 `POST /run` starts a live run for scripts (GitHub's backup schedule). It needs `RUN_TOKEN`, sent as `Authorization: Bearer …`. With no `RUN_TOKEN` set, runs are switched off, Check now included.
 
