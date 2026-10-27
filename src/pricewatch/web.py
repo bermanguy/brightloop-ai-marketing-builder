@@ -80,7 +80,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -153,7 +153,7 @@ def changes():
         last = runs[0]["run"]
         failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
         status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
-        body = f'<p class="meta">{status}</p>' + ("".join(map(render_item, items)) or "<p>No pricing changes found yet.</p>")
+        body = HOW_CHANGES + f'<p class="meta">{status}</p>' + ("".join(map(render_item, items)) or "<p>No pricing changes found yet.</p>")
     return page("What changed in competitors' pricing", body)
 
 
@@ -228,8 +228,23 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     return JSONResponse(summary)
 
 
-TEST_INTRO = ("<p>Upload a cases.json to see what it leads to, from the same core as <code>./run</code>. "
-              "Rules, not AI, decide each result. Nothing is saved: the other tabs don't change.</p>"
+# How confidence is set, the same for live runs and test uploads (core/trust.py).
+CONFIDENCE = ("<li><b>Confidence comes only from where a claim was seen</b>, never from guessing whether it's true: "
+              "the competitor's own pricing page 0.9; another page on their site 0.6; a third party 0.4, unverified; "
+              "a sponsored, ad, forum or anonymous source 0.2, unverified.</li>")
+
+HOW_CHANGES = ("<div class='how'><b>How this works</b><ul>"
+               "<li>Every 6 hours the app reads each competitor's pricing page and compares it with the last check. "
+               "Each difference becomes a card, quoted from the page.</li>"
+               "<li>It also looks for pricing rumors on Hacker News. Those cards are unverified and show what the "
+               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></div>")
+
+TEST_INTRO = ("<div class='how'><b>How this works</b><ul>"
+              "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
+              "<li>Each signal is a claim someone saw, already saying what changed. So the test doesn't compare with the "
+              "current pricing pages, and the same file always gives the same result.</li>" + CONFIDENCE +
+              "<li>Pricing signals become cards; ads and launches are skipped with a reason.</li>"
+              "<li>Nothing is saved: the other tabs don't change.</li></ul></div>"
               "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
               "<button>Run</button></form>")
 
