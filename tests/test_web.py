@@ -227,3 +227,21 @@ def test_filters_on_the_pages_and_the_api(client):
     pricing = client.get("/api/pricing?competitor=Lovable").json()["pages"]
     assert pricing and {p["competitor"] for p in pricing} == {"Lovable"}
     assert "Bolt" not in client.get("/pricing?competitor=Lovable").text.split("</form>", 1)[1]
+
+
+def test_check_now_needs_no_token_but_runs_at_most_every_30_minutes(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger))
+    # The fixture's last run is from 2026-10-25, long ago: the button runs, with no token.
+    response = client.post("/check", follow_redirects=False)
+    assert response.status_code == 303 and calls == ["manual"]
+    now = web.datetime.now(web.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    web.store().save_run({"items": [], "skipped": [], "run": {"started_at": now, "errors": [], "cost_usd": 0.0}})
+    again = client.post("/check?now=2030-01-01T00:00:00", follow_redirects=False)
+    assert again.status_code == 200 and "at most once every 30 minutes" in again.text and calls == ["manual"]
+    assert "name='token'" not in client.get("/runs").text
+
+
+def test_check_now_is_off_without_run_token(client, monkeypatch):
+    monkeypatch.delenv("RUN_TOKEN")
+    assert "switched off" in client.post("/check").text

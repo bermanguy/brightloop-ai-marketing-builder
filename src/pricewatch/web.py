@@ -5,8 +5,9 @@
 Plain server-rendered HTML, no front-end build. Every value shown comes from the
 store (snapshots and run results), written as it appears on the competitor's page.
 
-POST /run starts a live run. It needs RUN_TOKEN (as "Authorization: Bearer ..."
-from the schedule, or typed into the Check now form); without RUN_TOKEN set,
+POST /check is the Check now button: anyone may press it, but it starts at most one run
+every 30 minutes (D29). POST /run starts a live run for scripts, such as GitHub's backup
+schedule, and needs RUN_TOKEN as "Authorization: Bearer ..."; without RUN_TOKEN set,
 runs are switched off and the app only shows what's stored.
 
 The app schedules its own runs: with SCHEDULE_EVERY_HOURS set (6 on Render), a
@@ -229,10 +230,33 @@ def runs():
         errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
         rows += (f"<tr><td>{esc(run['started_at'])}</td><td>{esc(run.get('trigger') or '—')}</td><td>{esc(pages)}</td><td>{len(result['items'])}</td>"
                  f"<td>${run['cost_usd']:.4f}</td><td><ul>{errors}</ul></td></tr>")
-    form = ("<form method='post' action='/run' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
-            "<input type='password' name='token' placeholder='Run token' required> <button>Check now</button></form>")
+    form = ("<form method='post' action='/check' onsubmit=\"this.querySelector('button').textContent='Checking… about two minutes'\">"
+            f"<button>Check now</button> <span class='meta'>Anyone can start a check, at most once every {CHECK_NOW_EVERY_MIN} minutes.</span></form>")
     table = f"<table><tr><th>Started</th><th>Started by</th><th>Pages</th><th>Changes</th><th>Cost</th><th>Errors</th></tr>{rows}</table>"
     return page("Run log", form + (table if rows else "<p>No runs yet.</p>"))
+
+
+CHECK_NOW_EVERY_MIN = 30
+
+
+@app.post("/check", response_class=HTMLResponse)
+def check_now():
+    """The Check now button: no token, so reviewers can try it, but at most one run every
+    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29)."""
+    if not os.environ.get("RUN_TOKEN"):
+        return page("Check now", "<p>Runs are switched off on this server.</p>")
+    if not _running.acquire(blocking=False):
+        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+    try:
+        last = store().runs(1)
+        recent = (datetime.now(timezone.utc) - timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        if last and last[0]["run"]["started_at"] > recent:
+            return page("Check now", f"<p>The last check started at {esc(last[0]['run']['started_at'])}. Check now works at most once "
+                        f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
+        run_live(store(), trigger="manual")
+    finally:
+        _running.release()
+    return RedirectResponse("/", status_code=303)
 
 
 @app.post("/run")

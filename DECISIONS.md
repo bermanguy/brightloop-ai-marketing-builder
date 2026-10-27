@@ -295,6 +295,14 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D29 — Check now needs no token, at most one run every 30 minutes · 2026-10-27 · [Claude → Guy]
+
+**Decision.** Anyone can press Check now, without the run token, so the assignment's reviewers can try a live run. A run is refused if one started in the last 30 minutes. The token still protects `POST /run`, which GitHub's backup schedule uses.
+
+**Known limit (Claude).** At about $0.12 a run with the AI reader, the 30-minute limit caps the cost of Check now at about $6 a day.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
