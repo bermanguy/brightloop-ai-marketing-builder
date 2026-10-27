@@ -289,6 +289,12 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D28 — Test upload stays file-only · 2026-10-27 · [Claude → Guy]
+
+**Decision.** A test run judges each signal only on what's in the uploaded file, like `./run`. It doesn't compare with the app's latest pricing data, so the same file always gives the same result.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
