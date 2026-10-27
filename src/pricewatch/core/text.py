@@ -70,13 +70,13 @@ CHANGES = {
     ),
     "details": (
         "{c} changed what its {plan} includes, at the same price.",
-        f"{PUBLISHED} what {{c}}'s {{plan}} includes is now out of date: read the change below and update it. If {{c}} "
+        f"{PUBLISHED} what {{c}}'s {{plan}} includes is now out of date: read the change above and update it. If {{c}} "
         f"now gives less for the same price, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Prospects compare what each plan includes, not only the price.",
     ),
     "limits": (
         "{c} changed limits in its {plan}.",
-        f"{PUBLISHED} {{c}}'s limits is now out of date: read the change below and update it. If {{c}} now gives "
+        f"{PUBLISHED} {{c}}'s limits is now out of date: read the change above and update it. If {{c}} now gives "
         f"less, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Limits like tokens and requests are what prospects hit first on a trial, so they compare them.",
     ),
@@ -163,7 +163,7 @@ def unverified_text(competitor, source, quote, kind, page_check=None):
     if page_check:
         action = (
             f"Don't act yet. Compare the claim with what {competitor}'s own pricing page showed at this same check "
-            "(below), and act only on what the page shows. Don't repeat the claim in campaigns or to leadership."
+            "(above), and act only on what the page shows. Don't repeat the claim in campaigns or to leadership."
         )
     else:
         action = (

@@ -79,7 +79,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.85rem;color:#555} .failed{color:#a00} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -95,11 +95,14 @@ def page(title, body):
 def render_item(item):
     badge = '<span class="badge unverified">unverified</span> ' if item.get("unverified") else ""
     sources = "".join(f"<li>{link(s['url'])}: &ldquo;{esc(s['quote'])}&rdquo;</li>" for s in item["sources"])
+    # What changed (the quote, with its link) comes first, then why it matters, then what to do.
+    changed = "What's claimed" if item.get("unverified") else "What changed"
     return (
         f'<div class="item"><div class="meta">{esc(item.get("competitor"))} · seen {esc(item.get("seen_at"))} · '
         f'{badge}confidence {item["confidence"]}</div><h3>{esc(item.get("headline"))}</h3>'
-        f'<p><b>What to do:</b> {esc(item["action"])}</p><p class="why"><b>Why it matters:</b> {esc(item["why"])}</p>'
-        f"<ul class='sources'>{sources}</ul></div>"
+        f"<p class='label'>{changed}</p><ul class='sources'>{sources}</ul>"
+        f'<p class="why"><b>Why it matters:</b> {esc(item["why"])}</p>'
+        f'<p><b>Recommended next steps:</b> {esc(item["action"])}</p></div>'
     )
 
 
