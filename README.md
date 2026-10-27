@@ -46,6 +46,7 @@ Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output
 | Field | Meaning |
 | --- | --- |
 | `headline` | One line saying what happened, e.g. "Lovable raised its Pro plan from $25 to $30 / month." In a live run it's written by rule for each kind of change (price up or down, contents, limits table, plan added or removed, which prices the page shows first); numbers in it come from the quote. An unverified claim's headline says where it came from. |
+| `steps` | `action` split into its next steps, one per sentence, for showing as bullets. Same text as `action`. |
 | `sources` | `[{url, quote}]`: where the claim came from and its visible text (HTML comments and tags removed). Every number in `action` and `why` appears in a quote, checked on every run. |
 | `competitor` | As given in the signal. |
 | `unverified` | `true` when the claim isn't from the competitor's own website. The action is then "Don't act yet". |
@@ -120,7 +121,7 @@ The same data is available as JSON for a front end hosted elsewhere (the Base44 
 
 ## Deploy (Render + Neon)
 
-The app runs on Render's Starter plan (always awake, D22) from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. `.github/workflows/schedule.yml` wakes the app and starts a run every 6 hours. GitHub delays and sometimes drops scheduled runs, so it calls every hour and the app skips the call unless its last run is over 5.5 hours old.
+The app runs on Render's Starter plan (always awake, D22) from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. The app starts its own live run every 6 hours (`SCHEDULE_EVERY_HOURS=6`, set in the `Dockerfile`): a background thread checks every 5 minutes whether the last run is that old. `.github/workflows/schedule.yml` is a backup that calls every hour; the app skips the call unless its last run is over 5.5 hours old. It's only a backup because GitHub dropped most scheduled triggers on the first night (3 of 13 fired).
 
 1. Neon: create a project and copy its connection string.
 2. Render: New > Blueprint, pick this repo (`render.yaml`), and fill in `DATABASE_URL` (Neon), `ANTHROPIC_API_KEY` and `RUN_TOKEN` (any long random string).

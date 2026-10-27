@@ -142,3 +142,28 @@ def test_the_json_api_gives_the_same_data_as_the_pages(client):
 def test_the_json_api_is_read_only_from_other_sites(client):
     preflight = client.options("/run", headers={"Origin": "https://example.base44.app", "Access-Control-Request-Method": "POST"})
     assert preflight.status_code == 400 and "POST" not in preflight.headers.get("access-control-allow-methods", "")
+
+
+def test_the_app_starts_a_run_every_six_hours_by_itself(client, monkeypatch):
+    # The client's last run started at 2026-10-25T12:00:00Z.
+    from datetime import datetime, timezone
+    calls = []
+    monkeypatch.setattr(web, "run_live", lambda store: calls.append(store))
+    at = lambda text: datetime.fromisoformat(text).replace(tzinfo=timezone.utc)  # noqa: E731
+    assert web.run_if_due(6, at("2026-10-25T17:30:00")) == "not due" and calls == []
+    assert web.run_if_due(6, at("2026-10-25T17:56:00")) == "ran" and len(calls) == 1  # within 5 minutes counts
+    web._running.acquire()
+    try:
+        assert web.run_if_due(6, at("2026-10-25T18:30:00")) == "busy"
+    finally:
+        web._running.release()
+
+
+def test_a_scheduled_run_that_crashes_does_not_stop_the_schedule(client, monkeypatch):
+    def crash(store):
+        raise RuntimeError("browser died")
+    monkeypatch.setattr(web, "run_live", crash)
+    from datetime import datetime, timezone
+    assert web.run_if_due(6, datetime(2026, 10, 26, tzinfo=timezone.utc)) == "ran"
+    assert web._running.acquire(blocking=False)
+    web._running.release()

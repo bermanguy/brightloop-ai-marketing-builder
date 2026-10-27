@@ -135,12 +135,28 @@ def with_options(plans, page):
     """Add each plan's dropdown options (Lovable's credit ladder), as the page lists them.
 
     They're read from the page's own dropdown by the browser (fetch._open_dropdowns),
-    not by a reader, so they are page text by construction.
+    or from the page's <select> (fetch.selects), not by a reader, so they are page
+    text by construction.
+
+    A dropdown read from the server's HTML (fetch.selects) has no plan name, only
+    where it sits on the page: it belongs to the last plan whose name comes before it.
     """
-    dropdowns = {d["plan"]: d for d in page.get("dropdowns") or []}
-    for plan in plans:
-        if plan["name"] in dropdowns:
-            plan["options"] = dropdowns[plan["name"]]["options"]
+    lines = (page.get("text") or "").split("\n")
+
+    def last_before(plan, end):
+        """Where the plan's name (or its first quoted line) last appears before line `end`, or -1."""
+        names = {plan["name"], *plan["quotes"][:1]}
+        return max((i for i, line in enumerate(lines[:end]) if line in names), default=-1)
+
+    for dropdown in page.get("dropdowns") or []:
+        name = dropdown.get("plan")
+        if name is None and plans:
+            end = dropdown.get("after_line", 0)
+            nearest = max(plans, key=lambda plan: last_before(plan, end))
+            name = nearest["name"] if last_before(nearest, end) >= 0 else None
+        for plan in plans:
+            if plan["name"] == name:
+                plan["options"] = dropdown["options"]
     return plans
 
 

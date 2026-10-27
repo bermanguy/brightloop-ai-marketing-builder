@@ -51,6 +51,9 @@ def now_utc():
 class _TextExtractor(HTMLParser):
     """Visible text of a page, one block per line. Scripts, styles and hidden templates are dropped.
 
+    Each <option> of a dropdown is its own line, so a plan's tiers aren't run
+    together ("$90 / month$215 / month").
+
     Struck-through text (<del>, <s>, or a CSS "line-through" class as on Replit)
     is wrapped in ~~ so a crossed-out list price can't be read as the plan's
     price: v0's "$30 ~~$90~~", not "$30$90".
@@ -67,7 +70,7 @@ class _TextExtractor(HTMLParser):
     SKIP = {"script", "style", "noscript", "template", "svg", "head"}
     BLOCK = {
         "p", "div", "section", "article", "header", "footer", "main", "nav", "aside", "li", "ul", "ol",
-        "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "th", "table", "br", "hr", "button", "label",
+        "h1", "h2", "h3", "h4", "h5", "h6", "tr", "td", "th", "table", "br", "hr", "button", "label", "option",
     }
     BLOCK_CLASSES = {"block", "flex", "grid"}
 
@@ -77,8 +80,16 @@ class _TextExtractor(HTMLParser):
         self.skipping = 0
         self.struck_open = []  # tag names of open struck-through elements
         self.styled_open = []  # (tag, styled as a block) for each open inline element
+        self.selects = []  # each <select>'s options, and the page line it sits after
+        self.in_option = False
 
     def handle_starttag(self, tag, attrs):
+        if tag == "select":
+            done = "".join(self.parts).split("\n")
+            self.selects.append({"line": sum(1 for line in done if line.strip()), "options": []})
+        if tag == "option" and self.selects:
+            self.selects[-1]["options"].append("")
+            self.in_option = True
         if tag in self.SKIP:
             self.skipping += 1
         elif tag in self.BLOCK:
@@ -97,6 +108,8 @@ class _TextExtractor(HTMLParser):
             self.struck_open.append(tag + "/plain")  # same tag nested inside: not a closer
 
     def handle_endtag(self, tag):
+        if tag in ("option", "select"):
+            self.in_option = False
         if tag in self.SKIP:
             self.skipping = max(0, self.skipping - 1)
         elif tag in self.BLOCK:
@@ -134,6 +147,8 @@ class _TextExtractor(HTMLParser):
     def handle_data(self, data):
         if not self.skipping:
             self.parts.append(data)
+            if self.in_option:
+                self.selects[-1]["options"][-1] += data
 
 
 def visible_text(html):
@@ -141,6 +156,19 @@ def visible_text(html):
     parser.feed(html or "")
     lines = (" ".join(line.split()) for line in "".join(parser.parts).splitlines())
     return "\n".join(line for line in lines if line)
+
+
+def selects(html):
+    """The options of each <select> on a server-rendered page, as written, and the page line
+    they follow: Replit's Pro credit tiers ("$90 / month" … "$2,000 / month"), 2026-10-27."""
+    parser = _TextExtractor()
+    parser.feed(html or "")
+    found = []
+    for select in parser.selects:
+        options = [" ".join(o.split()) for o in select["options"]]
+        if any(options):
+            found.append({"plan": None, "after_line": select["line"], "options": [o for o in options if o]})
+    return found
 
 
 def check_page(status, text):
@@ -163,7 +191,8 @@ def _fetch_http(spec):
     import httpx
 
     response = httpx.get(spec["url"], headers={"User-Agent": USER_AGENT}, follow_redirects=True, timeout=TIMEOUT_S)
-    return {"status": response.status_code, "opens_on": None, "views": [{"view": None, "html": response.text, "dropdowns": []}]}
+    return {"status": response.status_code, "opens_on": None,
+            "views": [{"view": None, "html": response.text, "dropdowns": selects(response.text)}]}
 
 
 def _price_lines(html):

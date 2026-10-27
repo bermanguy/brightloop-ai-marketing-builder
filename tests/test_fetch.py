@@ -126,3 +126,13 @@ def test_a_struck_price_split_over_lines_is_closed_on_its_own_line():
 def test_css_line_through_counts_as_struck():
     html = '<p><span class="opacity-75 line-through">$20</span> $18 / month</p><p><del><span>$9</span>0</del></p>'
     assert fetch.visible_text(html).split("\n") == ["~~$20~~ $18 / month", "~~$90~~"]
+
+
+def test_a_dropdown_on_a_server_rendered_page_is_kept_as_written():
+    # Replit's Pro credit tiers, 2026-10-27: a hidden <select> beside the visible "$100 credits".
+    html = ('<div>Pro</div><div>~~$100~~ $90 / month</div><span>$100 credits</span>'
+            '<select><option value="" label=" "> </option><option value="100" selected>$90 / month</option>'
+            '<option value="2500">$2,000 / month</option></select><a>Upgrade to Pro</a>')
+    text = fetch.visible_text(html)
+    assert text.split("\n")[-4:] == ["$100 credits", "$90 / month", "$2,000 / month", "Upgrade to Pro"]
+    assert fetch.selects(html) == [{"plan": None, "after_line": 3, "options": ["$90 / month", "$2,000 / month"]}]
