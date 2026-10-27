@@ -116,6 +116,7 @@ def _pricing_item(sid, signal, default_tz, cta_wanted, errors):
         "competitor": competitor,
         "unverified": unverified,
         "source_kind": kind,
+        "change": signal.get("change") if known else None,  # the kind of change, when our rules named it
         "sources": sources,
         "seen_at": seen_at,
     }

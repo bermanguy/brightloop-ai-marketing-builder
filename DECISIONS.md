@@ -303,6 +303,14 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D30 — Counters above the Changes feed; trends later · 2026-10-27 · [Claude → Guy]
+
+**Decision.** The Changes page shows counters for the cards in the selected time range and company: all, verified, unverified rumors, each kind of change and each company. Each counter is a link that shows the cards it counts. They are computed by rules on the server (`summary` in `/api/changes`), not by AI. Trends and anomalies are a next step, with MCP (D27), once there is enough history.
+
+**Note (Claude).** The counters are counts of our own cards, not figures about competitors, and each one leads to the cards and sources behind it.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].

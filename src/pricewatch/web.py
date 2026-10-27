@@ -28,6 +28,8 @@ import json
 import os
 import re
 import threading
+from collections import Counter
+from urllib.parse import quote
 from contextlib import asynccontextmanager
 import time
 from datetime import datetime, timedelta, timezone
@@ -80,7 +82,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -124,6 +126,63 @@ def changes_in(runs, days="7", competitor=None, now=None):
         runs = [r for r in runs if r["run"]["started_at"] >= since]
     items = recent_items(runs)
     return [i for i in items if i.get("competitor") == competitor] if competitor else items
+
+
+# How each kind of change is counted in the summary strip.
+CHANGE_LABELS = {"price_up": "price up", "price_down": "price down", "price": "price changed", "details": "plan contents",
+                 "limits": "limits", "added": "plan added", "removed": "plan removed", "options": "new price options",
+                 "opens": "billing view", "view": "billing view"}
+
+
+def summary_of(items):
+    """Counts of the cards in the current filter: rules, not AI (D30). Each count is a filter of
+    those same cards, so every number shown traces back to cards and their sources."""
+    count = lambda pairs: sorted(Counter(pairs).items(), key=lambda kv: (-kv[1], str(kv[0]).lower()))  # noqa: E731
+    return {
+        "total": len(items),
+        "verified": sum(1 for i in items if not i.get("unverified")),
+        "unverified": sum(1 for i in items if i.get("unverified")),
+        "by_competitor": [{"competitor": c, "count": n} for c, n in count(i.get("competitor") for i in items)],
+        "by_change": [{"change": c, "count": n} for c, n in count(CHANGE_LABELS.get(i.get("change"), "other")
+                                                                   for i in items if not i.get("unverified"))],
+    }
+
+
+def focused(items, focus=None):
+    """The cards behind one counter: "verified", "unverified", or a kind of change ("price up")."""
+    if focus == "verified":
+        return [i for i in items if not i.get("unverified")]
+    if focus == "unverified":
+        return [i for i in items if i.get("unverified")]
+    if focus in set(CHANGE_LABELS.values()) | {"other"}:
+        return [i for i in items if not i.get("unverified") and CHANGE_LABELS.get(i.get("change"), "other") == focus]
+    return items
+
+
+def summary_strip(summary, days, competitor, focus):
+    """The counters above the feed, as stat tiles; each one is a link that shows the cards it counts."""
+    def tile(text, n, key=None, value=None, size="big"):
+        query = {"days": days, "competitor": competitor or "", "focus": ""}
+        if key:
+            query[key] = value
+        on = not focus if key is None else (focus if key == "focus" else competitor) == value
+        href = "/?" + "&".join(f"{k}={quote(str(v))}" for k, v in query.items() if v)
+        return (f"<a class='tile {size}{' on' if on else ''}' href='{esc(href)}'>"
+                f"<span class='n'>{n}</span><span class='t'>{esc(text)}</span></a>")
+    main = [tile("All changes", summary["total"]), tile("Verified", summary["verified"], "focus", "verified"),
+            tile("Unverified rumors", summary["unverified"], "focus", "unverified")]
+    kinds = [tile(c["change"], c["count"], "focus", c["change"], "small") for c in summary["by_change"]]
+    companies = [] if competitor else [tile(c["competitor"], c["count"], "competitor", c["competitor"], "small")
+                                       for c in summary["by_competitor"]]
+    more = ""
+    if kinds:
+        more += f"<div class='tiles'><span class='group'>By kind</span>{''.join(kinds)}</div>"
+    if companies:
+        more += f"<div class='tiles'><span class='group'>By company</span>{''.join(companies)}</div>"
+    if more:  # the breakdowns are secondary: collapsed, unless one of them is the current filter
+        opened = " open" if focus not in (None, "", "verified", "unverified") else ""
+        more = f"<details class='more'{opened}><summary>Show more stats</summary>{more}</details>"
+    return f"<div class='strip'><div class='tiles'>{''.join(main)}</div>{more}</div>"
 
 
 def competitors_in(runs, snapshot):
@@ -171,18 +230,20 @@ def _schedule(every_hours):
 
 
 @app.get("/", response_class=HTMLResponse)
-def changes(days: str = "7", competitor: str = None):
+def changes(days: str = "7", competitor: str = None, focus: str = None):
     days = days if days in RANGES else "7"
     runs = store().runs()
     if not runs:
         return page("What changed in competitors' pricing", "<p>No runs yet.</p>")
-    items = changes_in(runs, days, competitor)
+    in_filter = changes_in(runs, days, competitor)
+    items = focused(in_filter, focus)
     last = runs[0]["run"]
     failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
     status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
     shown = f"{len(items)} change{'s' if len(items) != 1 else ''} · {RANGES[days].lower()} · {esc(competitor or 'all companies')}"
     empty = "<p>No pricing changes for this filter. Try a longer time range.</p>"
     body = (HOW_CHANGES + filter_form("/", competitors_in(runs, (store().snapshots(1) or [None])[0]), competitor, days)
+            + summary_strip(summary_of(in_filter), days, competitor, focus)
             + f'<p class="meta">{status} · {shown}</p>' + ("".join(map(render_item, items)) or empty))
     return page("What changed in competitors' pricing", body)
 
@@ -418,15 +479,17 @@ def test_results(data, result, body):
 
 
 @app.get("/api/changes")
-def api_changes(days: str = "7", competitor: str = None):
-    """?days=7|30|all (default 7) and ?competitor=Lovable, as on the Changes page."""
+def api_changes(days: str = "7", competitor: str = None, focus: str = None):
+    """?days=7|30|all (default 7), ?competitor=Lovable and ?focus=verified|unverified|<kind of change>,
+    as on the Changes page. `summary` counts the cards in the time range and company, before focus."""
     runs = store().runs()
     last = runs[0]["run"] if runs else None
     return {
         "last_check": last["started_at"] if last else None,
         "failed_pages": [label(p) for p in last.get("pages", []) if not p["ok"]] if last else [],
         "competitors": competitors_in(runs, (store().snapshots(1) or [None])[0]),
-        "items": changes_in(runs, days, competitor),
+        "summary": summary_of(changes_in(runs, days, competitor)),
+        "items": focused(changes_in(runs, days, competitor), focus),
     }
 
 
