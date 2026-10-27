@@ -278,7 +278,8 @@ def test_counters_count_the_cards_in_the_filter_and_each_one_shows_its_cards(cli
 
 def test_changes_page_and_api_show_the_counters(client):
     page = client.get("/?days=all").text
-    assert "class='strip'" in page and "All changes <b>1</b>" in page and "price up <b>1</b>" in page
+    assert "class='strip'" in page and "<span class='n'>1</span><span class='t'>All changes</span>" in page
+    assert "<span class='t'>price up</span>" in page
     assert "focus=price%20up" in page
     data = client.get("/api/changes?days=all&focus=unverified").json()
     assert data["summary"]["total"] == 1 and data["items"] == []
