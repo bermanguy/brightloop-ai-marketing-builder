@@ -221,33 +221,44 @@ def pricing(competitor: str = None):
     return page("Current pricing", note + "".join(parts))
 
 
-def run_details(result):
-    """What a run read, found and decided, in a few lines: shown when its row is expanded.
+READERS = {"ai": "read with AI, every price checked against the page text", "plain": "read with the plain reader"}
+
+
+def run_summary(result):
+    """What a run read, found and decided, as data: the run log's Details and /api/runs share it.
     Everything comes from the saved run; the reasons are the rules in core/trust.py, in words."""
     run, items = result["run"], result["items"]
-    readers = {"ai": "read with AI, every price checked against the page text", "plain": "read with the plain reader"}
-    pages = []
-    for p in run.get("pages", []):
-        if not p["ok"]:
-            pages.append(f"<li>{esc(label(p))}: <span class='failed'>couldn't read</span> (see errors); not compared.</li>")
-            continue
-        pages.append(f"<li>{esc(label(p))}: {p.get('plans', 0)} plans, {p.get('tables', 0)} tables, "
-                     f"{esc(readers.get(p.get('reader'), 'read'))}.</li>")
-    first = "".join(f"<li>{esc(n)}</li>" for n in run.get("notes", []))
     rumors = sum(1 for i in items if i.get("unverified"))
-    decisions = "".join(
-        f"<li><b>{esc(i.get('headline'))}</b><br><span class='meta'>{esc(SOURCE_RULES.get(i.get('source_kind'), '').format(c=i.get('competitor')))}"
-        f" Next step: {esc((i.get('steps') or [i['action']])[0])}</span></li>" for i in items)
-    skipped = "".join(f"<li>{esc(s['id'])}: {esc(s['reason'])}</li>" for s in result.get("skipped", []))
-    errors = "".join(f"<li>{esc(e)}</li>" for e in run["errors"])
+    return {
+        "read": [f"{label(p)}: couldn't read (see errors); not compared." if not p["ok"] else
+                 f"{label(p)}: {p.get('plans', 0)} plans, {p.get('tables', 0)} tables, {READERS.get(p.get('reader'), 'read')}."
+                 for p in run.get("pages", [])],
+        "compared": "Each page was compared with its last good reading.",
+        "notes": run.get("notes", []),
+        "found": (f"{len(items) - rumors} change{'s' if len(items) - rumors != 1 else ''} on the pricing pages and "
+                  f"{rumors} pricing rumor{'s' if rumors != 1 else ''} elsewhere."),
+        "decided": [{"headline": i.get("headline"), "competitor": i.get("competitor"), "confidence": i["confidence"],
+                     "unverified": bool(i.get("unverified")),
+                     "rule": SOURCE_RULES.get(i.get("source_kind"), "").format(c=i.get("competitor")),
+                     "next_step": (i.get("steps") or [i["action"]])[0]} for i in items],
+        "skipped": [f"{s['id']}: {s['reason']}" for s in result.get("skipped", [])],
+        "errors": run["errors"],
+    }
+
+
+def run_details(result):
+    """The run's summary, collapsed under its row in the run log."""
+    s = run_summary(result)
+    li = lambda lines: "".join(f"<li>{esc(line)}</li>" for line in lines)  # noqa: E731
+    decisions = "".join(f"<li><b>{esc(d['headline'])}</b><br><span class='meta'>{esc(d['rule'])} Next step: {esc(d['next_step'])}</span></li>"
+                        for d in s["decided"])
     parts = [
-        f"<p><b>Read.</b></p><ul>{''.join(pages) or '<li>No pages recorded for this run.</li>'}</ul>",
-        f"<p><b>Compared</b> each page with its last good reading.</p>" + (f"<ul>{first}</ul>" if first else ""),
-        f"<p><b>Found</b> {len(items) - rumors} change{'s' if len(items) - rumors != 1 else ''} on the pricing pages and "
-        f"{rumors} pricing rumor{'s' if rumors != 1 else ''} elsewhere.</p>",
+        f"<p><b>Read.</b></p><ul>{li(s['read']) or '<li>No pages recorded for this run.</li>'}</ul>",
+        f"<p><b>Compared.</b> {esc(s['compared'])}</p>" + (f"<ul>{li(s['notes'])}</ul>" if s["notes"] else ""),
+        f"<p><b>Found</b> {esc(s['found'])}</p>",
         f"<p><b>Decided.</b></p><ul>{decisions}</ul>" if decisions else "",
-        f"<p><b>Skipped.</b></p><ul>{skipped}</ul>" if skipped else "",
-        f"<p><b>Errors.</b></p><ul>{errors}</ul>" if errors else "",
+        f"<p><b>Skipped.</b></p><ul>{li(s['skipped'])}</ul>" if s["skipped"] else "",
+        f"<p><b>Errors.</b></p><ul>{li(s['errors'])}</ul>" if s["errors"] else "",
     ]
     return f"<details><summary>Details</summary><div class='how'>{''.join(parts)}</div></details>"
 
@@ -433,7 +444,8 @@ def api_pricing(competitor: str = None):
 def api_runs():
     return [
         {"started_at": r["run"]["started_at"], "trigger": r["run"].get("trigger"), "changes": len(r["items"]), "cost_usd": r["run"]["cost_usd"],
-         "errors": r["run"]["errors"], "pages": [{"label": label(p), "ok": p["ok"]} for p in r["run"].get("pages", [])]}
+         "errors": r["run"]["errors"], "pages": [{"label": label(p), "ok": p["ok"]} for p in r["run"].get("pages", [])],
+         "details": run_summary(r)}
         for r in store().runs(100)
     ]
 
