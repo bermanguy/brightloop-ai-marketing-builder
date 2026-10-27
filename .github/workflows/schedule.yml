@@ -1,9 +1,10 @@
-name: Live run every 6 hours
+name: Live run every 6 hours (backup)
 
 on:
   schedule:
-    # Every hour: GitHub delays and sometimes drops scheduled runs. The app
-    # skips the call unless its last run is over 5.5 hours old, so runs stay 6 hours apart.
+    # A backup: the app starts its own run every 6 hours (SCHEDULE_EVERY_HOURS).
+    # GitHub drops many scheduled triggers (3 of 13 fired on the first night); when
+    # one fires, the app skips it unless its last run is over 5.5 hours old.
     - cron: "17 * * * *"
   workflow_dispatch:
 

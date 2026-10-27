@@ -9,9 +9,11 @@ POST /run starts a live run. It needs RUN_TOKEN (as "Authorization: Bearer ..."
 from the schedule, or typed into the Check now form); without RUN_TOKEN set,
 runs are switched off and the app only shows what's stored.
 
-GitHub delays and sometimes drops scheduled workflows, so the schedule calls
-every hour with ?unless_ran_within_hours=5.5 and the app keeps the 6-hour pace:
-a dropped call costs an hour, not six.
+The app schedules its own runs: with SCHEDULE_EVERY_HOURS set (6 on Render), a
+background thread starts a run whenever the last one is that old, checking
+every few minutes. It's reliable because the app is always awake (D22). GitHub's
+hourly workflow stays as a backup; it dropped most of its triggers on the first
+night (3 of 13 fired), which is why the app now keeps time itself.
 
 /api/changes, /api/pricing and /api/runs give the same data as JSON, read-only,
 for a front end hosted elsewhere (the Base44 app). Any site may read them: they
@@ -24,6 +26,8 @@ import json
 import os
 import re
 import threading
+from contextlib import asynccontextmanager
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Form, Header, UploadFile
@@ -35,11 +39,20 @@ from .live import run_live
 from .sources.fetch import label
 from .store import Store
 
-app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None)
+@asynccontextmanager
+async def lifespan(app):
+    every = os.environ.get("SCHEDULE_EVERY_HOURS")
+    if every:
+        threading.Thread(target=_schedule, args=(float(every),), daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
 _store = None
 _running = threading.Lock()
 RECENT_RUNS = 30
+CHECK_EVERY_S = 300
 
 
 def store():
@@ -95,6 +108,34 @@ def recent_items(runs):
 
 
 PAGE_FIELDS = ("competitor", "view", "url", "fetched_at", "ok", "error", "opens_on", "plans", "tables")
+
+
+def run_if_due(every_hours, now=None):
+    """Start a live run if the last one started at least every_hours ago (or there's none).
+
+    Returns what happened: "ran", "not due" or "busy" (a run is already going).
+    A run that crashes is logged and the next check tries again.
+    """
+    now = now or datetime.now(timezone.utc)
+    last = store().runs(1)
+    due = (now - timedelta(hours=every_hours, minutes=-5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if last and last[0]["run"]["started_at"] > due:
+        return "not due"
+    if not _running.acquire(blocking=False):
+        return "busy"
+    try:
+        run_live(store())
+    except Exception as exc:  # never kill the scheduler; the run log shows the gap
+        print(f"scheduled run failed: {exc.__class__.__name__}: {exc}", flush=True)
+    finally:
+        _running.release()
+    return "ran"
+
+
+def _schedule(every_hours):
+    while True:
+        run_if_due(every_hours)
+        time.sleep(CHECK_EVERY_S)
 
 
 @app.get("/", response_class=HTMLResponse)
