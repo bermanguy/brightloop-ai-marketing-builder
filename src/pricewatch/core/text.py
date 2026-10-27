@@ -74,6 +74,12 @@ CHANGES = {
         f"now gives less for the same price, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Prospects compare what each plan includes, not only the price.",
     ),
+    "options": (
+        "{c} added price options to its {plan}: {now}.",
+        f"{PUBLISHED} the price of {{c}}'s {{plan}} (comparison pages, ads, sales material) now needs to show that "
+        f"the price depends on the option chosen: update it. Then {DECIDE} whether this changes how we compare with {{c}}.",
+        "The same plan now has a range of prices, so a single quoted price for it can mislead prospects comparing plans.",
+    ),
     "limits": (
         "{c} changed limits in its {plan}.",
         f"{PUBLISHED} {{c}}'s limits is now out of date: read the change above and update it. If {{c}} now gives "

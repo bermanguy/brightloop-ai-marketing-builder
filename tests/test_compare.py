@@ -324,3 +324,16 @@ def test_a_plan_that_changed_differently_in_each_view_stays_two_cards():
     _raise(after["Lovable (Monthly)"], "Pro", "$25", "$30")
     _raise(after["Lovable (Yearly)"], "Pro", "$21", "$19")
     assert sorted(s["change"] for s in compare.compare(before, after)) == ["price_down", "price_up"]
+
+
+def test_a_plan_that_gains_a_dropdown_is_one_options_change_listing_every_option(tmp_path):
+    before, after = views(), views("2026-10-27T02:17:00Z")
+    plan(before["Replit"], "Pro").pop("options", None)
+    tiers = ["$90 / month", "$215 / month", "$425 / month", "$825 / month", "$2,000 / month"]
+    plan(after["Replit"], "Pro")["options"] = tiers
+    [signal] = compare.compare(before, after)
+    assert signal["change"] == "options" and signal["id"].startswith("live-replit-pro-options-")
+    from pricewatch.core import process
+    [item] = process({"signals": [signal]})["items"]
+    assert item["headline"] == "Replit added price options to its Pro plan: " + "; ".join(tiers) + "."
+    assert "depends on the option chosen" in item["action"] and item["confidence"] == 0.9
