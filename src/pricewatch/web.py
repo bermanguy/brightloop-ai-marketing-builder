@@ -51,8 +51,8 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Brightloop pricing watch", docs_url=None, redoc_url=None, lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
+app = FastAPI(title="Brightloop Pricing Watch", docs_url=None, redoc_url=None, lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"])
 _store = None
 _running = threading.Lock()
 CHECK_EVERY_S = 300
@@ -80,18 +80,37 @@ def link(url):
 
 STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
-nav a{margin-right:16px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
+nav a{margin-right:16px} .brand{margin-right:24px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .fresh{float:right;font-size:.88rem;color:#555} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#16a34a} .dot.old{background:#d97706} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
 
+FRESH_HOURS = 7  # the schedule runs every 6 hours, plus some slack
+
+
+def freshness(now=None):
+    """'Last checked 2h ago' for the top bar: green when recent, amber when a scheduled run looks missed."""
+    try:
+        last = store().runs(1)
+    except Exception:  # the page still renders if the store can't be read
+        return ""
+    if not last:
+        return '<span class="fresh">No checks yet</span>'
+    started = datetime.strptime(last[0]["run"]["started_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    minutes = max(0, int(((now or datetime.now(timezone.utc)) - started).total_seconds() // 60))
+    ago = f"{minutes} min ago" if minutes < 60 else f"{minutes // 60}h ago" if minutes < 48 * 60 else f"{minutes // 1440} days ago"
+    old = minutes >= FRESH_HOURS * 60
+    return (f'<span class="fresh" title="{esc(last[0]["run"]["started_at"])}"><span class="dot{" old" if old else ""}"></span>'
+            f'Last checked {ago}{" · may be out of date" if old else ""}</span>')
+
+
 def page(title, body):
-    nav = '<nav><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/test">Test upload</a></nav>'
+    nav = f'<nav>{freshness()}<b class="brand">Brightloop Pricing Watch</b><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/test">Test upload</a></nav>'
     return HTMLResponse(
         f"<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
-        f"<title>{esc(title)} · Pricing watch</title><style>{STYLE}</style></head><body>{nav}<h1>{esc(title)}</h1>{body}</body></html>"
+        f"<title>{esc(title)} · Brightloop Pricing Watch</title><style>{STYLE}</style></head><body>{nav}<h1>{esc(title)}</h1>{body}</body></html>"
     )
 
 
@@ -239,12 +258,12 @@ def changes(days: str = "7", competitor: str = None, focus: str = None):
     items = focused(in_filter, focus)
     last = runs[0]["run"]
     failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
-    status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
+    status = f'<span class="failed">couldn\'t read: {esc(", ".join(failed))}</span> · ' if failed else ""
     shown = f"{len(items)} change{'s' if len(items) != 1 else ''} · {RANGES[days].lower()} · {esc(competitor or 'all companies')}"
     empty = "<p>No pricing changes for this filter. Try a longer time range.</p>"
     body = (HOW_CHANGES + filter_form("/", competitors_in(runs, (store().snapshots(1) or [None])[0]), competitor, days)
             + summary_strip(summary_of(in_filter), days, competitor, focus)
-            + f'<p class="meta">{status} · {shown}</p>' + ("".join(map(render_item, items)) or empty))
+            + f'<p class="meta">{status}{shown}</p>' + ("".join(map(render_item, items)) or empty))
     return page("What changed in competitors' pricing", body)
 
 
@@ -343,24 +362,75 @@ def runs():
 CHECK_NOW_EVERY_MIN = 30
 
 
-@app.post("/check", response_class=HTMLResponse)
-def check_now():
-    """The Check now button: no token, so reviewers can try it, but at most one run every
-    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29)."""
+def check(background=False):
+    """Check now, for the page and the API: no token, so reviewers can try it, but at most one run every
+    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29).
+
+    Returns (status, last check's started_at): "off", "busy", "too soon", "started" (background) or "done".
+    """
     if not os.environ.get("RUN_TOKEN"):
-        return page("Check now", "<p>Runs are switched off on this server.</p>")
+        return "off", None
     if not _running.acquire(blocking=False):
-        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+        return "busy", None
     try:
         last = store().runs(1)
         recent = (datetime.now(timezone.utc) - timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
         if last and last[0]["run"]["started_at"] > recent:
-            return page("Check now", f"<p>The last check started at {esc(last[0]['run']['started_at'])}. Check now works at most once "
-                        f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
+            _running.release()
+            return "too soon", last[0]["run"]["started_at"]
+    except Exception:
+        _running.release()
+        raise
+    if background:  # answer the API at once; the run takes about two minutes
+        threading.Thread(target=_check_in_background, daemon=True).start()
+        return "started", None
+    try:
         run_live(store(), trigger="manual")
     finally:
         _running.release()
+    return "done", None
+
+
+def _check_in_background():
+    try:
+        run_live(store(), trigger="manual")
+    except Exception as exc:  # the run log shows the gap
+        print(f"check now failed: {exc.__class__.__name__}: {exc}", flush=True)
+    finally:
+        _running.release()
+
+
+@app.post("/check", response_class=HTMLResponse)
+def check_now():
+    status, last = check()
+    if status == "off":
+        return page("Check now", "<p>Runs are switched off on this server.</p>")
+    if status == "busy":
+        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+    if status == "too soon":
+        return page("Check now", f"<p>The last check started at {esc(last)}. Check now works at most once "
+                    f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
     return RedirectResponse("/", status_code=303)
+
+
+CHECK_ANSWERS = {
+    "started": (202, "Checking the four pricing pages. It takes about two minutes; the new run then appears in /api/runs."),
+    "busy": (409, "A check is already running. It takes about two minutes."),
+    "too soon": (429, f"Check now works at most once every {CHECK_NOW_EVERY_MIN} minutes."),
+    "off": (503, "Runs are switched off on this server."),
+}
+
+
+@app.post("/api/check")
+def api_check():
+    """Check now for the Base44 front end: starts a run and answers at once."""
+    status, last = check(background=True)
+    code, message = CHECK_ANSWERS[status]
+    answer = {"status": status, "message": message, "last_check": last}
+    if last:
+        answer["next_allowed_at"] = (datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ")
+                                     + timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return JSONResponse(answer, status_code=code)
 
 
 @app.post("/run")
@@ -394,18 +464,18 @@ CONFIDENCE = ("<li><b>Confidence comes only from where a claim was seen</b>, nev
               "the competitor's own pricing page 0.9; another page on their site 0.6; a third party 0.4, unverified; "
               "a sponsored, ad, forum or anonymous source 0.2, unverified.</li>")
 
-HOW_CHANGES = ("<div class='how'><b>How this works</b><ul>"
+HOW_CHANGES = ("<details class='how'><summary><b>How this works</b></summary><ul>"
                "<li>Every 6 hours the app reads each competitor's pricing page and compares it with the last check. "
                "Each difference becomes a card, quoted from the page.</li>"
                "<li>It also looks for pricing rumors on Hacker News. Those cards are unverified and show what the "
-               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></div>")
+               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></details>")
 
-TEST_INTRO = ("<div class='how'><b>How this works</b><ul>"
+TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>"
               "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
               "<li>Each signal is a claim someone saw, already saying what changed. So the test doesn't compare with the "
               "current pricing pages, and the same file always gives the same result.</li>" + CONFIDENCE +
               "<li>Pricing signals become cards; ads and launches are skipped with a reason.</li>"
-              "<li>Nothing is saved: the other tabs don't change.</li></ul></div>"
+              "<li>Nothing is saved: the other tabs don't change.</li></ul></details>"
               "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
               "<button>Run</button></form>")
 
@@ -415,8 +485,8 @@ def test_form():
     return page("Test upload", TEST_INTRO)
 
 
-@app.post("/test")
-async def test_upload(cases: UploadFile, format: str = None):
+async def run_upload(cases):
+    """Run an uploaded cases file through the core, as ./run does. Returns (input, result)."""
     try:
         data = json.loads(await cases.read())
         error = None
@@ -425,6 +495,12 @@ async def test_upload(cases: UploadFile, format: str = None):
     result = process(data)
     if error:
         result["run"]["errors"].insert(0, error)
+    return data, result
+
+
+@app.post("/test")
+async def test_upload(cases: UploadFile, format: str = None):
+    data, result = await run_upload(cases)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if format == "json":
         return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
@@ -440,14 +516,12 @@ SOURCE_RULES = {
 }
 
 
-def test_results(data, result, body):
-    """The test result under the upload form: a summary, then one row per input id saying what it
-    led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
+def test_rows(data, result):
+    """One row per input id: what it led to (an item or a skip) and why, by the rules."""
     signals = data.get("signals") if isinstance(data, dict) and isinstance(data.get("signals"), list) else []
     item_of = {sid: item for item in result["items"] for sid in item["source_ids"]}
     skip_of = {s["id"]: s["reason"] for s in result["skipped"]}
-    errors = result["run"]["errors"]
-    rows, seen = "", set()
+    rows, seen = [], set()
     for signal in signals:
         sid = signal.get("id") if isinstance(signal, dict) else None
         if sid is None or sid in seen:
@@ -455,19 +529,33 @@ def test_results(data, result, body):
         seen.add(sid)
         item = item_of.get(sid)
         if item:
-            badge = ' <span class="badge unverified">unverified</span>' if item.get("unverified") else ""
-            outcome = f"<b>Item</b>{badge}<br>{esc(item.get('headline'))}"
-            why = [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]
+            row = {"result": "item", "unverified": bool(item.get("unverified")), "headline": item.get("headline"),
+                   "why": [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]}
         else:
-            outcome, why = "<b>Skipped</b>", [skip_of.get(sid, "")]
+            row = {"result": "skipped", "unverified": False, "headline": None, "why": [skip_of.get(sid, "")]}
         if "<!--" in str(signal.get("text")):
-            why.append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
+            row["why"].append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
         mentions = re.compile(rf"(?<![\w-]){re.escape(str(sid))}(?![\w])|item-{re.escape(str(sid))}\b")
-        why += [e for e in errors if mentions.search(e)]
-        rows += (f"<tr><td>{esc(sid)}</td><td>{esc(signal.get('competitor'))}<br><span class='meta'>{esc(signal.get('type'))}</span></td>"
-                 f"<td>{outcome}</td><td>{'<br>'.join(esc(w) for w in why if w)}</td></tr>")
-    summary = (f"<p><b>{len(signals)} signals in the file → {len(result['items'])} items, {len(result['skipped'])} skipped, "
-               f"{len(errors)} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
+        row["why"] = [w for w in row["why"] + [e for e in result["run"]["errors"] if mentions.search(e)] if w]
+        rows.append({"id": sid, "competitor": signal.get("competitor"), "type": signal.get("type"), **row})
+    summary = {"signals": len(signals), "items": len(result["items"]), "skipped": len(result["skipped"]),
+               "errors": len(result["run"]["errors"])}
+    return summary, rows
+
+
+def test_results(data, result, body):
+    """The test result under the upload form: a summary, then one row per input id saying what it
+    led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
+    counts, table = test_rows(data, result)
+    errors = result["run"]["errors"]
+    rows = ""
+    for r in table:
+        badge = ' <span class="badge unverified">unverified</span>' if r["unverified"] else ""
+        outcome = f"<b>Item</b>{badge}<br>{esc(r['headline'])}" if r["result"] == "item" else "<b>Skipped</b>"
+        rows += (f"<tr><td>{esc(r['id'])}</td><td>{esc(r['competitor'])}<br><span class='meta'>{esc(r['type'])}</span></td>"
+                 f"<td>{outcome}</td><td>{'<br>'.join(esc(w) for w in r['why'])}</td></tr>")
+    summary = (f"<p><b>{counts['signals']} signals in the file → {counts['items']} items, {counts['skipped']} skipped, "
+               f"{counts['errors']} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
     download = (f"<p><a download='result.json' href='data:application/json;base64,"
                 f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a></p>")
     parts = [TEST_INTRO, "<h2>Result</h2>", summary, download, "<h3>What each input led to, and why</h3>"]
@@ -476,6 +564,15 @@ def test_results(data, result, body):
         parts.append("<h3>Errors in the file</h3><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
     parts.append("<h3>Items, as Maya would see them</h3>" + ("".join(map(render_item, result["items"])) or "<p>No items.</p>"))
     return page("Test upload", "".join(parts))
+
+
+@app.post("/api/test")
+async def api_test(cases: UploadFile):
+    """Test upload for the Base44 front end: the same core and rows as the Test upload page. Saves nothing.
+    `result` is exactly what ./run writes for this file."""
+    data, result = await run_upload(cases)
+    summary, rows = test_rows(data, result)
+    return {"summary": summary, "rows": rows, "result": result}
 
 
 @app.get("/api/changes")
