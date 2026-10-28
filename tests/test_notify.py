@@ -64,3 +64,27 @@ def test_a_failed_channel_says_so_without_the_key(configured, monkeypatch):
 
 def test_nothing_is_sent_when_no_change_passes(configured):
     assert notify.send([], ["email"]) == ["Nothing to send: no change passed the filters."] and configured == []
+
+
+def test_email_goes_through_gmail_when_smtp_is_set_up(monkeypatch):
+    for name in ("RESEND_API_KEY",):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("ALERT_EMAIL_TO", "guy@example.com")
+    monkeypatch.setenv("SMTP_USER", "guy@gmail.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "abcd efgh ijkl mnop")
+    sent = []
+    monkeypatch.setattr(notify, "_smtp", lambda to, title, body: sent.append((to, title, body)))
+    assert notify.settings()["email"] is True and "abcd" not in json.dumps(notify.settings())
+    assert notify.send(ITEMS[:1], ["email"], test=True, email_to="reviewer@example.org") == ["Email sent to r***@example.org."]
+    assert sent[0][0] == ["reviewer@example.org"] and sent[0][1].startswith("[TEST]") and notify.TEST_NOTE in sent[0][2]
+
+
+def test_a_failed_smtp_login_is_reported_without_the_password(monkeypatch):
+    monkeypatch.setenv("ALERT_EMAIL_TO", "guy@example.com")
+    monkeypatch.setenv("SMTP_USER", "guy@gmail.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "secretpass")
+
+    def refuse(*args):
+        raise notify.smtplib.SMTPAuthenticationError(535, b"bad secretpass")
+    monkeypatch.setattr(notify, "_smtp", refuse)
+    assert notify.send(ITEMS[:1], ["email"]) == ["Email failed: SMTPAuthenticationError."]

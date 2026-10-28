@@ -494,7 +494,9 @@ HOW_CHANGES = ("<details class='how'><summary><b>How this works</b></summary><ul
                "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></details>")
 
 TEST_ALERT_EVERY_MIN = 5
+TEST_ALERTS_PER_DAY = 20
 _last_test_alert = None
+_test_alerts_today = {}
 
 TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>"
               "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
@@ -508,9 +510,11 @@ TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>
               "<label><input type='checkbox' name='notify' value='slack'> Slack</label> · "
               "<label>Minimum confidence <select name='min_confidence'><option>0.9</option><option selected>0.6</option>"
               "<option>0.4</option><option>0.2</option></select></label> · "
-              "<label>Companies <input name='competitors' placeholder='All, or e.g. Lovable, Bolt'></label>"
-              "<p class='meta'>Alerts go only to the email and Slack channel set up on this server, are marked TEST, "
-              f"and are sent at most once every {TEST_ALERT_EVERY_MIN} minutes. result.json doesn't change.</p></details></form>")
+              "<label>Companies <input name='competitors' placeholder='All, or e.g. Lovable, Bolt'></label> · "
+              "<label>Send email to <input type='email' name='email_to' placeholder='this server&#39;s inbox'></label>"
+              "<p class='meta'>Slack goes to this server's channel; email to its inbox or the one address you give. "
+              f"Alerts are marked TEST, sent at most once every {TEST_ALERT_EVERY_MIN} minutes and {TEST_ALERTS_PER_DAY} a day. "
+              "result.json doesn't change.</p></details></form>")
 
 
 @app.get("/test", response_class=HTMLResponse)
@@ -531,31 +535,41 @@ async def run_upload(cases):
     return data, result
 
 
-def test_alert(result, channels, min_conf, names):
-    """Alerts for a test upload: only when asked, only to this server's own channels, marked TEST,
-    at most once every TEST_ALERT_EVERY_MIN minutes. Returns what happened, one line per channel."""
+def test_alert(result, channels, min_conf, names, email_to=None):
+    """Alerts for a test upload: only when asked, marked TEST, at most once every TEST_ALERT_EVERY_MIN
+    minutes and TEST_ALERTS_PER_DAY a day. Slack goes to this server's channel; email to its inbox,
+    or to one address given in "Send to". Returns what happened, one line per channel."""
     global _last_test_alert
     channels = [c for c in channels or [] if c in ("email", "slack")]
     if not channels:
         return []
-    now = time.monotonic()
+    email_to = (email_to or "").strip() or None
+    if "email" in channels and email_to and not notify.valid_email(email_to):
+        return ["No alert sent: \"Send to\" needs one email address."]
+    now, today = time.monotonic(), datetime.now(timezone.utc).date().isoformat()
     if _last_test_alert is not None and now - _last_test_alert < TEST_ALERT_EVERY_MIN * 60:
         return [f"No alert sent: test alerts go out at most once every {TEST_ALERT_EVERY_MIN} minutes."]
+    if _test_alerts_today.get(today, 0) >= TEST_ALERTS_PER_DAY:
+        return [f"No alert sent: today's {TEST_ALERTS_PER_DAY} test alerts have been used."]
     items = notify.pick(result["items"], notify.min_confidence(min_conf), notify.competitors(names))
-    lines = notify.send(items, channels, test=True)
+    lines = notify.send(items, channels, test=True, email_to=email_to)
     if items:
         _last_test_alert = now
+        count = _test_alerts_today.get(today, 0) + 1
+        _test_alerts_today.clear()  # only today's count is kept
+        _test_alerts_today[today] = count
     return lines
 
 
 @app.post("/test")
 async def test_upload(cases: UploadFile, format: str = None, notify_: list[str] = Form(None, alias="notify"),
-                      min_confidence: str = Form(None), competitors: str = Form(None)):
+                      min_confidence: str = Form(None), competitors: str = Form(None),
+                      email_to: str = Form(None)):
     data, result = await run_upload(cases)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if format == "json":
         return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
-    return test_results(data, result, body, test_alert(result, notify_, min_confidence, competitors))
+    return test_results(data, result, body, test_alert(result, notify_, min_confidence, competitors, email_to))
 
 
 # Why a source got its confidence: the rule in core/trust.py, in words.
@@ -620,14 +634,15 @@ def test_results(data, result, body, alerts=()):
 
 @app.post("/api/test")
 async def api_test(cases: UploadFile, notify_: list[str] = Form(None, alias="notify"),
-                   min_confidence: str = Form(None), competitors: str = Form(None)):
+                   min_confidence: str = Form(None), competitors: str = Form(None),
+                      email_to: str = Form(None)):
     """Test upload for the Base44 front end: the same core and rows as the Test upload page. Saves nothing.
     `result` is exactly what ./run writes for this file. Optional form fields `notify` (email, slack;
-    none by default), `min_confidence` and `competitors` also send the result as a TEST alert."""
+    none by default), `min_confidence`, `competitors` and `email_to` (one address) also send the result as a TEST alert."""
     data, result = await run_upload(cases)
     summary, rows = test_rows(data, result)
     return {"summary": summary, "rows": rows, "result": result,
-            "alerts": test_alert(result, notify_, min_confidence, competitors)}
+            "alerts": test_alert(result, notify_, min_confidence, competitors, email_to)}
 
 
 @app.get("/api/alerts")

@@ -2,7 +2,11 @@
 
 Everything comes from environment variables, and each channel is off until its own are set:
 
-    RESEND_API_KEY, ALERT_EMAIL_TO     email through Resend (ALERT_EMAIL_FROM is optional)
+    ALERT_EMAIL_TO                     where email goes by default
+    SMTP_USER, SMTP_PASSWORD           email through Gmail (an app password; SMTP_HOST for another server),
+                                       sent from SMTP_USER to any address
+    RESEND_API_KEY                     or email through Resend (ALERT_EMAIL_FROM is optional); without a
+                                       verified domain Resend only delivers to the account's own address
     SLACK_BOT_TOKEN, SLACK_CHANNEL_ID  a message in one Slack channel (the bot must be in it)
     ALERT_MIN_CONFIDENCE               default 0.6: changes seen on the competitor's own site
     ALERT_COMPETITORS                  comma-separated names; empty means all companies
@@ -17,7 +21,9 @@ import html
 import json
 import os
 import re
+import smtplib
 import urllib.error
+from email.message import EmailMessage
 import urllib.request
 
 RESEND_URL = "https://api.resend.com/emails"
@@ -32,7 +38,7 @@ def settings():
     """The alert settings, safe to show: which channels are set up, the filters, never a key."""
     to = os.environ.get("ALERT_EMAIL_TO", "")
     return {
-        "email": bool(os.environ.get("RESEND_API_KEY") and to),
+        "email": bool(to and (_smtp_ready() or os.environ.get("RESEND_API_KEY"))),
         "email_to": _mask(to),
         "slack": bool(os.environ.get("SLACK_BOT_TOKEN") and os.environ.get("SLACK_CHANNEL_ID")),
         "slack_channel": os.environ.get("SLACK_CHANNEL_ID") or None,
@@ -60,8 +66,17 @@ def pick(items, min_conf, names):
     return [i for i in items if i["confidence"] >= min_conf and (not wanted or str(i.get("competitor", "")).lower() in wanted)]
 
 
-def send(items, channels, test=False, post=None):
+EMAIL = re.compile(r"[^@\s<>,;\"']{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
+
+
+def valid_email(address):
+    return bool(EMAIL.fullmatch(str(address or "").strip())) and len(str(address)) <= 200
+
+
+def send(items, channels, test=False, post=None, email_to=None):
     """Send the items to each channel in `channels` ("email", "slack") that is set up.
+
+    email_to replaces ALERT_EMAIL_TO with one address (a Test upload's "Send to"; checked by the caller).
 
     Returns one line per channel saying what happened; never raises, never shows a key.
     """
@@ -72,7 +87,7 @@ def send(items, channels, test=False, post=None):
     for channel in channels:
         try:
             if channel == "email":
-                lines.append(_send_email(items, test, post))
+                lines.append(_send_email(items, test, post, email_to))
             elif channel == "slack":
                 lines.append(_send_slack(items, test, post))
         except Exception as exc:  # a failed alert never fails the run
@@ -86,15 +101,39 @@ def subject(items, test):
     return f"{'[TEST] ' if test else ''}Pricing watch: {n} change{'s' if n != 1 else ''} ({names})"
 
 
-def _send_email(items, test, post):
+def _smtp_ready():
+    return bool(os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"))
+
+
+def _send_email(items, test, post, email_to=None):
     key, to = os.environ.get("RESEND_API_KEY"), os.environ.get("ALERT_EMAIL_TO", "")
-    if not (key and to):
+    if not (to and (_smtp_ready() or key)):
         return "Email is not set up on this server."
-    body = {"from": os.environ.get("ALERT_EMAIL_FROM") or DEFAULT_FROM,
-            "to": [a.strip() for a in to.split(",") if a.strip()],
+    to = email_to or to
+    addresses = [a.strip() for a in to.split(",") if a.strip()]
+    if _smtp_ready():
+        _smtp(addresses, subject(items, test), email_html(items, test))
+        return f"Email sent to {_mask(to)}."
+    body = {"from": os.environ.get("ALERT_EMAIL_FROM") or DEFAULT_FROM, "to": addresses,
             "subject": subject(items, test), "html": email_html(items, test)}
     status, answer = post(RESEND_URL, body, key)
-    return f"Email sent to {_mask(to)}." if 200 <= status < 300 else f"Email failed: Resend answered {status}."
+    if 200 <= status < 300:
+        return f"Email sent to {_mask(to)}."
+    if email_to and status == 403:  # Resend's answer for an address it won't send to yet
+        return "Email failed: this server can only email its own inbox until a sending domain is verified."
+    return f"Email failed: Resend answered {status}."
+
+
+def _smtp(addresses, title, body_html):
+    """Send through an SMTP server over SSL (Gmail by default), from SMTP_USER."""
+    user = os.environ["SMTP_USER"]
+    message = EmailMessage()
+    message["From"], message["To"], message["Subject"] = f"Brightloop Pricing Watch <{user}>", ", ".join(addresses), title
+    message.set_content("This alert is in HTML; open it in an email app that shows HTML.")
+    message.add_alternative(body_html, subtype="html")
+    with smtplib.SMTP_SSL(os.environ.get("SMTP_HOST", "smtp.gmail.com"), 465, timeout=TIMEOUT_S) as server:
+        server.login(user, os.environ["SMTP_PASSWORD"].replace(" ", ""))
+        server.send_message(message)
 
 
 def _send_slack(items, test, post):

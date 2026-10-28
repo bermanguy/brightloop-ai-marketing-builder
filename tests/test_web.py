@@ -381,3 +381,26 @@ def test_a_live_run_alerts_its_new_changes_when_a_channel_is_set_up(client, monk
     monkeypatch.setenv("ALERT_EMAIL_TO", "maya@example.com")
     web.run_now("schedule")
     assert sent == [([item], ["email"])]
+
+
+def test_a_test_alert_can_email_one_given_address_within_the_daily_cap(client, monkeypatch):
+    from pricewatch import notify
+    monkeypatch.setenv("RESEND_API_KEY", "re_x")
+    monkeypatch.setenv("ALERT_EMAIL_TO", "guy@example.com")
+    monkeypatch.setattr(web, "_last_test_alert", None)
+    monkeypatch.setattr(web, "_test_alerts_today", {})
+    monkeypatch.setattr(web, "TEST_ALERT_EVERY_MIN", 0)
+    sent = []
+    monkeypatch.setattr(notify, "_post", lambda url, body, bearer: (sent.append(body["to"]), (200, {}))[1])
+    cases = {"cases": ("c.json", open("tests/cases/1-trust-and-scope.json", "rb").read())}
+    bad = client.post("/api/test", files=cases, data={"notify": ["email"], "email_to": "a@b.com, c@d.com"}).json()
+    assert bad["alerts"] == ['No alert sent: "Send to" needs one email address.'] and sent == []
+    ok = client.post("/api/test", files=cases, data={"notify": ["email"], "email_to": "reviewer@example.org"}).json()
+    assert ok["alerts"] == ["Email sent to r***@example.org."] and sent == [["reviewer@example.org"]]
+    client.post("/api/test", files=cases, data={"notify": ["email"]})
+    assert sent[-1] == ["guy@example.com"]  # no "Send to": this server's inbox
+    monkeypatch.setattr(web, "TEST_ALERTS_PER_DAY", 2)
+    capped = client.post("/api/test", files=cases, data={"notify": ["email"]}).json()
+    assert "today's 2 test alerts have been used" in capped["alerts"][0] and len(sent) == 2
+    monkeypatch.setattr(notify, "_post", lambda url, body, bearer: (403, {}))
+    assert "until a sending domain is verified" in notify.send(ok["result"]["items"][:1], ["email"], True, email_to="x@y.com")[0]
