@@ -12,3 +12,16 @@ services:
         sync: false
       - key: RUN_TOKEN         # protects POST /run (Check now and the schedule)
         sync: false
+      # Alerts (notify.py): each channel stays off until its settings are here.
+      - key: RESEND_API_KEY    # email through Resend
+        sync: false
+      - key: ALERT_EMAIL_TO    # comma-separated addresses
+        sync: false
+      - key: SLACK_BOT_TOKEN   # a Slack app's bot token (chat:write), the bot invited to the channel
+        sync: false
+      - key: SLACK_CHANNEL_ID
+        sync: false
+      - key: ALERT_MIN_CONFIDENCE
+        value: "0.6"
+      - key: ALERT_COMPETITORS # empty means all companies
+        sync: false

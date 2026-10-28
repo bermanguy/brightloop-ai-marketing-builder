@@ -346,3 +346,38 @@ def test_api_check_says_when_a_run_is_in_progress(client, monkeypatch):
         web.run_now("manual")
     assert seen[0]["running"] and seen[0]["trigger"] == "manual" and seen[0]["started_at"]
     assert client.get("/api/check").json()["running"] is False
+
+
+def test_test_upload_sends_alerts_only_when_asked_and_never_changes_the_result(client, monkeypatch):
+    from pricewatch import notify
+    monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
+    monkeypatch.setenv("SLACK_CHANNEL_ID", "C1")
+    monkeypatch.setattr(web, "_last_test_alert", None)
+    sent = []
+    monkeypatch.setattr(notify, "_post", lambda url, body, bearer: (sent.append(body), (200, {"ok": True}))[1])
+    cases = open("tests/cases/1-trust-and-scope.json", "rb").read()
+    plain = client.post("/api/test", files={"cases": ("c.json", cases)}).json()
+    assert plain["alerts"] == [] and sent == []  # off by default
+    asked = client.post("/api/test", files={"cases": ("c.json", cases)},
+                        data={"notify": ["slack"], "min_confidence": "0.9", "competitors": "Lovable"}).json()
+    assert asked["result"]["items"] == plain["result"]["items"] and asked["alerts"] == ["Slack message posted to channel C1."]
+    assert len(sent) == 1 and "[TEST]" in sent[0]["text"] and "Lovable" in sent[0]["text"] and "Bolt" not in sent[0]["text"]
+    again = client.post("/api/test", files={"cases": ("c.json", cases)}, data={"notify": ["slack"]}).json()
+    assert "at most once every 5 minutes" in again["alerts"][0] and len(sent) == 1
+    page = client.post("/test", files={"cases": ("c.json", cases)}, data={"notify": ["email"]}).text
+    assert "<b>Alerts.</b>" in page
+    assert client.get("/api/alerts").json()["slack"] is True and "xoxb" not in client.get("/api/alerts").text
+
+
+def test_a_live_run_alerts_its_new_changes_when_a_channel_is_set_up(client, monkeypatch):
+    from pricewatch import notify
+    sent = []
+    monkeypatch.setattr(notify, "send", lambda items, channels, test=False: sent.append((items, channels)) or ["ok"])
+    item = {"confidence": 0.9, "competitor": "Lovable"}
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: {"items": [item, {"confidence": 0.2, "competitor": "Bolt"}]})
+    web.run_now("manual")
+    assert sent == []  # no channel set up
+    monkeypatch.setenv("RESEND_API_KEY", "re_x")
+    monkeypatch.setenv("ALERT_EMAIL_TO", "maya@example.com")
+    web.run_now("schedule")
+    assert sent == [([item], ["email"])]

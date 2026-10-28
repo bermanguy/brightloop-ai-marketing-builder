@@ -120,6 +120,12 @@ The same data is available as JSON for a front end hosted elsewhere (the Base44 
 
 `POST /run` starts a live run for scripts (GitHub's backup schedule). It needs `RUN_TOKEN`, sent as `Authorization: Bearer …`. With no `RUN_TOKEN` set, runs are switched off, Check now included.
 
+## Alerts (email and Slack)
+
+After each live run, the changes that pass the alert filters go out as one email (through Resend) and one Slack message to a channel. Each change keeps its quote and source link. The filters are rules: a minimum confidence (default 0.6, the competitor's own site) and a list of companies (default all). Each channel stays off until its settings are in the environment: `RESEND_API_KEY` and `ALERT_EMAIL_TO`; `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID`; optional `ALERT_MIN_CONFIDENCE`, `ALERT_COMPETITORS` and `ALERT_EMAIL_FROM`. `GET /api/alerts` shows the settings without any key.
+
+Test upload can send its result as an alert too: email and Slack checkboxes, off by default, with the same filters. It only ever sends to this server's own email and channel, marks the message TEST, and sends at most once every 5 minutes. `result.json` doesn't change. `./run` and `./proof` never send anything.
+
 ## Deploy (Render + Neon)
 
 The app runs on Render's Starter plan (always awake, D22) from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. The app starts its own live run every 6 hours (`SCHEDULE_EVERY_HOURS=6`, set in the `Dockerfile`): a background thread checks every 5 minutes whether the last run is that old. `.github/workflows/schedule.yml` is a backup that calls every hour; the app skips the call unless its last run is over 5.5 hours old. It's only a backup because GitHub dropped most scheduled triggers on the first night (3 of 13 fired).

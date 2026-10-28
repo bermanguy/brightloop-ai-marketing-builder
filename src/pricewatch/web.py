@@ -40,6 +40,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 
 from .core import process
 from .core.text import hides_text
+from . import notify
 from .live import run_live
 from .sources.fetch import label
 from .store import Store
@@ -67,9 +68,20 @@ def run_now(trigger):
     global _current
     _current = {"started_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "trigger": trigger}
     try:
-        return run_live(store(), trigger=trigger)
+        result = run_live(store(), trigger=trigger)
     finally:
         _current = None
+    alert(result)
+    return result
+
+
+def alert(result):
+    """Send the run's new changes that pass the alert filters to each channel set up (notify.py)."""
+    ready = [c for c in ("email", "slack") if notify.settings()[c]]
+    if ready:
+        items = notify.pick(result["items"], notify.min_confidence(), notify.competitors())
+        if items:
+            print("alerts: " + " ".join(notify.send(items, ready)), flush=True)
 
 
 def store():
@@ -96,7 +108,7 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} .brand{margin-right:24px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .fresh{float:right;font-size:.88rem;color:#555} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#16a34a} .dot.old{background:#d97706} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .fresh{float:right;font-size:.88rem;color:#555} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#16a34a} .dot.old{background:#d97706} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .alerts{margin-top:8px;font-size:.9rem} .alerts label{margin-right:6px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
@@ -481,6 +493,9 @@ HOW_CHANGES = ("<details class='how'><summary><b>How this works</b></summary><ul
                "<li>It also looks for pricing rumors on Hacker News. Those cards are unverified and show what the "
                "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></details>")
 
+TEST_ALERT_EVERY_MIN = 5
+_last_test_alert = None
+
 TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>"
               "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
               "<li>Each signal is a claim someone saw, already saying what changed. So the test doesn't compare with the "
@@ -488,7 +503,14 @@ TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>
               "<li>Pricing signals become cards; ads and launches are skipped with a reason.</li>"
               "<li>Nothing is saved: the other tabs don't change.</li></ul></details>"
               "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
-              "<button>Run</button></form>")
+              "<button>Run</button><details class='alerts'><summary>Also send the result as an alert (off by default)</summary>"
+              "<label><input type='checkbox' name='notify' value='email'> Email</label> "
+              "<label><input type='checkbox' name='notify' value='slack'> Slack</label> · "
+              "<label>Minimum confidence <select name='min_confidence'><option>0.9</option><option selected>0.6</option>"
+              "<option>0.4</option><option>0.2</option></select></label> · "
+              "<label>Companies <input name='competitors' placeholder='All, or e.g. Lovable, Bolt'></label>"
+              "<p class='meta'>Alerts go only to the email and Slack channel set up on this server, are marked TEST, "
+              f"and are sent at most once every {TEST_ALERT_EVERY_MIN} minutes. result.json doesn't change.</p></details></form>")
 
 
 @app.get("/test", response_class=HTMLResponse)
@@ -509,13 +531,31 @@ async def run_upload(cases):
     return data, result
 
 
+def test_alert(result, channels, min_conf, names):
+    """Alerts for a test upload: only when asked, only to this server's own channels, marked TEST,
+    at most once every TEST_ALERT_EVERY_MIN minutes. Returns what happened, one line per channel."""
+    global _last_test_alert
+    channels = [c for c in channels or [] if c in ("email", "slack")]
+    if not channels:
+        return []
+    now = time.monotonic()
+    if _last_test_alert is not None and now - _last_test_alert < TEST_ALERT_EVERY_MIN * 60:
+        return [f"No alert sent: test alerts go out at most once every {TEST_ALERT_EVERY_MIN} minutes."]
+    items = notify.pick(result["items"], notify.min_confidence(min_conf), notify.competitors(names))
+    lines = notify.send(items, channels, test=True)
+    if items:
+        _last_test_alert = now
+    return lines
+
+
 @app.post("/test")
-async def test_upload(cases: UploadFile, format: str = None):
+async def test_upload(cases: UploadFile, format: str = None, notify_: list[str] = Form(None, alias="notify"),
+                      min_confidence: str = Form(None), competitors: str = Form(None)):
     data, result = await run_upload(cases)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if format == "json":
         return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
-    return test_results(data, result, body)
+    return test_results(data, result, body, test_alert(result, notify_, min_confidence, competitors))
 
 
 # Why a source got its confidence: the rule in core/trust.py, in words.
@@ -554,7 +594,7 @@ def test_rows(data, result):
     return summary, rows
 
 
-def test_results(data, result, body):
+def test_results(data, result, body, alerts=()):
     """The test result under the upload form: a summary, then one row per input id saying what it
     led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
     counts, table = test_rows(data, result)
@@ -569,7 +609,8 @@ def test_results(data, result, body):
                f"{counts['errors']} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
     download = (f"<p><a download='result.json' href='data:application/json;base64,"
                 f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a></p>")
-    parts = [TEST_INTRO, "<h2>Result</h2>", summary, download, "<h3>What each input led to, and why</h3>"]
+    sent = "<p class='meta'><b>Alerts.</b> " + " ".join(esc(a) for a in alerts) + "</p>" if alerts else ""
+    parts = [TEST_INTRO, "<h2>Result</h2>", summary, download, sent, "<h3>What each input led to, and why</h3>"]
     parts.append(f"<table><tr><th>Id</th><th>Competitor</th><th>Result</th><th>Why</th></tr>{rows}</table>" if rows else "<p>No signals with an id.</p>")
     if errors:
         parts.append("<h3>Errors in the file</h3><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
@@ -578,12 +619,21 @@ def test_results(data, result, body):
 
 
 @app.post("/api/test")
-async def api_test(cases: UploadFile):
+async def api_test(cases: UploadFile, notify_: list[str] = Form(None, alias="notify"),
+                   min_confidence: str = Form(None), competitors: str = Form(None)):
     """Test upload for the Base44 front end: the same core and rows as the Test upload page. Saves nothing.
-    `result` is exactly what ./run writes for this file."""
+    `result` is exactly what ./run writes for this file. Optional form fields `notify` (email, slack;
+    none by default), `min_confidence` and `competitors` also send the result as a TEST alert."""
     data, result = await run_upload(cases)
     summary, rows = test_rows(data, result)
-    return {"summary": summary, "rows": rows, "result": result}
+    return {"summary": summary, "rows": rows, "result": result,
+            "alerts": test_alert(result, notify_, min_confidence, competitors)}
+
+
+@app.get("/api/alerts")
+def api_alerts():
+    """The alert settings, read-only: which channels are set up and the filters. Never a key."""
+    return notify.settings()
 
 
 @app.get("/api/changes")
