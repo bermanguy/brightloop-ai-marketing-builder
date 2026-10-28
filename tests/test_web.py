@@ -284,3 +284,14 @@ def test_changes_page_and_api_show_the_counters(client):
     assert "focus=price%20up" in page
     data = client.get("/api/changes?days=all&focus=unverified").json()
     assert data["summary"]["total"] == 1 and data["items"] == []
+
+
+def test_every_page_shows_how_fresh_the_data_is(client):
+    from datetime import datetime, timezone
+
+    fresh = web.freshness(datetime(2026, 10, 25, 14, 0, tzinfo=timezone.utc))
+    assert "Last checked 2h ago" in fresh and "dot old" not in fresh and "out of date" not in fresh
+    stale = web.freshness(datetime(2026, 10, 25, 20, 0, tzinfo=timezone.utc))
+    assert "Last checked 8h ago · may be out of date" in stale and "dot old" in stale
+    for path in ["/", "/pricing", "/runs", "/test"]:
+        assert "Last checked" in client.get(path).text

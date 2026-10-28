@@ -82,13 +82,32 @@ STYLE = """
 body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#1a1a1a;background:#fff;line-height:1.45}
 nav a{margin-right:16px} .brand{margin-right:24px} h1{font-size:1.4rem} .item{border-top:1px solid #ddd;padding:12px 0}
 .meta{color:#555;font-size:.9rem} .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:.8rem;background:#eee}
-.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
+.unverified{background:#fde2b8} .item h3{font-size:1.05rem;margin:6px 0} .why{color:#333} .sources{font-size:.9rem;color:#333;margin-bottom:8px} .label{font-weight:600;margin:8px 0 2px} .failed{color:#a00} .strip{margin:10px 0} .fresh{float:right;font-size:.88rem;color:#555} .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#16a34a} .dot.old{background:#d97706} .tiles{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:8px} .tile{display:flex;flex-direction:column;border:1px solid #d5d8e0;border-radius:8px;background:#fff;text-decoration:none;color:#223} .tile.big{padding:10px 14px;min-width:130px} .tile.big .n{font-size:1.6rem;font-weight:700;line-height:1.1} .tile.small{padding:5px 10px;min-width:80px} .tile.small .n{font-size:1.1rem;font-weight:700} .tile .t{font-size:.85rem;color:#555} .tile:hover{border-color:#8a90c8} .tile.on{border-color:#4f46e5;background:#eef0ff} .more summary{font-size:.88rem;margin-bottom:6px} .group{font-size:.8rem;color:#666;align-self:center;min-width:80px} .filters{margin:8px 0} .filters select{margin-right:6px} .details td{border-bottom:2px solid #ccc;padding-top:0} summary{cursor:pointer;color:#0645ad} .how{background:#f4f6f8;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:.92rem} table{border-collapse:collapse;width:100%;margin-bottom:24px}
 td:first-child{white-space:nowrap} td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;vertical-align:top;font-size:.92rem} ul{margin:0;padding-left:18px}
 """
 
 
+FRESH_HOURS = 7  # the schedule runs every 6 hours, plus some slack
+
+
+def freshness(now=None):
+    """'Last checked 2h ago' for the top bar: green when recent, amber when a scheduled run looks missed."""
+    try:
+        last = store().runs(1)
+    except Exception:  # the page still renders if the store can't be read
+        return ""
+    if not last:
+        return '<span class="fresh">No checks yet</span>'
+    started = datetime.strptime(last[0]["run"]["started_at"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    minutes = max(0, int(((now or datetime.now(timezone.utc)) - started).total_seconds() // 60))
+    ago = f"{minutes} min ago" if minutes < 60 else f"{minutes // 60}h ago" if minutes < 48 * 60 else f"{minutes // 1440} days ago"
+    old = minutes >= FRESH_HOURS * 60
+    return (f'<span class="fresh" title="{esc(last[0]["run"]["started_at"])}"><span class="dot{" old" if old else ""}"></span>'
+            f'Last checked {ago}{" · may be out of date" if old else ""}</span>')
+
+
 def page(title, body):
-    nav = '<nav><b class="brand">Brightloop Pricing Watch</b><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/test">Test upload</a></nav>'
+    nav = f'<nav>{freshness()}<b class="brand">Brightloop Pricing Watch</b><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/test">Test upload</a></nav>'
     return HTMLResponse(
         f"<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
         f"<title>{esc(title)} · Brightloop Pricing Watch</title><style>{STYLE}</style></head><body>{nav}<h1>{esc(title)}</h1>{body}</body></html>"
@@ -239,12 +258,12 @@ def changes(days: str = "7", competitor: str = None, focus: str = None):
     items = focused(in_filter, focus)
     last = runs[0]["run"]
     failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
-    status = f"Last check {esc(last['started_at'])}" + (f' · <span class="failed">couldn\'t read: {esc(", ".join(failed))}</span>' if failed else "")
+    status = f'<span class="failed">couldn\'t read: {esc(", ".join(failed))}</span> · ' if failed else ""
     shown = f"{len(items)} change{'s' if len(items) != 1 else ''} · {RANGES[days].lower()} · {esc(competitor or 'all companies')}"
     empty = "<p>No pricing changes for this filter. Try a longer time range.</p>"
     body = (HOW_CHANGES + filter_form("/", competitors_in(runs, (store().snapshots(1) or [None])[0]), competitor, days)
             + summary_strip(summary_of(in_filter), days, competitor, focus)
-            + f'<p class="meta">{status} · {shown}</p>' + ("".join(map(render_item, items)) or empty))
+            + f'<p class="meta">{status}{shown}</p>' + ("".join(map(render_item, items)) or empty))
     return page("What changed in competitors' pricing", body)
 
 
