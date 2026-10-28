@@ -164,7 +164,7 @@ Where to use AI was left open until after discovery (D3), first planned here, an
 **Alternatives.**
 - AI for everything, including confidence: open to prompt injection, and can't run without a key.
 - Render's own cron and database: cron isn't free, and the free database is deleted after 30 days.
-- A Base44 front end: rejected at the time because I couldn't confirm all the code would stay in the repo. Adopted later (D32).
+- A Base44 front end: rejected at the time because I couldn't confirm all the code would stay in the repo. Adopted later (D32); its code is kept in `frontend/` (D39).
 
 **Changed since.** Always-on hosting (D22); the app schedules its own runs (D21); AI only reads pages and answers questions (D38).
 
