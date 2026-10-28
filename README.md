@@ -2,7 +2,24 @@
 
 Home assignment for the AI Marketing Builder role at Base44.
 
-**Status:** test interface (`./run`), live run (`./run --live`), keyless proof (`./proof`) and the web app built; deploying to Render + Neon. Building for Maya (Head of Growth): a watch on competitors' pricing and packaging changes, where every number links to its source. See `docs/spec.md`.
+Built for Maya (Head of Growth): a watch on competitors' pricing and packaging changes (Lovable, Bolt, Replit, v0), where every number links to its source. See `docs/spec.md`.
+
+## At a glance
+
+| | |
+| --- | --- |
+| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44 front end) |
+| Engine and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon; runs every 6 hours, keeps the run log) |
+| The proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
+| Run the test | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
+| Decision log | `DECISIONS.md` |
+
+### How we know it works
+
+- `./proof` replays the brief's sample and every recorded real run, and checks the rules: every input id once, every number in its item's quotes, every item linked, injections not followed, `demo_key` not echoed.
+- `pytest`: 201 tests, run by CI on every push. They cover the core rules, comparing runs, the readers on saved real pages, the web app and alerts.
+- `tests/cases/`: three case files for trust and scope, injections and secrets, and malformed input, with the expected result for every id in `tests/cases/README.md`.
+- The live run log: every scheduled and Check now run, with the pages read, the changes found, the errors and the cost.
 
 ## Repository layout
 
@@ -70,9 +87,9 @@ No keys, no network, standard library only. It checks two things and exits 1 if 
 
 The last replayed result is written to `proof-result.json`.
 
-`./record` makes those recordings: one real run (fetch, then read with the AI when a key is set) saved as `fixtures/recorded/<time>.json`, holding each page's visible text, the plans read from it and what the reading cost. The two committed recordings are real AI runs of 2026-10-25, a minute apart ($0.12 each); no pricing changed between them, so the replay shows 0 changes. Real changes will show up as recordings accumulate; planted changes are covered by `tests/test_compare.py`.
+`./record` makes those recordings: one real run (fetch, then read with the AI when a key is set) saved as `fixtures/recorded/<time>.json`, holding each page's visible text, the plans read from it and what the reading cost. The committed recordings are real AI runs: two on 2026-10-25, a minute apart ($0.12 each), and one on 2026-10-26 that also reads every billing view and the pricing tables ($0.24). No pricing changed between them, so the replay shows 0 changes. Real changes will show up as recordings accumulate; planted changes are covered by `tests/test_compare.py`.
 
-## Live run (in progress)
+## Live run
 
 Downloads the four pricing pages, in every billing view they offer (D23), and saves the raw HTML plus the visible text:
 
@@ -106,12 +123,14 @@ Each run saves a snapshot to the store (every page's plans, or why it couldn't b
 
 ## Web app
 
+The marketers' app is the Base44 front end (https://brightloop-competitors-price-pulse.base44.app): Changes, Current pricing, Run log, Alerts, Test upload and Check now, reading the JSON API below. The Render app serves the same pages as plain HTML, as an admin tool if Base44 is down (D32).
+
 ```
 pip install -e ".[live,web]"
 uvicorn pricewatch.web:app        # http://localhost:8000
 ```
 
-- **Changes** (`/`): the items from recent runs, newest first, filtered by time range (last 7 days by default, 30 days or all time) and company, with counters on top (all, verified, rumors, each kind of change, each company; D30) that each show the cards they count, with action, why, confidence, the unverified label and source links.
+- **Changes** (`/`): the items from recent runs, newest first, filtered by time range (last 7 days by default, 30 days or all time) and company, with three counters on top (all, verified, rumors; D30, D33) that each show the cards they count, with action, why, confidence, the unverified label and source links.
 - **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page (filter by company), with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
 - **Run log** (`/runs`): start time, what started it (schedule, manual Check now, backup schedule, API or command line; blank for runs from before 27 Oct), pages read or failed, changes found, errors and cost per run, plus the **Check now** button: anyone can press it, with no token, and it starts at most one run every 30 minutes (D29).
 - **Test upload** (`/test`): upload a cases.json and see what each input id led to (item or skip reason), any errors, and the items as cards, with result.json to download. Same core as `./run`; nothing is saved, so the other tabs don't change. `POST /test?format=json` returns the file directly.
