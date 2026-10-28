@@ -18,7 +18,8 @@ night (3 of 13 fired), which is why the app now keeps time itself.
 
 /api/changes, /api/pricing and /api/runs give the same data as JSON, read-only,
 for a front end hosted elsewhere (the Base44 app). Any site may read them: they
-show only what the HTML pages already show.
+show only what the HTML pages already show. POST /mcp serves the same data to Claude as an
+MCP server (mcp_server.py).
 """
 
 import base64
@@ -40,7 +41,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 
 from .core import process
 from .core.text import hides_text
-from . import notify
+from . import mcp_server, notify
 from .live import run_live
 from .sources.fetch import label
 from .store import Store
@@ -786,6 +787,53 @@ def api_runs():
          "details": run_summary(r)}
         for r in store().runs(100)
     ]
+
+
+# MCP (mcp_server.py): the same read-only data for Claude, plus the test file run.
+MCP_MAX_CASES_BYTES = 1_000_000
+
+
+def mcp_changes(days="7", competitor=None, focus=None, limit=20):
+    answer = api_changes(str(days), competitor, focus)
+    limit = max(1, min(int(limit), 100))
+    return dict(answer, items=answer["items"][:limit], items_shown=min(limit, len(answer["items"])),
+                items_total=len(answer["items"]))
+
+
+def mcp_run_test(cases):
+    if not isinstance(cases, dict):
+        raise ValueError("cases must be the file's JSON object, with a signals list.")
+    if len(json.dumps(cases)) > MCP_MAX_CASES_BYTES:
+        raise ValueError("cases is over 1 MB.")
+    result = process(cases)
+    summary, rows = test_rows(cases, result)
+    return {"summary": summary, "rows": rows, "result": result}
+
+
+MCP_TOOLS = {
+    "get_changes": mcp_changes,
+    "get_current_pricing": lambda competitor=None: api_pricing(competitor),
+    "get_run_log": lambda limit=10: {"runs": api_runs()[:max(1, min(int(limit), 100))]},
+    "run_test": mcp_run_test,
+}
+
+
+@app.post("/mcp")
+async def mcp(request: Request):
+    """The MCP endpoint (Streamable HTTP, stateless): one JSON-RPC message in, one JSON answer out.
+    Add it to Claude as a custom connector with this URL. Read-only, like /api/*."""
+    try:
+        message = await request.json()
+    except ValueError:
+        return JSONResponse(mcp_server.handle(None, MCP_TOOLS), status_code=400)
+    answer = mcp_server.handle(message, MCP_TOOLS)
+    return Response(status_code=202) if answer is None else JSONResponse(answer)
+
+
+@app.get("/mcp")
+def mcp_stream():
+    """No server-to-client stream: every answer comes back on the POST (the spec allows 405 here)."""
+    return Response(status_code=405, headers={"Allow": "POST"})
 
 
 @app.get("/health")
