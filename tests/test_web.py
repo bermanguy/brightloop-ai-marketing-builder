@@ -337,3 +337,13 @@ def test_every_page_shows_how_fresh_the_data_is(client):
     assert "Last checked 8h ago · may be out of date" in stale and "dot old" in stale
     for path in ["/", "/pricing", "/runs", "/test"]:
         assert "Last checked" in client.get(path).text
+
+
+def test_api_check_says_when_a_run_is_in_progress(client, monkeypatch):
+    seen = []
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: seen.append(client.get("/api/check").json()))
+    assert client.get("/api/check").json() == {"running": False, "started_at": None, "trigger": None}
+    with web._running:
+        web.run_now("manual")
+    assert seen[0]["running"] and seen[0]["trigger"] == "manual" and seen[0]["started_at"]
+    assert client.get("/api/check").json()["running"] is False
