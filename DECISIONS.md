@@ -284,9 +284,13 @@ Everything else is rules: comparing runs (D18–D20), confidence, the unverified
 
 **Known limit (Claude).** Once an assistant does its own analysis, "no link, no number" is an instruction in the server's description, not something our code can enforce: the assistant could still write a figure that isn't in a source. History starts on 2026-10-26, so there's little to analyse yet.
 
+### D39 — The Base44 app's code is kept in this repo as a snapshot in `frontend/` · 2026-10-28 · [Guy]
+
+**Decision.** The Base44 front end's source is copied into `frontend/` in this repo, as it stood on 2026-10-28. Base44 stays where the app is edited and published. Base44's GitHub sync was the other option; it would have created a separate repo.
+
 ---
 
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
-- Where the Base44 app's code lives. The brief asks for all code in the repo (D13, D32).
+- ~~Where the Base44 app's code lives. The brief asks for all code in the repo (D13, D32).~~ Resolved 2026-10-28: a snapshot in `frontend/` (D39) [Guy].
