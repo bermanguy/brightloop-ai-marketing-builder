@@ -8,7 +8,7 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 
 | | |
 | --- | --- |
-| Live app (for marketers) | https://loop-rate-pulse.base44.app (Base44 front end) |
+| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44 front end) |
 | Engine and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon; runs every 6 hours, keeps the run log) |
 | The proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
 | Run the test | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
@@ -123,7 +123,7 @@ Each run saves a snapshot to the store (every page's plans, or why it couldn't b
 
 ## Web app
 
-The marketers' app is the Base44 front end (https://loop-rate-pulse.base44.app): Changes, Current pricing, Run log, Alerts, Test upload and Check now, reading the JSON API below. The Render app serves the same pages as plain HTML, as an admin tool if Base44 is down (D32).
+The marketers' app is the Base44 front end (https://brightloop-competitors-price-pulse.base44.app): Changes, Current pricing, Run log, Alerts, Test upload and Check now, reading the JSON API below. The Render app serves the same pages as plain HTML, as an admin tool if Base44 is down (D32).
 
 ```
 pip install -e ".[live,web]"
