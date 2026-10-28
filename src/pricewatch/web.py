@@ -464,18 +464,18 @@ CONFIDENCE = ("<li><b>Confidence comes only from where a claim was seen</b>, nev
               "the competitor's own pricing page 0.9; another page on their site 0.6; a third party 0.4, unverified; "
               "a sponsored, ad, forum or anonymous source 0.2, unverified.</li>")
 
-HOW_CHANGES = ("<div class='how'><b>How this works</b><ul>"
+HOW_CHANGES = ("<details class='how'><summary><b>How this works</b></summary><ul>"
                "<li>Every 6 hours the app reads each competitor's pricing page and compares it with the last check. "
                "Each difference becomes a card, quoted from the page.</li>"
                "<li>It also looks for pricing rumors on Hacker News. Those cards are unverified and show what the "
-               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></div>")
+               "pricing page said at the same check.</li>" + CONFIDENCE + "</ul></details>")
 
-TEST_INTRO = ("<div class='how'><b>How this works</b><ul>"
+TEST_INTRO = ("<details class='how'><summary><b>How this works</b></summary><ul>"
               "<li>A test runs a file of signals (like the brief's cases.json) through the same rules as the live watch.</li>"
               "<li>Each signal is a claim someone saw, already saying what changed. So the test doesn't compare with the "
               "current pricing pages, and the same file always gives the same result.</li>" + CONFIDENCE +
               "<li>Pricing signals become cards; ads and launches are skipped with a reason.</li>"
-              "<li>Nothing is saved: the other tabs don't change.</li></ul></div>"
+              "<li>Nothing is saved: the other tabs don't change.</li></ul></details>"
               "<form method='post' action='/test' enctype='multipart/form-data'><input type='file' name='cases' required> "
               "<button>Run</button></form>")
 
