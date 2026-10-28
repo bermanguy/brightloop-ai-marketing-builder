@@ -8,7 +8,7 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 
 | | |
 | --- | --- |
-| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44 front end) |
+| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44 front end; its code is in `frontend/`) |
 | Engine and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon; runs every 6 hours, keeps the run log) |
 | The proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
 | Run the test | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
@@ -102,7 +102,7 @@ flowchart TB
 
     subgraph out["Where Maya sees it"]
         direction LR
-        b44["Base44 app<br/>Changes · Pricing · Run log<br/>Alerts · Test upload"]
+        b44["Base44 app (code in frontend/)<br/>Changes · Pricing · Run log<br/>Alerts · Test upload"]
         mail["Email<br/>Gmail SMTP / Resend"]
         slack["Slack channel"]
         ask["Claude (claude.ai, Claude Code)<br/>via MCP connector"]
@@ -136,6 +136,7 @@ flowchart TB
 | `DECISIONS.md` | Decision log: what was decided, why, alternatives, and who decided |
 | `docs/discovery/` | Verbatim interview transcripts with the Brightloop marketers, plus the synthesis |
 | `reference/` | The original assignment brief, kept unmodified as reference |
+| `frontend/` | The Base44 app's code (React + Vite), a snapshot copied from Base44 on 2026-10-28 (D39). Base44 builds and hosts it |
 
 ## Test interface
 
