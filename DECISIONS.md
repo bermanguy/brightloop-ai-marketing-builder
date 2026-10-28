@@ -367,6 +367,16 @@ Toggles and dropdowns are not clicked.
 
 **How (Claude).** Streamable HTTP, stateless with JSON answers, in the standard library (`mcp_server.py`), reusing the API's functions. It was checked with the official MCP Python client.
 
+## D38 — Where and why we use AI · 2026-10-28 · [Claude → Guy]
+
+**Decision.** Guy asked to record where the product uses AI and why. AI is used in two places, and nowhere else:
+- **Reading the pricing pages** (D16). Claude reads each fetched page's text and returns its plans and prices, each with a quote. Code then drops any value that isn't in its quote, or whose quote isn't on the page word for word. Without a key, the plain reader runs instead.
+- **Asking about the data** (D37). Any AI assistant that speaks MCP (Claude, Claude Code, Cursor and others) can connect to `/mcp` and ask in plain language. The tools are read-only and return the engine's items, with their links and quotes.
+
+Everything else is rules: comparing runs (D18–D20), confidence, the unverified label, skips and id accounting (D13), rumors from Hacker News (D24), and the headline, "What to do" and "Why it matters" (D26). This replaces D13's line that AI also judges whether a change matters and writes the recommendations: as built, neither is done by AI.
+
+**Why** (from D13 and D16). Pricing pages change layout often, and AI reads them where fixed code breaks. Rules can't be talked into a different result by text inside a signal, and they work with no keys. Each AI use has a check that stops it inventing numbers, which is the mistake behind Maya's "30% cut" incident.
+
 ---
 
 ## Open questions

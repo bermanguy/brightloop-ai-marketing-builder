@@ -26,26 +26,53 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 
 ```mermaid
 flowchart LR
-    web["1. Public web<br/>competitors' pricing pages<br/>+ Hacker News"]
-    test["2. Test file<br/>cases.json"]
-    reader["3. AI reader<br/>Claude reads the page,<br/>every value quote-checked"]
-    core["4. Core rules<br/>not AI"]
-    db[("5. Database<br/>snapshots and runs")]
-    api["6. Engine API<br/>on Render"]
-    maya["7. Maya<br/>Base44 app<br/>email and Slack alerts<br/>Claude via MCP"]
+    subgraph sources["1. Sources"]
+        pages["Competitors' pricing pages<br/>Lovable · Bolt · Replit · v0"]
+        hn["Hacker News<br/>pricing rumors"]
+        test["Test file<br/>cases.json"]
+    end
 
-    web -->|"every 6 hours"| reader --> core
+    subgraph engine["Engine on Render"]
+        reader["2. AI reads the page<br/>Claude lists plans and prices<br/>with a quote for each"]
+        check["3. Quote check<br/>each value must be on the<br/>page word for word"]
+        compare["4. Compare<br/>with the last snapshot"]
+        core["5. Core rules, not AI<br/>confidence · unverified label<br/>skips · every id once"]
+        db[("6. Database<br/>Neon Postgres")]
+        api["7. Engine API<br/>JSON and MCP"]
+    end
+
+    subgraph use["8. Ways to use the data"]
+        admin["Render web app<br/>admin pages"]
+        b44["Base44 web app<br/>for marketers"]
+        alerts["Email and Slack<br/>alerts"]
+        assistant["Any AI assistant over MCP<br/>Claude · Claude Code · Cursor<br/>ask in plain language"]
+    end
+
+    pages -->|"every 6 hours"| reader --> check --> compare --> core
+    hn -->|"always unverified"| core
     test --> core
-    core --> db --> api --> maya
+    core --> db --> api
+    core --> alerts
+    api --> admin & b44 & assistant
+
+    classDef aiStep fill:#d9c8ff,stroke:#6a3df0,stroke-width:3px,color:#1e0f4d
+    class reader,assistant aiStep
 ```
 
-1. **Public web.** Every 6 hours the engine reads the pricing pages of Lovable, Bolt, Replit and v0, and searches Hacker News for pricing rumors. Rumors skip the reader and are always labelled unverified.
-2. **Test file.** The same core also takes a `cases.json` file, from `./run` or the app's Test upload. Only the source of signals differs.
-3. **AI reader.** Claude turns each page into plans and prices. Any value it can't quote word for word from the page is dropped, so it can't invent a number.
-4. **Core rules.** Plain code, not AI, decides confidence, the unverified label, skips and that every input is accounted for once. Text inside a signal can't change these rules.
-5. **Database.** Neon Postgres keeps the snapshots, so each run is compared with the last one and only real changes come through. The run log keeps every run, its errors and its cost.
-6. **Engine API.** A Python server on Render serves the results as JSON and holds all the keys.
-7. **Maya.** She sees changes in the Base44 app, gets email and Slack alerts, and can ask Claude about them through the MCP connector. Every number comes with its link and quote.
+Purple boxes are where AI is used. Everything else is plain code.
+
+1. **Sources.** Every 6 hours the engine fetches the pricing pages of Lovable, Bolt, Replit and v0, and searches Hacker News for pricing rumors. A `cases.json` test file goes through the same core, from `./run` or the app's Test upload. Only the source of signals differs.
+2. **AI reads the page.** Claude turns each page's text into plans and prices, with a quote for each one. Pricing pages change layout often and fixed code breaks when they do, so this is where AI helps. The page text is passed as data, so instructions hidden in it are ignored.
+3. **Quote check.** Code, not AI, checks that every value Claude returned is in its quote, and that the quote is on the page word for word. Anything else is dropped, so the AI can't invent a number. Without a key, a plain reader takes over.
+4. **Compare.** Each reading is compared with the last snapshot, so only real changes become signals.
+5. **Core rules.** Plain code decides confidence, the unverified label, skips, the suggested action, and that every input is accounted for once. Text inside a signal can't change them. Hacker News claims skip steps 2 to 4 and are always labelled unverified.
+6. **Database.** Neon Postgres keeps the snapshots, the changes and the run log (pages read, errors and cost).
+7. **Engine API.** One Python server on Render serves the results as JSON for the apps and as MCP tools for AI assistants. It holds all the keys.
+8. **Ways to use the data.**
+    - **Render web app:** admin pages, including the run log and alert settings.
+    - **Base44 web app:** the marketers' front end: changes, current pricing, alerts and Test upload.
+    - **Email and Slack:** alerts when a run finds changes, filtered by confidence and company.
+    - **Any AI assistant over MCP:** connect Claude, Claude Code, Cursor or any other MCP client to `/mcp` and ask in plain language, for example "What changed at Bolt this week?". The answers come from the engine's data, with links and quotes.
 
 ## How it fits together
 
