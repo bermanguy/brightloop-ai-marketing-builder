@@ -345,6 +345,12 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D35 — Test alerts can email the tester's address; send from a verified domain · 2026-10-28 · [Claude → Guy]
+
+**Decision.** Test upload has an optional "Send email to" field for one address, so reviewers can get the alert themselves. Emails are sent through Resend from a domain Guy verifies. Test alerts stay marked TEST and limited to one every 5 minutes and 20 a day. Slack stays on Guy's channel.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
