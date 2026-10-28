@@ -34,7 +34,7 @@ from contextlib import asynccontextmanager
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, Form, Header, UploadFile
+from fastapi import FastAPI, Form, Header, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
@@ -71,17 +71,49 @@ def run_now(trigger):
         result = run_live(store(), trigger=trigger)
     finally:
         _current = None
-    alert(result)
+    try:
+        alert(result, trigger)
+    except Exception as exc:  # a failed alert never fails the run
+        print(f"alerts failed: {exc.__class__.__name__}", flush=True)
     return result
 
 
-def alert(result):
-    """Send the run's new changes that pass the alert filters to each channel set up (notify.py)."""
-    ready = [c for c in ("email", "slack") if notify.settings()[c]]
-    if ready:
-        items = notify.pick(result["items"], notify.min_confidence(), notify.competitors())
-        if items:
-            print("alerts: " + " ".join(notify.send(items, ready)), flush=True)
+def now_utc():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def alert(result, trigger):
+    """Send the run's new changes that pass the alert filters to each channel set up and switched on
+    (notify.py), and note what happened in the alert log. A run with no new changes sends and notes nothing."""
+    if not result.get("items"):
+        return
+    saved = store().alert_settings()
+    shown = notify.settings(saved)
+    items = notify.pick(result["items"], shown["min_confidence"], shown["competitors"])
+    channels = [c for c in ("email", "slack") if shown[c] and shown[f"{c}_on"]]
+    switch = notify.TRIGGER_SWITCH.get(trigger, "on_schedule")
+    addresses = notify.recipients(saved)
+    if not items:
+        lines = [f"Nothing sent: none of the {len(result['items'])} changes passed the filters."]
+    elif not shown[switch]:
+        lines = [f"Nothing sent: alerts are off for {'Check now' if switch == 'on_check_now' else 'scheduled runs'}."]
+    elif not channels:
+        lines = ["Nothing sent: email and Slack are both off or not set up."]
+    else:
+        lines = notify.send(items, channels, email_to=",".join(addresses))
+    log_alert(trigger, result, items, channels, lines, shown, addresses if "email" in channels else [])
+    print("alerts: " + " ".join(lines), flush=True)
+
+
+def log_alert(trigger, result, items, channels, lines, shown, addresses, test=False):
+    """One row in the alert log: what started it, which changes went out, where, and what each channel said."""
+    store().save_alert({
+        "at": now_utc(), "kind": "alert", "trigger": trigger, "test": test, "changes": len(result["items"]),
+        "sent": [{key: i.get(key) for key in ("competitor", "headline", "confidence", "unverified")} for i in items],
+        "channels": channels, "recipients": [notify.mask(a) for a in addresses],
+        "slack_channel": shown["slack_channel"] if "slack" in channels else None,
+        "min_confidence": shown["min_confidence"], "competitors": shown["competitors"], "outcome": lines,
+    })
 
 
 def store():
@@ -133,7 +165,7 @@ def freshness(now=None):
 
 
 def page(title, body):
-    nav = f'<nav>{freshness()}<b class="brand">Brightloop Pricing Watch</b><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/test">Test upload</a></nav>'
+    nav = f'<nav>{freshness()}<b class="brand">Brightloop Pricing Watch</b><a href="/">Changes</a><a href="/pricing">Current pricing</a><a href="/runs">Run log</a><a href="/alerts">Alerts</a><a href="/test">Test upload</a></nav>'
     return HTMLResponse(
         f"<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
         f"<title>{esc(title)} · Brightloop Pricing Watch</title><style>{STYLE}</style></head><body>{nav}<h1>{esc(title)}</h1>{body}</body></html>"
@@ -553,6 +585,11 @@ def test_alert(result, channels, min_conf, names, email_to=None):
         return [f"No alert sent: today's {TEST_ALERTS_PER_DAY} test alerts have been used."]
     items = notify.pick(result["items"], notify.min_confidence(min_conf), notify.competitors(names))
     lines = notify.send(items, channels, test=True, email_to=email_to)
+    shown = dict(notify.settings(), min_confidence=notify.min_confidence(min_conf), competitors=notify.competitors(names))
+    owner = [a.strip() for a in os.environ.get("ALERT_EMAIL_TO", "").split(",") if a.strip()]
+    if items:
+        log_alert("test upload", result, items, channels, lines, shown,
+                  ([email_to] if email_to else owner) if "email" in channels else [], test=True)
     if items:
         _last_test_alert = now
         count = _test_alerts_today.get(today, 0) + 1
@@ -647,8 +684,73 @@ async def api_test(cases: UploadFile, notify_: list[str] = Form(None, alias="not
 
 @app.get("/api/alerts")
 def api_alerts():
-    """The alert settings, read-only: which channels are set up and the filters. Never a key."""
-    return notify.settings()
+    """The alert settings for live runs: which channels are set up and switched on, for which runs,
+    the filters and the addresses (masked). Never a key."""
+    return notify.settings(store().alert_settings())
+
+
+@app.post("/api/alerts")
+async def api_alerts_change(request: Request):
+    """Change the alert settings for live runs (see notify.update for the fields). Keys and the
+    channels stay in the environment. Every change is noted in the alert log."""
+    try:
+        changes = await request.json()
+    except ValueError:
+        changes = None
+    saved = store().alert_settings()
+    new, error = notify.update(saved, changes)
+    if error:
+        return JSONResponse({"error": error}, status_code=400)
+    at = now_utc()
+    store().save_alert_settings(at, dict(new, changed_at=at))
+    before, after = notify.settings(saved), notify.settings(new)
+    what = [f"{SETTING_NAMES[k]} {fmt_setting(after[k], k)}" for k in SETTING_NAMES if before[k] != after[k]]
+    store().save_alert({"at": at, "kind": "settings", "outcome": ["Settings changed: " + ("; ".join(what) or "nothing") + "."]})
+    return notify.settings(store().alert_settings())
+
+
+SETTING_NAMES = {"email_on": "email", "slack_on": "Slack", "on_schedule": "scheduled runs", "on_check_now": "Check now",
+                 "min_confidence": "minimum confidence", "competitors": "companies", "extra_emails": "extra addresses"}
+
+
+def fmt_setting(value, key=None):
+    if isinstance(value, bool):
+        return "on" if value else "off"
+    if isinstance(value, list):
+        return ", ".join(value) or ("none" if key == "extra_emails" else "all")
+    return str(value)
+
+
+@app.get("/api/alerts/log")
+def api_alerts_log():
+    """The alert log, newest first: each alert sent or held back, and each settings change. Addresses masked."""
+    return store().alerts(100)
+
+
+@app.get("/alerts", response_class=HTMLResponse)
+def alerts_page():
+    """The alert settings and log, read-only (they're changed in the Base44 app or through POST /api/alerts)."""
+    s = notify.settings(store().alert_settings())
+    email = (f"{fmt_setting(s['email_on'])}, to {esc(', '.join([a for a in [s['email_to']] + s['extra_emails'] if a]))}"
+             if s["email"] else "not set up on this server")
+    slack = f"{fmt_setting(s['slack_on'])}, channel {esc(s['slack_channel'])}" if s["slack"] else "not set up on this server"
+    rows = "".join(f"<tr><th>{k}</th><td>{v}</td></tr>" for k, v in [
+        ("Email", email), ("Slack", slack), ("Scheduled runs", fmt_setting(s["on_schedule"])),
+        ("Check now", fmt_setting(s["on_check_now"])), ("Minimum confidence", s["min_confidence"]),
+        ("Companies", esc(", ".join(s["competitors"]) or "all"))])
+    log = ""
+    for e in store().alerts(100):
+        if e.get("kind") == "settings":
+            log += f"<tr><td>{esc(e['at'])}</td><td>settings</td><td colspan='2'></td><td>{esc(' '.join(e['outcome']))}</td></tr>"
+            continue
+        sent = "<br>".join(f"{esc(i['competitor'])}: {esc(i['headline'])} ({i['confidence']})" for i in e["sent"]) or "—"
+        where = ", ".join(e["channels"]) + (f"<br><span class='meta'>{esc(', '.join(e['recipients']))}</span>" if e["recipients"] else "")
+        log += (f"<tr><td>{esc(e['at'])}</td><td>{esc(e['trigger'])}{' (TEST)' if e.get('test') else ''}</td>"
+                f"<td>{sent}</td><td>{where or '—'}</td><td>{esc(' '.join(e['outcome']))}</td></tr>")
+    intro = ("<p class='meta'>After each live run, its new changes that pass the filters go to each channel switched on. "
+             "Change these settings in the Base44 app. Keys stay on the server and are never shown.</p>")
+    table = f"<table><tr><th>When</th><th>Started by</th><th>Changes sent</th><th>Where</th><th>Result</th></tr>{log}</table>"
+    return page("Alerts", intro + f"<h2>Settings</h2><table>{rows}</table><h2>Alert log</h2>" + (table if log else "<p>No alerts yet.</p>"))
 
 
 @app.get("/api/changes")

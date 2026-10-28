@@ -1,8 +1,10 @@
 """Snapshots and the run log, in Postgres (Neon) when DATABASE_URL is set, else SQLite.
 
-Two tables, each row one JSON document:
+Four tables, each row one JSON document:
 - snapshots: every page's plans from one run, or why a page couldn't be read
 - runs: the result of one run (items, skipped, run log), exactly as ./run writes it
+- alerts: every alert sent (or held back by the settings), for the alert log
+- settings: the alert settings changed in the app; the newest row is the one in use
 
 SQLite needs nothing installed, so tests, ./proof and local runs use it.
 """
@@ -27,7 +29,7 @@ class Store:
             Path(self.url).parent.mkdir(parents=True, exist_ok=True)
             self.sqlite = sqlite3.connect(self.url, check_same_thread=False, isolation_level=None)
             key = "INTEGER PRIMARY KEY AUTOINCREMENT"
-        for table in ("snapshots", "runs"):
+        for table in ("snapshots", "runs", "alerts", "settings"):
             self._sql(f"CREATE TABLE IF NOT EXISTS {table} (id {key}, at TEXT NOT NULL, doc TEXT NOT NULL)")
 
     def _sql(self, query, args=()):
@@ -79,3 +81,19 @@ class Store:
 
     def runs(self, limit=None):
         return self._newest("runs", limit)
+
+    # Alerts
+
+    def save_alert(self, entry):
+        self._add("alerts", entry["at"], entry)
+
+    def alerts(self, limit=None):
+        return self._newest("alerts", limit)
+
+    def save_alert_settings(self, at, settings):
+        self._add("settings", at, settings)
+
+    def alert_settings(self):
+        """The newest saved alert settings, or {} when none were saved (the environment's then)."""
+        newest = self._newest("settings", 1)
+        return newest[0] if newest else {}
