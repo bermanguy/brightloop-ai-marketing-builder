@@ -11,13 +11,28 @@ MAX_QUOTE = 600
 NUMBER = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?")
 
 
-def visible_text(raw):
-    """The text a person would see: HTML comments and tags removed, spaces collapsed.
+# What a reader never sees: comments, script/style/template contents, and elements hidden
+# by a style or the hidden attribute (the brief hides an instruction in one, D1).
+HIDDEN = re.compile(
+    r"<!--.*?(?:-->|$)"
+    r"|<(script|style|template)\b[^>]*>.*?(?:</\1\s*>|$)"
+    r"|<(\w+)\b[^>]*(?:\bhidden\b|display\s*:\s*none|visibility\s*:\s*hidden)[^>]*>.*?(?:</\2\s*>|$)",
+    re.DOTALL | re.IGNORECASE,
+)
 
-    Comments are where the brief hides instructions (sg-303), and a reader never
-    sees them, so they are not part of the claim.
+
+def hides_text(raw):
+    """Whether a text holds something a reader wouldn't see (and so isn't part of the claim)."""
+    return bool(HIDDEN.search(str(raw or "")))
+
+
+def visible_text(raw):
+    """The text a person would see: hidden parts and tags removed, spaces collapsed.
+
+    Hidden parts are where the brief hides instructions (sg-303, the #kelp span), and a
+    reader never sees them, so they are not part of the claim.
     """
-    text = re.sub(r"<!--.*?(-->|$)", " ", str(raw or ""), flags=re.DOTALL)
+    text = HIDDEN.sub(" ", str(raw or ""))
     text = re.sub(r"<[^>]*>", " ", text)
     text = " ".join(text.split())
     if len(text) > MAX_QUOTE:

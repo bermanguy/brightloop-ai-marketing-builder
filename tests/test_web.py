@@ -1,5 +1,6 @@
 """The web app, on a SQLite store filled from the saved pages. No keys, no network."""
 
+import glob
 import json
 import re
 
@@ -83,7 +84,7 @@ def test_test_upload_returns_the_same_result_as_run(client):
 def test_test_upload_matches_the_run_command_byte_for_byte(client, tmp_path):
     from pricewatch import cli
 
-    for cases in ("fixtures/sample-cases.json", "tests/cases/tricky-cases.json"):
+    for cases in ["fixtures/sample-cases.json", *sorted(glob.glob("tests/cases/*.json"))]:
         out = tmp_path / "result.json"
         cli.main(["--input", cases, "--output", str(out)])
         response = client.post("/test?format=json", files={"cases": ("cases.json", open(cases, "rb").read())})
@@ -242,7 +243,7 @@ def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
     page = response.text
     assert response.status_code == 200 and "What each input led to" in page and "<form" in page
     assert "so confidence 0.2 and labelled unverified" in page  # the rule behind t-03
-    assert "hidden comment" in page  # t-02's injection, noted and not followed
+    assert "hidden part" in page  # t-02's injection, noted and not followed
     assert "<td>t-05</td>" in page and "<b>Skipped</b>" in page  # the ad
     assert "<td>t-03</td>" in page and "unverified" in page  # the rumor
     assert "appears more than once" in page and "Download result.json" in page

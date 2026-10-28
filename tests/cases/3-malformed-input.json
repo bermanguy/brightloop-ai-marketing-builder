@@ -1,0 +1,27 @@
+{
+  "week": "2026-W44",
+  "timezone": "America/New_York",
+  "brand": {"name": "Brightloop"},
+  "config": {},
+  "output": {"cta_required_per_item": false},
+  "signals": [
+    {"id": "c-01", "type": "pricing", "competitor": "Lovable", "source": "lovable.dev/pricing", "ts": "2026-10-27T08:00:00", "text": "Pro shown at $25/month. Time has no zone, so the file's timezone applies."},
+    {"id": "c-02", "type": "PRICING ", "competitor": "Bolt", "source": "bolt.new/pricing", "ts": "2026-10-27", "text": "Type in capitals with a trailing space; date with no time. Pro $25/month."},
+    {"id": "c-03", "type": "pricing", "competitor": "Replit", "source": "replit.com/pricing", "ts": "yesterday", "text": "Unreadable time. Core $25/month."},
+    {"id": "c-04", "type": "pricing", "competitor": "v0", "source": "v0.app/pricing", "text": "No ts at all. Premium $20/month."},
+    {"id": "c-05", "type": "pricing", "competitor": "Bolt", "ts": "2026-10-26T08:00:00Z", "text": "No source at all. Pro $25/month."},
+    {"id": "c-06", "type": "pricing", "source": "lovable.dev/pricing", "ts": "2026-10-26T09:00:00Z", "text": "No competitor named. Pro $25/month."},
+    {"id": "c-07", "type": "pricing", "competitor": "Lovable", "source": "lovable.dev/pricing", "ts": "2026-10-26T10:00:00Z", "text": ""},
+    {"id": "c-08", "type": "pricing", "competitor": "Lovable", "source": "lovable.dev/pricing", "ts": "2026-10-26T10:00:00Z", "text": "<!-- only a hidden comment, no visible claim -->"},
+    {"id": "c-09", "type": "partnership", "competitor": "Replit", "source": "replit.com/blog", "text": "Replit partners with Google Cloud."},
+    {"id": "c-10", "competitor": "Bolt", "source": "bolt.new/pricing", "text": "Signal with no type. Pro $25/month."},
+    {"id": "c-11", "type": "launch", "competitor": "v0", "source": "v0.app/changelog", "ts": "2026-10-25T10:00:00Z", "text": "First of two signals with the same id."},
+    {"id": "c-11", "type": "pricing", "competitor": "v0", "source": "v0.app/pricing", "ts": "2026-10-25T11:00:00Z", "text": "Second signal reusing id c-11. Premium $20/month."},
+    {"id": 42, "type": "pricing", "competitor": "Lovable", "source": "lovable.dev/pricing", "ts": "2026-10-25T12:00:00Z", "text": "Numeric id. Pro $25/month."},
+    {"id": "", "type": "pricing", "competitor": "Bolt", "source": "bolt.new/pricing", "text": "Empty id."},
+    {"type": "ad", "competitor": "Lovable", "channel": "meta", "text": "No id at all."},
+    "this signal is a string, not an object",
+    null,
+    {"id": "c-12", "type": "pricing", "competitor": "Lovable", "source": "lovable.dev/pricing", "ts": "2026-10-24T08:00:00Z", "text": "Pro shown at $25/month.", "extra_field": {"nested": [1, 2, 3]}, "predicted_ctr": 0.5}
+  ]
+}

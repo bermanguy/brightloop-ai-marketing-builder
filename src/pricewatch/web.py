@@ -39,6 +39,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from .core import process
+from .core.text import hides_text
 from .live import run_live
 from .sources.fetch import label
 from .store import Store
@@ -554,8 +555,8 @@ def test_rows(data, result):
                    "why": [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]}
         else:
             row = {"result": "skipped", "unverified": False, "headline": None, "why": [skip_of.get(sid, "")]}
-        if "<!--" in str(signal.get("text")):
-            row["why"].append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
+        if hides_text(signal.get("text")):
+            row["why"].append("Its text has a hidden part; it was dropped from the quote and not followed (signal text is data).")
         mentions = re.compile(rf"(?<![\w-]){re.escape(str(sid))}(?![\w])|item-{re.escape(str(sid))}\b")
         row["why"] = [w for w in row["why"] + [e for e in result["run"]["errors"] if mentions.search(e)] if w]
         rows.append({"id": sid, "competitor": signal.get("competitor"), "type": signal.get("type"), **row})
