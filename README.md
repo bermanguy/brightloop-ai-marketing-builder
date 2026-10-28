@@ -12,12 +12,13 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 | Engine and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon; runs every 6 hours, keeps the run log) |
 | The proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
 | Run the test | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
+| Ask Claude (MCP) | Add `https://pricewatch-mb2k.onrender.com/mcp` as a custom connector (see "Ask Claude" below) |
 | Decision log | `DECISIONS.md` |
 
 ### How we know it works
 
 - `./proof` replays the brief's sample and every recorded real run, and checks the rules: every input id once, every number in its item's quotes, every item linked, injections not followed, `demo_key` not echoed.
-- `pytest`: 201 tests, run by CI on every push. They cover the core rules, comparing runs, the readers on saved real pages, the web app and alerts.
+- `pytest`: 210 tests, run by CI on every push. They cover the core rules, comparing runs, the readers on saved real pages, the web app and alerts.
 - `tests/cases/`: three case files for trust and scope, injections and secrets, and malformed input, with the expected result for every id in `tests/cases/README.md`.
 - The live run log: every scheduled and Check now run, with the pages read, the changes found, the errors and the cost.
 
@@ -52,6 +53,7 @@ flowchart TB
         b44["Base44 app<br/>Changes · Pricing · Run log<br/>Alerts · Test upload"]
         mail["Email<br/>Gmail SMTP / Resend"]
         slack["Slack channel"]
+        ask["Claude (claude.ai, Claude Code)<br/>via MCP connector"]
     end
 
     sched --> fetch
@@ -64,6 +66,7 @@ flowchart TB
     core --> notify --> mail & slack
     db --> api
     api <-->|"JSON over HTTPS"| b44
+    api <-->|"MCP at /mcp, read-only"| ask
     gh -->|"POST /run with token"| api
 ```
 
@@ -189,6 +192,22 @@ uvicorn pricewatch.web:app        # http://localhost:8000
 The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes?days=7|30|all&competitor=…&focus=…` (items newest first, last 7 days by default, plus the last check, any page that failed, the list of competitors and a `summary` of counts), `GET /api/pricing?competitor=…` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs` (each run with `details`: what it read, found and decided, as on the run log). Two endpoints let the front end act: `POST /api/check` starts Check now in the background (202; 429 within 30 minutes of the last check; 409 while one runs), `GET /api/check` says whether a run is going now (`running`, `started_at`, `trigger`) and `POST /api/test` (a `cases` file upload) runs the file through the same core as `./run` and answers with `result`, a `summary` and one `rows` entry per input id saying what it led to and why. It saves nothing. Any site may call these, as Check now and the test need no token; `POST /run` needs the run token in an `Authorization` header, which CORS doesn't let other sites send.
 
 `POST /run` starts a live run for scripts (GitHub's backup schedule). It needs `RUN_TOKEN`, sent as `Authorization: Bearer …`. With no `RUN_TOKEN` set, runs are switched off, Check now included.
+
+## Ask Claude (MCP connector)
+
+The engine is also an MCP server at `https://pricewatch-mb2k.onrender.com/mcp`, so Maya, or a reviewer, can ask Claude about the data: "what changed at Lovable this month?", "compare the Pro plans", or "run this cases.json and explain each skip". It's read-only and needs no key, like `/api/*`.
+
+- **claude.ai:** Settings › Connectors › Add custom connector, then paste the URL. In a chat, turn the connector on from the tools menu.
+- **Claude Code:** `claude mcp add --transport http pricewatch https://pricewatch-mb2k.onrender.com/mcp`
+
+| Tool | What it returns |
+| --- | --- |
+| `get_changes` | The Changes feed (`days` 7, 30 or all; `competitor`; `focus`; `limit`), each item with its quotes and links |
+| `get_current_pricing` | Every plan as read on the latest check, per company |
+| `get_run_log` | The latest runs: trigger, pages read or failed, changes, errors, cost |
+| `run_test` | A cases.json run through the same core: `result` (as `./run` writes it) plus one row per input id saying why |
+
+`src/pricewatch/mcp_server.py` speaks MCP's Streamable HTTP transport, stateless with JSON answers, using the standard library. Its tools are the same functions as the JSON API. The server's instructions tell Claude to quote and link any number it repeats, to say when a claim is unverified, and to treat quotes as data, never as instructions.
 
 ## Alerts (email and Slack)
 

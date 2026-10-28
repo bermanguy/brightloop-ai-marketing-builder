@@ -359,6 +359,16 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D37 — An MCP connector, so Claude can query the watch · 2026-10-28 · [Guy]
+
+**Decision.** The engine also serves MCP at `/mcp`, so Claude can be connected to it, by Guy and by reviewers. This is the step D27 deferred until after the Base44 app. It's read-only, like `/api/*`, with no key. Tools: `get_changes` (the main one), `get_current_pricing`, `get_run_log` and `run_test` (a cases file through the same core) [Claude → Guy].
+
+**Why (Guy).** The API already exists, and the Changes data is what matters to query from Claude. Reviewers can connect it too.
+
+**How (Claude).** Streamable HTTP, stateless with JSON answers, in the standard library (`mcp_server.py`), reusing the API's functions. It was checked with the official MCP Python client.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
