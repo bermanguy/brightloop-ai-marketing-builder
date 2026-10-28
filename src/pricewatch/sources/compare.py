@@ -11,7 +11,7 @@ Rules, not AI (D13):
 - A plan whose price changes as its card switches between "billed monthly"
   and "billed annually" is one signal saying the page now opens on the other
   billing period, not that the price changed: the page's Monthly/Yearly toggle
-  has a new default, and we only read the default view (D14). Seen on Bolt,
+  has a new default (D20; before D23 only the default view was read). Seen on Bolt,
   2026-10-26. (The same price with the other period is a real change in terms,
   so it stays a details change.)
 - Each plan gives at most one signal per run, so one change isn't shown twice.
