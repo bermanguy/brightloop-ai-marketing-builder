@@ -327,6 +327,12 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D33 — Remove the "more stats" breakdowns · 2026-10-28 · [Guy]
+
+**Decision.** The Changes page keeps only the three counters: all changes, verified and unverified rumors. The counters by kind of change and by company ("Show more stats") are removed from Render and Base44. This narrows D30. `/api/changes` still returns them in `summary`.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].

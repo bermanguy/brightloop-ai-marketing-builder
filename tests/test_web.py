@@ -1,5 +1,6 @@
 """The web app, on a SQLite store filled from the saved pages. No keys, no network."""
 
+import glob
 import json
 import re
 
@@ -83,7 +84,7 @@ def test_test_upload_returns_the_same_result_as_run(client):
 def test_test_upload_matches_the_run_command_byte_for_byte(client, tmp_path):
     from pricewatch import cli
 
-    for cases in ("fixtures/sample-cases.json", "tests/cases/tricky-cases.json"):
+    for cases in ["fixtures/sample-cases.json", *sorted(glob.glob("tests/cases/*.json"))]:
         out = tmp_path / "result.json"
         cli.main(["--input", cases, "--output", str(out)])
         response = client.post("/test?format=json", files={"cases": ("cases.json", open(cases, "rb").read())})
@@ -242,7 +243,7 @@ def test_test_upload_shows_what_each_id_led_to_and_saves_nothing(client):
     page = response.text
     assert response.status_code == 200 and "What each input led to" in page and "<form" in page
     assert "so confidence 0.2 and labelled unverified" in page  # the rule behind t-03
-    assert "hidden comment" in page  # t-02's injection, noted and not followed
+    assert "hidden part" in page  # t-02's injection, noted and not followed
     assert "<td>t-05</td>" in page and "<b>Skipped</b>" in page  # the ad
     assert "<td>t-03</td>" in page and "unverified" in page  # the rumor
     assert "appears more than once" in page and "Download result.json" in page
@@ -321,9 +322,7 @@ def test_counters_count_the_cards_in_the_filter_and_each_one_shows_its_cards(cli
 def test_changes_page_and_api_show_the_counters(client):
     page = client.get("/?days=all").text
     assert "class='strip'" in page and "<span class='n'>1</span><span class='t'>All changes</span>" in page
-    assert "<span class='t'>price up</span>" in page and "<details class='more'><summary>Show more stats" in page
-    assert "<details class='more' open>" in client.get("/?days=all&focus=price%20up").text
-    assert "focus=price%20up" in page
+    assert "Show more stats" not in page and "<span class='t'>price up</span>" not in page  # D33: three tiles only
     data = client.get("/api/changes?days=all&focus=unverified").json()
     assert data["summary"]["total"] == 1 and data["items"] == []
 

@@ -1,0 +1,26 @@
+{
+  "week": "2026-W44",
+  "timezone": "Asia/Jerusalem",
+  "brand": {"name": "Brightloop", "voice": "plain, confident, no hype", "banned_words": ["revolutionary", "game-changing", "seamless"]},
+  "config": {"utm_source": "brightloop"},
+  "sources": ["competitor pricing pages", "launch blogs", "reddit.com", "x.com"],
+  "output": {"cta_required_per_item": true},
+  "signals": [
+    {"id": "a-01", "type": "pricing", "competitor": "Lovable", "source": "https://www.lovable.dev/pricing", "ts": "2026-10-27T08:00:00Z", "text": "Pro plan shown at $25/month (was $20 last week)."},
+    {"id": "a-02", "type": "pricing", "competitor": "v0", "source": "v0.dev/pricing", "ts": "2026-10-27T09:15:00+02:00", "text": "Premium plan now $20/month, includes $20 of credits."},
+    {"id": "a-03", "type": "pricing", "competitor": "Bolt", "source": "bolt.new/blog/new-plans", "ts": "2026-10-26 14:00 UTC", "text": "Introducing Teams at $30 per member per month."},
+    {"id": "a-04", "type": "pricing", "competitor": "Replit", "source": "techcrunch.com/2026/10/26/replit-pricing", "ts": "2026-10-26T10:00:00-07:00", "text": "Replit is raising Core to $25/month, the company confirmed."},
+    {"id": "a-05", "type": "pricing", "competitor": "Bolt", "source": "sponsored post, ads.example", "ts": "2026-10-26T12:40:00Z", "text": "Bolt is now free forever, no limits."},
+    {"id": "a-06", "type": "pricing", "competitor": "Lovable", "source": "news.ycombinator.com/item?id=4242", "ts": "2026-10-25T18:00:00Z", "text": "Lovable quietly dropped the 5 free daily credits."},
+    {"id": "a-07", "type": "pricing", "competitor": "v0", "source": "x.com/someone", "ts": "2026-10-25T07:00:00", "text": "v0 Team plan going to $50/user next month"},
+    {"id": "a-08", "type": "pricing", "competitor": "Cursor", "source": "cursor.com/pricing", "ts": "2026-10-24T09:00:00Z", "text": "Pro is $20/month, Ultra $200/month."},
+    {"id": "a-09", "type": "pricing", "competitor": "Lovable", "source": "bolt.new/compare/lovable", "ts": "2026-10-24T10:00:00Z", "text": "Lovable charges $50/month for what Bolt gives for $25."},
+    {"id": "a-10", "type": "ad", "competitor": "Lovable", "channel": "meta", "first_seen": "2026-08-02", "last_seen": "2026-10-19", "text": "Build an app in a weekend. No code.", "predicted_ctr": 0.041},
+    {"id": "a-11", "type": "ad", "competitor": "Bolt", "channel": "google", "first_seen": "2026-10-20", "last_seen": "2026-10-26", "text": "Bolt Pro now 50% off - $10/month!", "predicted_ctr": 0.12},
+    {"id": "a-12", "type": "launch", "competitor": "Replit", "source": "x.com/@replit", "ts": "2026-10-24T23:30:00+03:00", "text": "Agent 4 is live for every plan."},
+    {"id": "a-13", "type": "launch", "competitor": "Replit", "source": "techblog.example", "ts": "2026-10-24 20:30 UTC", "text": "Replit rolls out Agent 4 to all tiers."},
+    {"id": "a-14", "type": "launch", "competitor": "v0", "source": "reddit.com/r/vibecoding, u/anon", "ts": "2026-10-25T11:00:00+02:00", "text": "heard v0 is shutting down??"}
+  ],
+  "quality_metric_hint": "predicted_ctr is Brightloop's model score",
+  "nice_to_have": ["multi-language", "SSO", "dark mode", "analytics dashboard", "A/B auto-winner", "mobile app"]
+}
