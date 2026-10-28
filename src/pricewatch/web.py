@@ -58,6 +58,19 @@ _running = threading.Lock()
 CHECK_EVERY_S = 300
 
 
+_current = None  # the run going now: {"started_at", "trigger"}, for GET /api/check
+
+
+def run_now(trigger):
+    """Start a live run (the caller holds _running) and note it, so the front end can show it in progress."""
+    global _current
+    _current = {"started_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "trigger": trigger}
+    try:
+        return run_live(store(), trigger=trigger)
+    finally:
+        _current = None
+
+
 def store():
     global _store
     if _store is None:
@@ -234,7 +247,7 @@ def run_if_due(every_hours, now=None):
     if not _running.acquire(blocking=False):
         return "busy"
     try:
-        run_live(store(), trigger="schedule")
+        run_now(trigger="schedule")
     except Exception as exc:  # never kill the scheduler; the run log shows the gap
         print(f"scheduled run failed: {exc.__class__.__name__}: {exc}", flush=True)
     finally:
@@ -385,7 +398,7 @@ def check(background=False):
         threading.Thread(target=_check_in_background, daemon=True).start()
         return "started", None
     try:
-        run_live(store(), trigger="manual")
+        run_now(trigger="manual")
     finally:
         _running.release()
     return "done", None
@@ -393,7 +406,7 @@ def check(background=False):
 
 def _check_in_background():
     try:
-        run_live(store(), trigger="manual")
+        run_now(trigger="manual")
     except Exception as exc:  # the run log shows the gap
         print(f"check now failed: {exc.__class__.__name__}: {exc}", flush=True)
     finally:
@@ -419,6 +432,14 @@ CHECK_ANSWERS = {
     "too soon": (429, f"Check now works at most once every {CHECK_NOW_EVERY_MIN} minutes."),
     "off": (503, "Runs are switched off on this server."),
 }
+
+
+@app.get("/api/check")
+def api_check_status():
+    """Whether a run is going now (from any trigger), so the run log can show it in progress."""
+    current = _current
+    return {"running": current is not None, "started_at": current and current["started_at"],
+            "trigger": current and current["trigger"]}
 
 
 @app.post("/api/check")
@@ -449,7 +470,7 @@ def run(token: str = Form(None), authorization: str = Header(None), unless_ran_w
     try:
         # The Check now form sends the token as a field; GitHub's backup workflow asks to skip a recent run.
         trigger = "manual" if token else "backup schedule" if unless_ran_within_hours is not None else "API"
-        result = run_live(store(), trigger=trigger)
+        result = run_now(trigger=trigger)
     finally:
         _running.release()
     if token:  # the Check now form
