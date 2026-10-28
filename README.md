@@ -22,6 +22,31 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 - `tests/cases/`: three case files for trust and scope, injections and secrets, and malformed input, with the expected result for every id in `tests/cases/README.md`.
 - The live run log: every scheduled and Check now run, with the pages read, the changes found, the errors and the cost.
 
+## The big picture
+
+```mermaid
+flowchart LR
+    web["1. Public web<br/>competitors' pricing pages<br/>+ Hacker News"]
+    test["2. Test file<br/>cases.json"]
+    reader["3. AI reader<br/>Claude reads the page,<br/>every value quote-checked"]
+    core["4. Core rules<br/>not AI"]
+    db[("5. Database<br/>snapshots and runs")]
+    api["6. Engine API<br/>on Render"]
+    maya["7. Maya<br/>Base44 app<br/>email and Slack alerts<br/>Claude via MCP"]
+
+    web -->|"every 6 hours"| reader --> core
+    test --> core
+    core --> db --> api --> maya
+```
+
+1. **Public web.** Every 6 hours the engine reads the pricing pages of Lovable, Bolt, Replit and v0, and searches Hacker News for pricing rumors. Rumors skip the reader and are always labelled unverified.
+2. **Test file.** The same core also takes a `cases.json` file, from `./run` or the app's Test upload. Only the source of signals differs.
+3. **AI reader.** Claude turns each page into plans and prices. Any value it can't quote word for word from the page is dropped, so it can't invent a number.
+4. **Core rules.** Plain code, not AI, decides confidence, the unverified label, skips and that every input is accounted for once. Text inside a signal can't change these rules.
+5. **Database.** Neon Postgres keeps the snapshots, so each run is compared with the last one and only real changes come through. The run log keeps every run, its errors and its cost.
+6. **Engine API.** A Python server on Render serves the results as JSON and holds all the keys.
+7. **Maya.** She sees changes in the Base44 app, gets email and Slack alerts, and can ask Claude about them through the MCP connector. Every number comes with its link and quote.
+
 ## How it fits together
 
 ```mermaid
