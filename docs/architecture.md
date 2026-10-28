@@ -2,6 +2,8 @@
 
 Status: **approved by Guy, 2026-10-25** (D13). Implements `docs/spec.md`.
 
+> **What changed since (see `DECISIONS.md`):** the app, always on (D22), schedules its own runs every 6 hours, with GitHub Actions as an hourly backup (D21). The AI reads the pages and every value is quote-checked (D16); action and why are written by rule (D26). Every billing view on each page is captured (D23). Hacker News is the rumor source (D24). Base44 became the marketers' front end over the JSON API, with Render as the admin fallback (D32). Alerts go by email and Slack (D34–D36). The current picture is the diagram in the README.
+
 ## One idea holds it together
 
 The brief requires the live app and the test mode to share the same logic, with only the input source different. So the system is split into **sources** that produce signals and **one core** that turns signals into Maya's items:
