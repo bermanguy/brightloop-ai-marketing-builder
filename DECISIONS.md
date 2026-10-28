@@ -333,6 +333,18 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D34 — Alerts by email and Slack; test uploads can send them, off by default · 2026-10-28 · [Guy]
+
+**Decision.** After each live run, the new changes that pass the filters (minimum confidence, companies) go out by email and to one Slack channel, chosen by its id. Test upload can also send its result as an alert, with each channel off by default. The alerts go to Guy's email and Slack workspace and are shown in the recording.
+
+**Why (Guy).** Maya spends her time and attention in other tools, so changes surfaced only in the app may not look user-centric.
+
+**Evidence.** Maya didn't say which channel she wants (asked in message 3/25). *[assumption]*
+
+**Limits (Claude).** Settings are server environment variables, shown read-only, because a public settings form would let anyone send our alerts anywhere. Test alerts go only to the server's own channels, are marked TEST, and are sent at most once every 5 minutes.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
