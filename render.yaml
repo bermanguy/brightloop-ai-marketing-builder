@@ -13,7 +13,11 @@ services:
       - key: RUN_TOKEN         # protects POST /run (Check now and the schedule)
         sync: false
       # Alerts (notify.py): each channel stays off until its settings are here.
-      - key: RESEND_API_KEY    # email through Resend
+      - key: SMTP_USER         # email through Gmail: the address
+        sync: false
+      - key: SMTP_PASSWORD     # a Google app password
+        sync: false
+      - key: RESEND_API_KEY    # or email through Resend
         sync: false
       - key: ALERT_EMAIL_TO    # comma-separated addresses
         sync: false
