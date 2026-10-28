@@ -351,6 +351,14 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D36 — Live alert settings editable in the app, with an alert log · 2026-10-28 · [Claude → Guy]
+
+**Decision.** The live alert settings can be changed in the app (Base44 Alerts tab, `POST /api/alerts`) by anyone with the link: email and Slack on or off, alerts for scheduled runs and for Check now, minimum confidence, companies, and up to 3 extra email addresses. Addresses are always shown masked; keys and channels stay in Render. An alert log lists every alert sent or held back, test alerts and each settings change. This replaces D34's "settings are shown read-only".
+
+**Asked by Guy.** Configure and disable the alerts for each run, add another email, and track the alerts that were fired with their details.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
