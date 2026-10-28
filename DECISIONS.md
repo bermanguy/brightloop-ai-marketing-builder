@@ -311,6 +311,14 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D31 — Plan prices side by side, no cost per prompt · 2026-10-28 · [Claude → Guy]
+
+**Decision.** Current pricing shows each competitor's plan prices side by side, as written on each page. The app doesn't show a cost per prompt or per credit across competitors.
+
+**Note (Claude).** Only Lovable publishes example prompt costs; Bolt, Replit and v0 price in their own units. A cross-competitor figure would have to be computed, which "no link, no number" and D12 rule out.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].
