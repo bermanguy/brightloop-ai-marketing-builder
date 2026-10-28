@@ -364,6 +364,8 @@ def test_test_upload_sends_alerts_only_when_asked_and_never_changes_the_result(c
     assert len(sent) == 1 and "[TEST]" in sent[0]["text"] and "Lovable" in sent[0]["text"] and "Bolt" not in sent[0]["text"]
     again = client.post("/api/test", files={"cases": ("c.json", cases)}, data={"notify": ["slack"]}).json()
     assert "at most once every 5 minutes" in again["alerts"][0] and len(sent) == 1
+    log = client.get("/api/alerts/log").json()
+    assert len(log) == 1 and log[0]["test"] and log[0]["trigger"] == "test upload" and log[0]["slack_channel"] == "C1"
     page = client.post("/test", files={"cases": ("c.json", cases)}, data={"notify": ["email"]}).text
     assert "<b>Alerts.</b>" in page
     assert client.get("/api/alerts").json()["slack"] is True and "xoxb" not in client.get("/api/alerts").text
@@ -372,15 +374,66 @@ def test_test_upload_sends_alerts_only_when_asked_and_never_changes_the_result(c
 def test_a_live_run_alerts_its_new_changes_when_a_channel_is_set_up(client, monkeypatch):
     from pricewatch import notify
     sent = []
-    monkeypatch.setattr(notify, "send", lambda items, channels, test=False: sent.append((items, channels)) or ["ok"])
-    item = {"confidence": 0.9, "competitor": "Lovable"}
+    monkeypatch.setattr(notify, "send", lambda items, channels, test=False, email_to=None: sent.append((items, channels, email_to)) or ["ok"])
+    item = {"confidence": 0.9, "competitor": "Lovable", "headline": "Pro now $30"}
     monkeypatch.setattr(web, "run_live", lambda store, trigger=None: {"items": [item, {"confidence": 0.2, "competitor": "Bolt"}]})
     web.run_now("manual")
     assert sent == []  # no channel set up
     monkeypatch.setenv("RESEND_API_KEY", "re_x")
     monkeypatch.setenv("ALERT_EMAIL_TO", "maya@example.com")
     web.run_now("schedule")
-    assert sent == [([item], ["email"])]
+    assert sent == [([item], ["email"], "maya@example.com")]
+    log = client.get("/api/alerts/log").json()
+    assert log[0]["trigger"] == "schedule" and log[0]["sent"][0]["headline"] == "Pro now $30" and log[0]["outcome"] == ["ok"]
+    assert log[0]["recipients"] == ["m***@example.com"] and log[1]["outcome"][0].startswith("Nothing sent")
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: {"items": []})
+    web.run_now("schedule")
+    assert len(client.get("/api/alerts/log").json()) == 2  # a run with no new changes notes nothing
+
+
+def test_alert_settings_can_be_changed_and_each_run_obeys_them(client, monkeypatch):
+    from pricewatch import notify
+    monkeypatch.setenv("RESEND_API_KEY", "re_x")
+    monkeypatch.setenv("ALERT_EMAIL_TO", "maya@example.com")
+    sent = []
+    monkeypatch.setattr(notify, "send", lambda items, channels, test=False, email_to=None: sent.append(email_to) or ["ok"])
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: {"items": [{"confidence": 0.9, "competitor": "Lovable"}]})
+    shown = client.get("/api/alerts").json()
+    assert shown["email_on"] and shown["on_schedule"] and shown["on_check_now"] and shown["extra_emails"] == []
+    changed = client.post("/api/alerts", json={"on_check_now": False, "add_email": "reviewer@example.org"}).json()
+    assert changed["on_check_now"] is False and changed["extra_emails"] == ["r***@example.org"]
+    assert "reviewer@" not in client.get("/api/alerts").text and "reviewer@" not in client.get("/api/alerts/log").text
+    web.run_now("manual")
+    web.run_now("schedule")
+    assert sent == ["maya@example.com,reviewer@example.org"]
+    log = client.get("/api/alerts/log").json()
+    assert log[0]["recipients"] == ["m***@example.com", "r***@example.org"]
+    assert log[1]["outcome"] == ["Nothing sent: alerts are off for Check now."]
+    assert log[2]["kind"] == "settings" and "Check now off" in log[2]["outcome"][0]
+    client.post("/api/alerts", json={"email_on": False, "remove_email": 0, "min_confidence": 0.4, "competitors": ["Bolt"]})
+    assert client.get("/api/alerts").json()["extra_emails"] == []
+    web.run_now("schedule")
+    assert len(sent) == 1 and "none of the 1 changes passed the filters" in client.get("/api/alerts/log").json()[0]["outcome"][0]
+    page = client.get("/alerts").text
+    assert "Alert log" in page and "reviewer@" not in page and "re_x" not in page
+
+
+@pytest.mark.parametrize("change, error", [
+    ({"email_on": "no"}, "true or false"), ({"min_confidence": 0.5}, "one of 0.9"), ({"add_email": "not an email"}, "one email"),
+    ({"remove_email": 3}, "position"), ({"competitors": [1]}, "list of names"), ([1, 2], "JSON object"),
+])
+def test_bad_alert_settings_are_refused_and_change_nothing(client, change, error):
+    answer = client.post("/api/alerts", json=change)
+    assert answer.status_code == 400 and error in answer.json()["error"]
+    assert client.get("/api/alerts").json()["changed_at"] is None and client.get("/api/alerts/log").json() == []
+
+
+def test_at_most_three_extra_addresses(client):
+    for n in range(3):
+        client.post("/api/alerts", json={"add_email": f"r{n}@example.org"})
+    assert client.post("/api/alerts", json={"add_email": "r0@example.org"}).status_code == 200  # already there
+    answer = client.post("/api/alerts", json={"add_email": "r9@example.org"})
+    assert answer.status_code == 400 and "At most 3" in answer.json()["error"]
 
 
 def test_a_test_alert_can_email_one_given_address_within_the_daily_cap(client, monkeypatch):

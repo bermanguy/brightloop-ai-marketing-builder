@@ -11,6 +11,10 @@ Everything comes from environment variables, and each channel is off until its o
     ALERT_MIN_CONFIDENCE               default 0.6: changes seen on the competitor's own site
     ALERT_COMPETITORS                  comma-separated names; empty means all companies
 
+The app can save changes to these (on/off per channel and per trigger, up to
+MAX_EXTRA_EMAILS more addresses, the filters); `settings(saved)` merges them over
+the environment. Keys and the channels themselves stay in the environment.
+
 Only the web app calls this (a live run, or a Test upload that asks for it), so
 ./run and ./proof never send anything. The filters are rules, not AI (D13). The
 text sent is the item's own text, with every source quote and link (no link, no
@@ -34,17 +38,83 @@ TEST_NOTE = "TEST: not real pricing data. These changes come from a file uploade
 SAFE_URL = re.compile(r"https?://[\w.-]+(/[\w./%?=&#~+-]*)?")
 
 
-def settings():
-    """The alert settings, safe to show: which channels are set up, the filters, never a key."""
+CONFIDENCE_LEVELS = (0.9, 0.6, 0.4, 0.2)
+MAX_EXTRA_EMAILS = 3
+SWITCHES = ("email_on", "slack_on", "on_schedule", "on_check_now")
+# Which switch a run's trigger obeys: Check now is "manual"; every other live run counts as scheduled.
+TRIGGER_SWITCH = {"manual": "on_check_now"}
+
+
+def settings(saved=None):
+    """The alert settings, safe to show: which channels are set up, what's switched on, the filters,
+    masked addresses, never a key. `saved` is what the app saved (Store.alert_settings())."""
+    saved = saved or {}
     to = os.environ.get("ALERT_EMAIL_TO", "")
     return {
         "email": bool(to and (_smtp_ready() or os.environ.get("RESEND_API_KEY"))),
         "email_to": _mask(to),
         "slack": bool(os.environ.get("SLACK_BOT_TOKEN") and os.environ.get("SLACK_CHANNEL_ID")),
         "slack_channel": os.environ.get("SLACK_CHANNEL_ID") or None,
-        "min_confidence": min_confidence(),
-        "competitors": competitors(),
+        **{key: saved.get(key, True) for key in SWITCHES},
+        "extra_emails": [_mask(a) for a in saved.get("extra_emails") or []],
+        "min_confidence": min_confidence(saved.get("min_confidence")),
+        "competitors": competitors(saved["competitors"]) if "competitors" in saved else competitors(),
+        "changed_at": saved.get("changed_at"),
     }
+
+
+def update(saved, changes):
+    """Apply a settings change from the app. Returns (new saved settings, None) or (None, why not).
+
+    `changes` may hold any of SWITCHES (true/false), min_confidence (one of CONFIDENCE_LEVELS),
+    competitors (a list or "Lovable, Bolt"; empty is all), add_email (one address) and
+    remove_email (the position of an extra address, from 0)."""
+    if not isinstance(changes, dict):
+        return None, "Send the changes as a JSON object."
+    new = dict(saved or {})
+    for key in SWITCHES:
+        if key in changes:
+            if not isinstance(changes[key], bool):
+                return None, f"{key} must be true or false."
+            new[key] = changes[key]
+    if "min_confidence" in changes:
+        try:
+            level = float(changes["min_confidence"])
+        except (TypeError, ValueError):
+            level = None
+        if level not in CONFIDENCE_LEVELS:
+            return None, "min_confidence must be one of 0.9, 0.6, 0.4, 0.2."
+        new["min_confidence"] = level
+    if "competitors" in changes:
+        value = changes["competitors"]
+        if not isinstance(value, (str, list)) or not all(isinstance(n, str) for n in (value if isinstance(value, list) else [])):
+            return None, "competitors must be a list of names."
+        names = competitors(value)
+        if len(names) > 10 or any(len(n) > 40 for n in names):
+            return None, "competitors takes at most 10 names."
+        new["competitors"] = names
+    extras = list(new.get("extra_emails") or [])
+    if changes.get("remove_email") is not None:
+        index = changes["remove_email"]
+        if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < len(extras):
+            return None, "remove_email must be the position of an extra address."
+        extras.pop(index)
+    if changes.get("add_email"):
+        address = str(changes["add_email"]).strip()
+        if not valid_email(address):
+            return None, "add_email needs one email address."
+        if address.lower() not in {a.lower() for a in extras}:
+            if len(extras) >= MAX_EXTRA_EMAILS:
+                return None, f"At most {MAX_EXTRA_EMAILS} extra addresses; remove one first."
+            extras.append(address)
+    new["extra_emails"] = extras
+    return new, None
+
+
+def recipients(saved=None):
+    """Every address a live alert goes to: ALERT_EMAIL_TO, then the extra addresses saved in the app."""
+    owner = [a.strip() for a in os.environ.get("ALERT_EMAIL_TO", "").split(",") if a.strip()]
+    return owner + [a for a in (saved or {}).get("extra_emails") or [] if a.lower() not in {o.lower() for o in owner}]
 
 
 def min_confidence(value=None):
@@ -184,6 +254,11 @@ def email_html(items, test):
         parts.append(f"<h3>{e(item['headline'])}</h3><p style='color:#555'>{e(_label(item))}</p>"
                      f"<p>{e(item['action'])}</p><ul>{sources}</ul>")
     return "".join(parts)
+
+
+def mask(addresses):
+    """Addresses as shown anywhere (the app, the alert log): first letter and domain only."""
+    return _mask(addresses)
 
 
 def _mask(addresses):
