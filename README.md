@@ -21,6 +21,57 @@ Built for Maya (Head of Growth): a watch on competitors' pricing and packaging c
 - `tests/cases/`: three case files for trust and scope, injections and secrets, and malformed input, with the expected result for every id in `tests/cases/README.md`.
 - The live run log: every scheduled and Check now run, with the pages read, the changes found, the errors and the cost.
 
+## How it fits together
+
+```mermaid
+flowchart TB
+    subgraph inputs["Where signals come from"]
+        direction LR
+        pages["Pricing pages<br/>Lovable · Bolt · Replit · v0"]
+        hn["Hacker News<br/>(Algolia search API)"]
+        cases["cases.json<br/>./run or Test upload"]
+        proof["./proof<br/>recorded real runs, no keys"]
+    end
+
+    subgraph render["Render: Python engine (Docker, always on)"]
+        sched["Scheduler: every 6 h<br/>+ Check now"]
+        fetch["Fetch<br/>httpx · Playwright + Chromium"]
+        read["Read plans<br/>AI reader, quote-checked<br/>(plain reader fallback)"]
+        compare["Compare with last snapshot"]
+        core["CORE: rules, not AI<br/>confidence · unverified · skips<br/>every id once · no link, no number"]
+        notify["Alerts, filtered by rule"]
+        api["FastAPI<br/>JSON API + admin pages"]
+    end
+
+    claude["Anthropic API<br/>Claude"]
+    db[("Neon Postgres<br/>snapshots · runs · alerts")]
+    gh["GitHub Actions<br/>CI on every push<br/>+ hourly backup trigger"]
+
+    subgraph out["Where Maya sees it"]
+        direction LR
+        b44["Base44 app<br/>Changes · Pricing · Run log<br/>Alerts · Test upload"]
+        mail["Email<br/>Gmail SMTP / Resend"]
+        slack["Slack channel"]
+    end
+
+    sched --> fetch
+    pages --> fetch --> read --> compare -->|"pricing signals"| core
+    read <-->|"page text as data"| claude
+    hn -->|"rumors: unverified, 0.2"| core
+    cases -->|"signals"| core
+    proof -.->|"replays the same pipeline"| compare
+    core --> db
+    core --> notify --> mail & slack
+    db --> api
+    api <-->|"JSON over HTTPS"| b44
+    gh -->|"POST /run with token"| api
+```
+
+- **One core, two sources.** The live watch (pages, read, compare) and the test path (`cases.json`) feed the same core, as the brief requires. Only the source of signals differs.
+- **AI reads, rules decide.** Claude reads the pages, and every value it returns must be found word for word on the page. Confidence, the unverified label, skips and id accounting are rules, so text inside a signal can't change them (D1, D13, D16).
+- **Base44 is the marketer's front end; Render is the engine.** Base44 calls the engine's JSON API. The Render pages stay as an admin fallback (D32).
+- **Keys stay on Render** (Anthropic, Neon, Gmail, Slack). A fresh clone runs `./run` and `./proof` with none.
+
 ## Repository layout
 
 | Path | Contents |
