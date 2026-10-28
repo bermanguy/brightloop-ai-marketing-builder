@@ -124,7 +124,7 @@ The same data is available as JSON for a front end hosted elsewhere (the Base44 
 
 After each live run, the changes that pass the alert filters go out as one email (through Resend) and one Slack message to a channel. Each change keeps its quote and source link. The filters are rules: a minimum confidence (default 0.6, the competitor's own site) and a list of companies (default all). Each channel stays off until its settings are in the environment: `RESEND_API_KEY` and `ALERT_EMAIL_TO`; `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID`; optional `ALERT_MIN_CONFIDENCE`, `ALERT_COMPETITORS` and `ALERT_EMAIL_FROM`. `GET /api/alerts` shows the settings without any key.
 
-Test upload can send its result as an alert too: email and Slack checkboxes, off by default, with the same filters. It only ever sends to this server's own email and channel, marks the message TEST, and sends at most once every 5 minutes. `result.json` doesn't change. `./run` and `./proof` never send anything.
+Test upload can send its result as an alert too: email and Slack checkboxes, off by default, with the same filters. Slack goes to this server's channel; email goes to its inbox, or to one address typed in "Send email to" (`email_to`). Resend delivers to other addresses only once a sending domain is verified (`ALERT_EMAIL_FROM` on that domain). Test alerts are marked TEST and sent at most once every 5 minutes and 20 times a day. `result.json` doesn't change. `./run` and `./proof` never send anything.
 
 ## Deploy (Render + Neon)
 

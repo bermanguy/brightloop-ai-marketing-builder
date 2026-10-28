@@ -60,8 +60,17 @@ def pick(items, min_conf, names):
     return [i for i in items if i["confidence"] >= min_conf and (not wanted or str(i.get("competitor", "")).lower() in wanted)]
 
 
-def send(items, channels, test=False, post=None):
+EMAIL = re.compile(r"[^@\s<>,;\"']{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
+
+
+def valid_email(address):
+    return bool(EMAIL.fullmatch(str(address or "").strip())) and len(str(address)) <= 200
+
+
+def send(items, channels, test=False, post=None, email_to=None):
     """Send the items to each channel in `channels` ("email", "slack") that is set up.
+
+    email_to replaces ALERT_EMAIL_TO with one address (a Test upload's "Send to"; checked by the caller).
 
     Returns one line per channel saying what happened; never raises, never shows a key.
     """
@@ -72,7 +81,7 @@ def send(items, channels, test=False, post=None):
     for channel in channels:
         try:
             if channel == "email":
-                lines.append(_send_email(items, test, post))
+                lines.append(_send_email(items, test, post, email_to))
             elif channel == "slack":
                 lines.append(_send_slack(items, test, post))
         except Exception as exc:  # a failed alert never fails the run
@@ -86,15 +95,20 @@ def subject(items, test):
     return f"{'[TEST] ' if test else ''}Pricing watch: {n} change{'s' if n != 1 else ''} ({names})"
 
 
-def _send_email(items, test, post):
+def _send_email(items, test, post, email_to=None):
     key, to = os.environ.get("RESEND_API_KEY"), os.environ.get("ALERT_EMAIL_TO", "")
     if not (key and to):
         return "Email is not set up on this server."
+    to = email_to or to
     body = {"from": os.environ.get("ALERT_EMAIL_FROM") or DEFAULT_FROM,
             "to": [a.strip() for a in to.split(",") if a.strip()],
             "subject": subject(items, test), "html": email_html(items, test)}
     status, answer = post(RESEND_URL, body, key)
-    return f"Email sent to {_mask(to)}." if 200 <= status < 300 else f"Email failed: Resend answered {status}."
+    if 200 <= status < 300:
+        return f"Email sent to {_mask(to)}."
+    if email_to and status == 403:  # Resend's answer for an address it won't send to yet
+        return "Email failed: this server can only email its own inbox until a sending domain is verified."
+    return f"Email failed: Resend answered {status}."
 
 
 def _send_slack(items, test, post):
