@@ -164,9 +164,51 @@ def test_the_json_api_gives_the_same_data_as_the_pages(client):
     assert {"label": "Replit", "ok": False} in runs[0]["pages"] and runs[0]["changes"] == 1
 
 
-def test_the_json_api_is_read_only_from_other_sites(client):
-    preflight = client.options("/run", headers={"Origin": "https://example.base44.app", "Access-Control-Request-Method": "POST"})
-    assert preflight.status_code == 400 and "POST" not in preflight.headers.get("access-control-allow-methods", "")
+def test_other_sites_can_check_now_and_test_but_never_send_the_run_token(client):
+    origin = {"Origin": "https://example.base44.app", "Access-Control-Request-Method": "POST"}
+    assert client.options("/api/check", headers=origin).status_code == 200
+    with_token = client.options("/run", headers={**origin, "Access-Control-Request-Headers": "authorization"})
+    assert with_token.status_code == 400  # a browser on another site can't send the Bearer token
+
+
+def test_api_check_starts_a_run_in_the_background_at_most_every_30_minutes(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(web, "run_live", lambda store, trigger=None: calls.append(trigger))
+    started = client.post("/api/check")
+    assert started.status_code == 202 and started.json()["status"] == "started"
+    for _ in range(100):  # the background run releases the lock when done
+        if web._running.acquire(blocking=False):
+            web._running.release()
+            break
+        web.time.sleep(0.01)
+    assert calls == ["manual"]
+    now = web.datetime.now(web.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    web.store().save_run({"items": [], "skipped": [], "run": {"started_at": now, "errors": [], "cost_usd": 0.0}})
+    again = client.post("/api/check")
+    assert again.status_code == 429 and again.json()["last_check"] == now and again.json()["next_allowed_at"] > now
+    assert calls == ["manual"]
+
+
+def test_api_check_is_refused_while_a_run_is_going_and_off_without_run_token(client, monkeypatch):
+    web._running.acquire()
+    try:
+        assert client.post("/api/check").status_code == 409
+    finally:
+        web._running.release()
+    monkeypatch.delenv("RUN_TOKEN")
+    assert client.post("/api/check").status_code == 503
+
+
+def test_api_test_gives_the_run_result_and_the_same_rows_as_the_page(client):
+    cases = open("fixtures/sample-cases.json", "rb").read()
+    answer = client.post("/api/test", files={"cases": ("cases.json", cases)}).json()
+    file_result = client.post("/test?format=json", files={"cases": ("cases.json", cases)}).json()
+    assert answer["result"]["items"] == file_result["items"] and answer["result"]["skipped"] == file_result["skipped"]
+    assert answer["summary"] == {"signals": 8, "items": 2, "skipped": 6, "errors": 0} and len(answer["rows"]) == 8
+    assert "bl_demo_4c19e2" not in json.dumps(answer)  # the demo key is never echoed
+    page = client.post("/test", files={"cases": ("cases.json", cases)}).text
+    for row in answer["rows"]:
+        assert f"<td>{row['id']}</td>" in page and row["result"] in ("item", "skipped") and row["why"]
 
 
 def test_the_app_starts_a_run_every_six_hours_by_itself(client, monkeypatch):

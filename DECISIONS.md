@@ -319,6 +319,14 @@ Toggles and dropdowns are not clicked.
 
 ---
 
+## D32 — Check now and Test upload in the Base44 app; Render as the admin tool · 2026-10-28 · [Guy]
+
+**Decision.** Marketers use Check now and Test upload from the Base44 app, through `POST /api/check` and `POST /api/test`. The Render pages stay as an admin tool in case Base44 is down.
+
+**Why (Guy).** The marketers shouldn't work against the Render app.
+
+---
+
 ## Open questions
 
 - ~~Deadline date~~ Resolved 2026-10-25: submission deadline is **Thursday 29 October 2026** [Guy].

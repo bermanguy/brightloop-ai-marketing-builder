@@ -52,7 +52,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="Brightloop Pricing Watch", docs_url=None, redoc_url=None, lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"])
 _store = None
 _running = threading.Lock()
 CHECK_EVERY_S = 300
@@ -362,24 +362,75 @@ def runs():
 CHECK_NOW_EVERY_MIN = 30
 
 
-@app.post("/check", response_class=HTMLResponse)
-def check_now():
-    """The Check now button: no token, so reviewers can try it, but at most one run every
-    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29)."""
+def check(background=False):
+    """Check now, for the page and the API: no token, so reviewers can try it, but at most one run every
+    CHECK_NOW_EVERY_MIN minutes (whatever started the last one), which caps the cost (D29).
+
+    Returns (status, last check's started_at): "off", "busy", "too soon", "started" (background) or "done".
+    """
     if not os.environ.get("RUN_TOKEN"):
-        return page("Check now", "<p>Runs are switched off on this server.</p>")
+        return "off", None
     if not _running.acquire(blocking=False):
-        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+        return "busy", None
     try:
         last = store().runs(1)
         recent = (datetime.now(timezone.utc) - timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
         if last and last[0]["run"]["started_at"] > recent:
-            return page("Check now", f"<p>The last check started at {esc(last[0]['run']['started_at'])}. Check now works at most once "
-                        f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
+            _running.release()
+            return "too soon", last[0]["run"]["started_at"]
+    except Exception:
+        _running.release()
+        raise
+    if background:  # answer the API at once; the run takes about two minutes
+        threading.Thread(target=_check_in_background, daemon=True).start()
+        return "started", None
+    try:
         run_live(store(), trigger="manual")
     finally:
         _running.release()
+    return "done", None
+
+
+def _check_in_background():
+    try:
+        run_live(store(), trigger="manual")
+    except Exception as exc:  # the run log shows the gap
+        print(f"check now failed: {exc.__class__.__name__}: {exc}", flush=True)
+    finally:
+        _running.release()
+
+
+@app.post("/check", response_class=HTMLResponse)
+def check_now():
+    status, last = check()
+    if status == "off":
+        return page("Check now", "<p>Runs are switched off on this server.</p>")
+    if status == "busy":
+        return page("Check now", "<p>A check is already running. It takes about two minutes; then see <a href='/'>Changes</a>.</p>")
+    if status == "too soon":
+        return page("Check now", f"<p>The last check started at {esc(last)}. Check now works at most once "
+                    f"every {CHECK_NOW_EVERY_MIN} minutes; its results are on <a href='/'>Changes</a>.</p>")
     return RedirectResponse("/", status_code=303)
+
+
+CHECK_ANSWERS = {
+    "started": (202, "Checking the four pricing pages. It takes about two minutes; the new run then appears in /api/runs."),
+    "busy": (409, "A check is already running. It takes about two minutes."),
+    "too soon": (429, f"Check now works at most once every {CHECK_NOW_EVERY_MIN} minutes."),
+    "off": (503, "Runs are switched off on this server."),
+}
+
+
+@app.post("/api/check")
+def api_check():
+    """Check now for the Base44 front end: starts a run and answers at once."""
+    status, last = check(background=True)
+    code, message = CHECK_ANSWERS[status]
+    answer = {"status": status, "message": message, "last_check": last}
+    if last:
+        answer["next_allowed_at"] = (datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ")
+                                     + timedelta(minutes=CHECK_NOW_EVERY_MIN)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return JSONResponse(answer, status_code=code)
 
 
 @app.post("/run")
@@ -434,8 +485,8 @@ def test_form():
     return page("Test upload", TEST_INTRO)
 
 
-@app.post("/test")
-async def test_upload(cases: UploadFile, format: str = None):
+async def run_upload(cases):
+    """Run an uploaded cases file through the core, as ./run does. Returns (input, result)."""
     try:
         data = json.loads(await cases.read())
         error = None
@@ -444,6 +495,12 @@ async def test_upload(cases: UploadFile, format: str = None):
     result = process(data)
     if error:
         result["run"]["errors"].insert(0, error)
+    return data, result
+
+
+@app.post("/test")
+async def test_upload(cases: UploadFile, format: str = None):
+    data, result = await run_upload(cases)
     body = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if format == "json":
         return Response(body, media_type="application/json", headers={"Content-Disposition": "attachment; filename=result.json"})
@@ -459,14 +516,12 @@ SOURCE_RULES = {
 }
 
 
-def test_results(data, result, body):
-    """The test result under the upload form: a summary, then one row per input id saying what it
-    led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
+def test_rows(data, result):
+    """One row per input id: what it led to (an item or a skip) and why, by the rules."""
     signals = data.get("signals") if isinstance(data, dict) and isinstance(data.get("signals"), list) else []
     item_of = {sid: item for item in result["items"] for sid in item["source_ids"]}
     skip_of = {s["id"]: s["reason"] for s in result["skipped"]}
-    errors = result["run"]["errors"]
-    rows, seen = "", set()
+    rows, seen = [], set()
     for signal in signals:
         sid = signal.get("id") if isinstance(signal, dict) else None
         if sid is None or sid in seen:
@@ -474,19 +529,33 @@ def test_results(data, result, body):
         seen.add(sid)
         item = item_of.get(sid)
         if item:
-            badge = ' <span class="badge unverified">unverified</span>' if item.get("unverified") else ""
-            outcome = f"<b>Item</b>{badge}<br>{esc(item.get('headline'))}"
-            why = [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]
+            row = {"result": "item", "unverified": bool(item.get("unverified")), "headline": item.get("headline"),
+                   "why": [SOURCE_RULES.get(item.get("source_kind"), "").format(c=item.get("competitor"))]}
         else:
-            outcome, why = "<b>Skipped</b>", [skip_of.get(sid, "")]
+            row = {"result": "skipped", "unverified": False, "headline": None, "why": [skip_of.get(sid, "")]}
         if "<!--" in str(signal.get("text")):
-            why.append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
+            row["why"].append("Its text has a hidden comment; it was dropped from the quote and not followed (signal text is data).")
         mentions = re.compile(rf"(?<![\w-]){re.escape(str(sid))}(?![\w])|item-{re.escape(str(sid))}\b")
-        why += [e for e in errors if mentions.search(e)]
-        rows += (f"<tr><td>{esc(sid)}</td><td>{esc(signal.get('competitor'))}<br><span class='meta'>{esc(signal.get('type'))}</span></td>"
-                 f"<td>{outcome}</td><td>{'<br>'.join(esc(w) for w in why if w)}</td></tr>")
-    summary = (f"<p><b>{len(signals)} signals in the file → {len(result['items'])} items, {len(result['skipped'])} skipped, "
-               f"{len(errors)} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
+        row["why"] = [w for w in row["why"] + [e for e in result["run"]["errors"] if mentions.search(e)] if w]
+        rows.append({"id": sid, "competitor": signal.get("competitor"), "type": signal.get("type"), **row})
+    summary = {"signals": len(signals), "items": len(result["items"]), "skipped": len(result["skipped"]),
+               "errors": len(result["run"]["errors"])}
+    return summary, rows
+
+
+def test_results(data, result, body):
+    """The test result under the upload form: a summary, then one row per input id saying what it
+    led to and the rule behind it, then the run's errors and the items as cards, as on Changes."""
+    counts, table = test_rows(data, result)
+    errors = result["run"]["errors"]
+    rows = ""
+    for r in table:
+        badge = ' <span class="badge unverified">unverified</span>' if r["unverified"] else ""
+        outcome = f"<b>Item</b>{badge}<br>{esc(r['headline'])}" if r["result"] == "item" else "<b>Skipped</b>"
+        rows += (f"<tr><td>{esc(r['id'])}</td><td>{esc(r['competitor'])}<br><span class='meta'>{esc(r['type'])}</span></td>"
+                 f"<td>{outcome}</td><td>{'<br>'.join(esc(w) for w in r['why'])}</td></tr>")
+    summary = (f"<p><b>{counts['signals']} signals in the file → {counts['items']} items, {counts['skipped']} skipped, "
+               f"{counts['errors']} errors.</b> Every id with a signal appears once: in an item or skipped.</p>")
     download = (f"<p><a download='result.json' href='data:application/json;base64,"
                 f"{base64.b64encode(body.encode()).decode()}'>Download result.json</a></p>")
     parts = [TEST_INTRO, "<h2>Result</h2>", summary, download, "<h3>What each input led to, and why</h3>"]
@@ -495,6 +564,15 @@ def test_results(data, result, body):
         parts.append("<h3>Errors in the file</h3><ul>" + "".join(f"<li>{esc(e)}</li>" for e in errors) + "</ul>")
     parts.append("<h3>Items, as Maya would see them</h3>" + ("".join(map(render_item, result["items"])) or "<p>No items.</p>"))
     return page("Test upload", "".join(parts))
+
+
+@app.post("/api/test")
+async def api_test(cases: UploadFile):
+    """Test upload for the Base44 front end: the same core and rows as the Test upload page. Saves nothing.
+    `result` is exactly what ./run writes for this file."""
+    data, result = await run_upload(cases)
+    summary, rows = test_rows(data, result)
+    return {"summary": summary, "rows": rows, "result": result}
 
 
 @app.get("/api/changes")
