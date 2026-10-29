@@ -55,3 +55,13 @@ def test_an_unknown_run_is_an_error(tmp_path):
     store = two_runs(tmp_path)
     assert reprocess.main(["2026-01-01T00:00:00Z", "--db", str(tmp_path / "db.sqlite")]) == 1
     assert len(store.runs()) == 2
+
+
+def test_a_card_the_rules_no_longer_see_is_dropped(tmp_path, capsys):
+    store = two_runs(tmp_path)
+    run = store.runs()[1]  # 21:48, the first run: nothing to compare, no cards
+    fake = {"id": "item-live-spurious", "source_ids": ["live-spurious"], "headline": "A change that wasn't."}
+    store.replace_run("2026-10-28T21:48:14Z", dict(run, items=[fake]))
+    assert reprocess.main(["2026-10-28T21:48:14Z", "--db", str(tmp_path / "db.sqlite"), "--apply"]) == 0
+    assert "Saved." in capsys.readouterr().out
+    assert store.runs()[1]["items"] == []

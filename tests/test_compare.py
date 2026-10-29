@@ -362,3 +362,22 @@ def test_a_crossed_out_amount_that_was_already_there_is_not_a_new_discount():
     plan(after["Lovable (Yearly)"], "Pro")["quotes"].append("Best value")
     [signal] = compare.compare(before, after)
     assert signal["change"] == "details"
+
+
+def test_the_same_crossed_out_price_filed_another_way_is_no_change():
+    # Seen 2026-10-29: 03:45 read "~~$25~~" + "Originally $25 per month" as lines; 08:27 read $25 as list_price
+    # and left out the "Originally" line. The page hadn't changed.
+    before, after = views(), views("2026-10-29T08:27:15Z")
+    plan(before["Lovable (Yearly)"], "Pro")["quotes"][1:1] = ["~~$25~~", "Originally $25 per month"]
+    pro = plan(after["Lovable (Yearly)"], "Pro")
+    pro["quotes"][1:1], pro["list_price"] = ["~~$25~~"], "$25"
+    assert compare.compare(before, after) == []
+    assert compare.compare(after, before) == []
+
+
+def test_a_new_list_price_beside_an_unchanged_price_is_a_discount_too():
+    before, after = views(), views("2026-10-29T08:27:15Z")
+    plan(after["Lovable (Yearly)"], "Pro")["list_price"] = "$25"
+    [signal] = compare.compare(before, after)
+    assert signal["change"] == "discount" and (signal["was"], signal["now"]) == ("$25", "$21")
+    assert '"~~$25~~"' in signal["text"]

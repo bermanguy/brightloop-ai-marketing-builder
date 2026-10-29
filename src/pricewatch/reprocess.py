@@ -7,7 +7,8 @@ For a card worded by an older rule (Lovable's crossed-out yearly prices, 2026-10
 first shown as "changed what it includes"). Nothing is fetched or read again: the
 run's saved snapshot is compared with the last good reading before it, exactly as
 the run did, and the core writes the cards. Only runs whose cards all came from the
-pricing pages are rebuilt, since rumors found on the day aren't saved.
+pricing pages are rebuilt, since rumors found on the day aren't saved, and a rebuild
+may drop cards but never add one.
 """
 
 import argparse
@@ -40,8 +41,10 @@ def rebuild(store, started_at):
     previous = {fetch.label(p): good.get((p["competitor"], p.get("view"), p["reader"])) for p in read}
     signals = compare.compare({k: v for k, v in previous.items() if v}, {fetch.label(p): p for p in read})
     new = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=old["run"]["cost_usd"])
-    if len(new["items"]) != len(old["items"]) or new["skipped"]:
-        raise ValueError(f"Rebuilding gives {len(new['items'])} cards, not {len(old['items'])}; nothing changed.")
+    # Fewer cards is a rule no longer seeing a change (a reader's variance, 2026-10-29); more would be a change
+    # never alerted on, so that's refused.
+    if len(new["items"]) > len(old["items"]) or new["skipped"]:
+        raise ValueError(f"Rebuilding gives {len(new['items'])} cards, more than {len(old['items'])}; nothing changed.")
     return old, dict(old, items=new["items"])
 
 
