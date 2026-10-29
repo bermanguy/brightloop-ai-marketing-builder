@@ -60,7 +60,8 @@ def compare_and_report(read, cost, store, started_at, rumor_signals=(), rumor_er
     label = fetch.label
     previous = {label(page): good.get((page["competitor"], page.get("view"), page["reader"])) for page in read}
     previous = {name: page for name, page in previous.items() if page}
-    signals = compare.compare(previous, {label(page): page for page in read}) + [with_page_check(s, read) for s in rumor_signals]
+    seen = compare.seen_lists(store.snapshots())
+    signals = compare.compare(previous, {label(page): page for page in read}, seen) + [with_page_check(s, read) for s in rumor_signals]
     store.save_snapshot(started_at, read, rumors=[s["hn_id"] for s in rumor_signals if s.get("hn_id")])
 
     result = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=cost)

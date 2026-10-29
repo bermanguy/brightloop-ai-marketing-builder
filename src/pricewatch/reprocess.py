@@ -39,7 +39,8 @@ def rebuild(store, started_at):
                     good.setdefault((page["competitor"], page.get("view"), page["reader"]), page)
     read = now["pages"]
     previous = {fetch.label(p): good.get((p["competitor"], p.get("view"), p["reader"])) for p in read}
-    signals = compare.compare({k: v for k, v in previous.items() if v}, {fetch.label(p): p for p in read})
+    seen = compare.seen_lists(s for s in snapshots if s["taken_at"] < started_at)
+    signals = compare.compare({k: v for k, v in previous.items() if v}, {fetch.label(p): p for p in read}, seen)
     new = process({"signals": signals, "timezone": "UTC"}, started_at=started_at, cost_usd=old["run"]["cost_usd"])
     # Fewer cards is a rule no longer seeing a change (a reader's variance, 2026-10-29); more would be a change
     # never alerted on, so that's refused.

@@ -131,8 +131,9 @@ def _signal(page, subject, kind, text, change=None, plan=None, was=None, now=Non
     }
 
 
-def compare_page(before, after):
-    """Signals for one competitor's page, read at two times. Both pages must be ok."""
+def compare_page(before, after, seen=frozenset()):
+    """Signals for one competitor's page, read at two times. Both pages must be ok.
+    seen: list prices earlier runs read, as (competitor, view, plan, amount) (seen_lists)."""
     old = {plan["name"]: plan for plan in before["plans"]}
     new = {plan["name"]: plan for plan in after["plans"]}
     since = f"(since {before['fetched_at']})"
@@ -147,9 +148,16 @@ def compare_page(before, after):
         was = old[name]
         old_list, new_list = _list(was), _list(plan)
         # A crossed-out amount newly shown beside an unchanged price: the page presents its price as a discount.
-        discount = (was["price"] == plan["price"] and not old_list and new_list and new_list != plan["price"]
+        same_price = was["price"] == plan["price"]
+        # The AI reader sometimes leaves a crossed-out amount out (Lovable's Yearly view, 2026-10-29: in at 03:45
+        # and 08:27, out at 09:28, while the page still showed it). At an unchanged price, a list price that
+        # disappears isn't reported, and one that appears is new only if no earlier run saw it for this plan.
+        dropped = same_price and old_list and not new_list
+        seen_before = (after["competitor"], after.get("view"), name, new_list) in seen
+        discount = (same_price and not old_list and new_list and new_list != plan["price"] and not seen_before
                     and AMOUNT.fullmatch(plan["price"] or ""))
-        price_changed = not discount and (was["price"] != plan["price"] or old_list != new_list)
+        price_changed = not (discount or dropped) and not (same_price and not old_list and seen_before) and (
+            not same_price or old_list != new_list)
         before_period, after_period = _period(was), _period(plan)
         if price_changed and before_period and after_period and before_period != after_period:
             signals.append(_signal(after, name, "view", (
@@ -160,7 +168,9 @@ def compare_page(before, after):
             continue
         old_lines = was["quotes"] + (was.get("options") or [])
         new_lines = plan["quotes"] + (plan.get("options") or [])
-        if new_list and (discount or new_list == old_list):
+        if dropped or (same_price and not old_list and seen_before):
+            new_list = old_list or new_list
+        if new_list and (discount or new_list == old_list or same_price):
             # Lines that only restate the crossed-out amount ("~~$25~~", "Originally $25 per month") come and
             # go between readings of the same page; the list price above already covers them.
             def restates_list(line, price):
@@ -273,11 +283,19 @@ def merge_views(signals):
     return merged
 
 
-def compare(previous, current):
-    """Signals for every page (or view) read in both, a change seen in every view once. previous/current: {fetch.label(page): page}."""
+def seen_lists(snapshots):
+    """Every crossed-out list price read in these snapshots: {(competitor, view, plan, amount)}."""
+    return {(page["competitor"], page.get("view"), plan["name"], _list(plan))
+            for snapshot in snapshots for page in snapshot["pages"] if page.get("ok")
+            for plan in page.get("plans") or [] if _list(plan)}
+
+
+def compare(previous, current, seen=frozenset()):
+    """Signals for every page (or view) read in both, a change seen in every view once. previous/current: {fetch.label(page): page}.
+    seen: seen_lists() of the earlier snapshots."""
     signals = []
     for name, page in current.items():
         before = previous.get(name)
         if page.get("ok") and before and before.get("ok"):
-            signals.extend(compare_page(before, page))
+            signals.extend(compare_page(before, page, seen))
     return merge_views(signals)
