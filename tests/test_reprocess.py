@@ -65,3 +65,24 @@ def test_a_card_the_rules_no_longer_see_is_dropped(tmp_path, capsys):
     assert reprocess.main(["2026-10-28T21:48:14Z", "--db", str(tmp_path / "db.sqlite"), "--apply"]) == 0
     assert "Saved." in capsys.readouterr().out
     assert store.runs()[1]["items"] == []
+
+
+def test_a_reader_that_reads_the_crossed_out_price_in_and_out_reports_only_the_first_discount(tmp_path):
+    # 2026-10-29 on Lovable's Yearly view: the page kept "~~$25~~" beside "$21" all day; the AI reader filed it as
+    # lines (03:45), as list_price (08:27), then left it out (09:28), then read it again.
+    def run(at, how):
+        read = pages(at)
+        pro = next(p for p in read if p["competitor"] == "Lovable" and p.get("view") == "Yearly")
+        pro = plan(pro, "Pro")
+        if how == "lines":
+            pro["quotes"][1:1] = ["~~$25~~", "Originally $25 per month"]
+        elif how == "field":
+            pro["quotes"][1:1], pro["list_price"] = ["~~$25~~"], "$25"
+        return [s["change"] for s in compare_and_report(read, 0.0, store, at)[1]]
+
+    store = Store(str(tmp_path / "db.sqlite"))
+    assert run("2026-10-28T21:48:14Z", None) == []
+    assert run("2026-10-29T03:45:25Z", "lines") == ["discount"]
+    assert run("2026-10-29T08:27:15Z", "field") == []
+    assert run("2026-10-29T09:28:05Z", None) == []
+    assert run("2026-10-29T14:00:00Z", "lines") == []
