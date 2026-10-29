@@ -1,4 +1,4 @@
-> **Snapshot.** This folder is a copy of the Base44 app behind https://brightloop-competitors-price-pulse.base44.app, taken on 2026-10-28 (decision D39). The app is edited and published in Base44; this repo is not synced to it, so pushing here does not change the live app. The engine it calls is the Python app in the repo root (`src/pricewatch/`); the calls are in `src/api/pricewatch.js`. `package-lock.json`, `node_modules` and `dist` were left out. Everything below is Base44's own README, kept as it was.
+> **Snapshot.** This folder is a copy of the Base44 app behind https://brightloop-competitors-price-pulse.base44.app, taken on 2026-10-28 and updated on 2026-10-29 (decision D39). The app is edited and published in Base44; this repo is not synced to it, so pushing here does not change the live app. The engine it calls is the Python app in the repo root (`src/pricewatch/`); the calls are in `src/api/pricewatch.js`. `package-lock.json`, `node_modules` and `dist` were left out. Everything below is Base44's own README, kept as it was.
 
 # Base44 Project
 

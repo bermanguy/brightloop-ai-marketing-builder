@@ -4,6 +4,7 @@ import RelativeTime from '@/components/RelativeTime';
 import { cn } from '@/lib/utils';
 
 const FRESH_HOURS = 7;
+const RELOAD_EVERY_MS = 5 * 60 * 1000;
 
 export default function FreshnessBadge() {
   const [startedAt, setStartedAt] = useState(null);
@@ -12,17 +13,28 @@ export default function FreshnessBadge() {
   useEffect(() => {
     let cancelled = false;
 
-    fetchRuns()
-      .then((runs) => {
-        if (cancelled) return;
-        setStartedAt(newestStartedAt(runs) || null);
-      })
-      .catch(() => {});
+    // Ask the engine again every few minutes and whenever the tab comes back into view,
+    // so a tab left open doesn't keep showing the run it saw when it was opened.
+    const load = () =>
+      fetchRuns()
+        .then((runs) => {
+          if (cancelled) return;
+          setStartedAt(newestStartedAt(runs) || null);
+        })
+        .catch(() => {});
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
 
-    const id = setInterval(() => setTick((tick) => tick + 1), 60000);
+    load();
+    const reload = setInterval(load, RELOAD_EVERY_MS);
+    const tick = setInterval(() => setTick((n) => n + 1), 60000);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      clearInterval(reload);
+      clearInterval(tick);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
