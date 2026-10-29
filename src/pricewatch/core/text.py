@@ -89,6 +89,12 @@ CHANGES = {
         f"now gives less for the same price, {DECIDE} whether to point that out in this week's trial-start campaign.",
         "Prospects compare what each plan includes, not only the price.",
     ),
+    "discount": (
+        "{c} now shows its {plan} as a discount: {now}{billing}, with {was} crossed out. The price itself didn't change.",
+        f"{PUBLISHED} {{c}}'s {{plan}} should quote {{now}}, not the crossed-out {{was}}. Then {DECIDE} whether "
+        "to answer the discount framing in this week's trial-start campaign.",
+        "A crossed-out price makes the same price look like a deal, which can pull prospects comparing plans toward {c}.",
+    ),
     "options": (
         "{c} added price options to its {plan}: {now}.",
         f"{PUBLISHED} the price of {{c}}'s {{plan}} (comparison pages, ads, sales material) now needs to show that "

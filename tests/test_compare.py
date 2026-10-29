@@ -337,3 +337,28 @@ def test_a_plan_that_gains_a_dropdown_is_one_options_change_listing_every_option
     [item] = process({"signals": [signal]})["items"]
     assert item["headline"] == "Replit added price options to its Pro plan: " + "; ".join(tiers) + "."
     assert "depends on the option chosen" in item["action"] and item["confidence"] == 0.9
+
+
+def test_a_crossed_out_amount_next_to_an_unchanged_price_is_a_discount_signal():
+    # Seen on Lovable's Yearly view, 2026-10-29: Pro still "$21" billed annually, now beside "~~$25~~".
+    before, after = views(), views("2026-10-29T03:45:25Z")
+    pro = plan(after["Lovable (Yearly)"], "Pro")
+    assert pro["price"] == "$21"
+    pro["quotes"][1:1] = ["~~$25~~", "Originally $25 per month"]
+    [signal] = compare.compare(before, after)
+    assert signal["id"] == "live-lovable-yearly-pro-discount-20261029034525"
+    assert signal["change"] == "discount" and (signal["was"], signal["now"]) == ("$25", "$21")
+    assert '"~~$25~~"' in signal["text"] and '"$21"' in signal["text"] and "unchanged" in signal["text"]
+    [item] = process({"signals": [signal]})["items"]
+    assert item["headline"] == ("Lovable now shows its Pro plan (Yearly view) as a discount: $21 / month, billed annually, "
+                                "with $25 crossed out. The price itself didn't change.")
+    assert unsupported_numbers(item) == []
+
+
+def test_a_crossed_out_amount_that_was_already_there_is_not_a_new_discount():
+    before, after = views(), views("2026-10-29T03:45:25Z")
+    for page in (before, after):
+        plan(page["Lovable (Yearly)"], "Pro")["quotes"].insert(1, "~~$25~~")
+    plan(after["Lovable (Yearly)"], "Pro")["quotes"].append("Best value")
+    [signal] = compare.compare(before, after)
+    assert signal["change"] == "details"
