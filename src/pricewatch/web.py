@@ -208,7 +208,7 @@ def changes_in(runs, days="7", competitor=None, now=None):
 
 # How each kind of change is counted in the summary strip.
 CHANGE_LABELS = {"price_up": "price up", "price_down": "price down", "price": "price changed", "details": "plan contents",
-                 "limits": "limits", "added": "plan added", "removed": "plan removed", "options": "new price options",
+                 "limits": "limits", "added": "plan added", "removed": "plan removed", "options": "new price options", "discount": "shown as a discount",
                  "opens": "billing view", "view": "billing view"}
 
 

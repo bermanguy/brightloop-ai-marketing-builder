@@ -16,6 +16,10 @@ Rules, not AI (D13):
   so it stays a details change.)
 - Each plan gives at most one signal per run, so one change isn't shown twice.
 - A plan that appears or disappears is one signal.
+- A plan whose price stays the same but now shows a crossed-out amount beside it
+  ("~~$25~~" next to "$21") is one "discount" signal: the page now presents its
+  price as a discount. Seen on Lovable's Yearly view, 2026-10-29, where Pro had
+  shown "$21" billed annually since at least 2026-10-26.
 - A page with a billing toggle is compared view by view (Monthly with Monthly,
   Yearly with Yearly). If it now opens on the other view, that's one signal.
 - A change seen the same way in every billing view (Lovable raising Pro on
@@ -44,6 +48,7 @@ import re
 PRICE_FIELDS = ("price", "list_price")
 AMOUNT = re.compile(r"\$\s?(\d+(?:\.\d+)?)\*?")
 PERIOD = re.compile(r"billed (monthly|annually|yearly)", re.IGNORECASE)
+STRUCK = re.compile(r"~~\s*(\$\s?\d+(?:\.\d+)?)\s*~~")
 MAX_LINES = 4  # changed lines quoted per signal; the rest are counted
 
 
@@ -162,6 +167,14 @@ def compare_page(before, after):
             changes.append(f"now shows {_lines(added)}")
         if removed:
             changes.append(f"no longer shows {_lines(removed)}")
+        struck = [m.group(1) for line in added for m in [STRUCK.search(line)] if m]
+        if (not price_changed and struck and AMOUNT.fullmatch(plan["price"] or "")
+                and struck[0] != plan["price"] and not any(STRUCK.search(line) for line in old_lines)):
+            text = (f"{_plan(after, name)} {' and '.join(changes)} next to its price, \"{plan['price']}\""
+                    f"{' ' + plan['billing'] if plan.get('billing') else ''}, which is unchanged {since}.")
+            signals.append(_signal(after, name, "discount", text, "discount", plan=_plan(after, name), was=struck[0],
+                                   now=plan["price"], billing=plan.get("billing")))
+            continue
         if changes:
             text = f"{_plan(after, name)} {' and '.join(changes)} {since}."
             if change in ("price_up", "price_down"):  # same billing on both sides: "from $25 to $30 (/ month)"
