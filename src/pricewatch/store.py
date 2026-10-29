@@ -82,6 +82,10 @@ class Store:
     def runs(self, limit=None):
         return self._newest("runs", limit)
 
+    def replace_run(self, started_at, result):
+        """Overwrite the logged result of the run that started at `started_at` (reprocess.py only)."""
+        self._sql("UPDATE runs SET doc = ? WHERE at = ?", (json.dumps(result, ensure_ascii=False), started_at))
+
     # Alerts
 
     def save_alert(self, entry):
