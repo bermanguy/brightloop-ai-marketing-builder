@@ -45,7 +45,6 @@ lines themselves only change when the page does.
 
 import re
 
-PRICE_FIELDS = ("price", "list_price")
 AMOUNT = re.compile(r"\$\s?(\d+(?:\.\d+)?)\*?")
 PERIOD = re.compile(r"billed (monthly|annually|yearly)", re.IGNORECASE)
 STRUCK = re.compile(r"~~\s*(\$\s?\d+(?:\.\d+)?)\s*~~")
@@ -63,11 +62,23 @@ def _shown(value):
 def _price_words(plan):
     """The plan's price as the page shows it: "$18 (list ~~$20~~) / month, billed annually"."""
     parts = [plan["price"] or "no price"]
-    if plan.get("list_price"):
-        parts.append(f"(list ~~{plan['list_price']}~~)")
+    if _list(plan):
+        parts.append(f"(list ~~{_list(plan)}~~)")
     if plan.get("billing"):
         parts.append(plan["billing"])
     return " ".join(parts)
+
+
+def _list(plan):
+    """The crossed-out list price: the reader's list_price, else a "~~$25~~" line on the card. The AI files the
+    same crossed-out amount either way from one run to the next (Lovable's Yearly view, 2026-10-29)."""
+    if plan.get("list_price"):
+        return plan["list_price"]
+    return next((m.group(1) for line in plan["quotes"] for m in [STRUCK.search(line)] if m), None)
+
+
+def _mentions(line, amount):
+    return re.search(re.escape(amount) + r"(?![\d.,])", line) is not None
 
 
 def _lines(items):
@@ -134,7 +145,11 @@ def compare_page(before, after):
                                    plan=_plan(after, name), now=_price_words(plan)))
             continue
         was = old[name]
-        price_changed = any(was.get(field) != plan.get(field) for field in PRICE_FIELDS)
+        old_list, new_list = _list(was), _list(plan)
+        # A crossed-out amount newly shown beside an unchanged price: the page presents its price as a discount.
+        discount = (was["price"] == plan["price"] and not old_list and new_list and new_list != plan["price"]
+                    and AMOUNT.fullmatch(plan["price"] or ""))
+        price_changed = not discount and (was["price"] != plan["price"] or old_list != new_list)
         before_period, after_period = _period(was), _period(plan)
         if price_changed and before_period and after_period and before_period != after_period:
             signals.append(_signal(after, name, "view", (
@@ -145,6 +160,13 @@ def compare_page(before, after):
             continue
         old_lines = was["quotes"] + (was.get("options") or [])
         new_lines = plan["quotes"] + (plan.get("options") or [])
+        if new_list and (discount or new_list == old_list):
+            # Lines that only restate the crossed-out amount ("~~$25~~", "Originally $25 per month") come and
+            # go between readings of the same page; the list price above already covers them.
+            def restates_list(line, price):
+                return _mentions(line, new_list) and not (price and _mentions(line, price))
+            old_lines = [line for line in old_lines if not restates_list(line, was["price"])]
+            new_lines = [line for line in new_lines if not restates_list(line, plan["price"])]
         changes, kind, change = [], "details", "details"
         if price_changed:
             kind, change = "price", _direction(was, plan)
@@ -167,12 +189,11 @@ def compare_page(before, after):
             changes.append(f"now shows {_lines(added)}")
         if removed:
             changes.append(f"no longer shows {_lines(removed)}")
-        struck = [m.group(1) for line in added for m in [STRUCK.search(line)] if m]
-        if (not price_changed and struck and AMOUNT.fullmatch(plan["price"] or "")
-                and struck[0] != plan["price"] and not any(STRUCK.search(line) for line in old_lines)):
-            text = (f"{_plan(after, name)} {' and '.join(changes)} next to its price, \"{plan['price']}\""
-                    f"{' ' + plan['billing'] if plan.get('billing') else ''}, which is unchanged {since}.")
-            signals.append(_signal(after, name, "discount", text, "discount", plan=_plan(after, name), was=struck[0],
+        if discount:
+            also = f" It also {' and '.join(changes)}." if changes else ""
+            text = (f"{_plan(after, name)} now shows \"~~{new_list}~~\" next to its price, \"{plan['price']}\""
+                    f"{' ' + plan['billing'] if plan.get('billing') else ''}, which is unchanged {since}.{also}")
+            signals.append(_signal(after, name, "discount", text, "discount", plan=_plan(after, name), was=new_list,
                                    now=plan["price"], billing=plan.get("billing")))
             continue
         if changes:
