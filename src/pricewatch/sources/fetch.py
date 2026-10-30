@@ -219,6 +219,49 @@ def _open_dropdowns(page):
     return found
 
 
+# A toggle side counts as chosen once the page marks it so: Bolt's tabs use
+# aria-selected, Lovable's buttons aria-pressed.
+CHOSEN = """el => ['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el.getAttribute(a) === 'true')
+               || !['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el.hasAttribute(a))"""
+
+
+def _choose_view(page, role, control, name):
+    """Click one side of a billing toggle until the page marks it as chosen.
+
+    Bolt shows its prices about three seconds before its JavaScript is ready, and a
+    click in that gap is silently lost: the "Yearly" view came back with the monthly
+    prices (2026-10-30). So each click is followed by a check that it took, and
+    retried until it does. A click Playwright can't make (something over the toggle)
+    is retried with force, which skips its checks and clicks the spot anyway.
+    """
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+    toggle = page.get_by_role(role, name=re.compile(control, re.I)).first
+    toggle.wait_for(timeout=TIMEOUT_S * 1000)
+    for _ in range(5):
+        try:
+            toggle.click(timeout=5000)
+        except PlaywrightTimeout:
+            toggle.click(timeout=5000, force=True)
+        try:
+            page.wait_for_function(f"el => ({CHOSEN})(el)", arg=toggle.element_handle(), timeout=3000)
+            return
+        except PlaywrightTimeout:
+            continue
+    raise RuntimeError(f"the {name} toggle didn't switch the page after 5 clicks")
+
+
+def _same_prices(views):
+    """Views after the first whose prices match an earlier view's: a toggle that didn't switch."""
+    seen, repeats = [], set()
+    for view in views:
+        lines = _price_lines(view["html"])
+        if lines and lines in seen:
+            repeats.add(view["view"])
+        seen.append(lines)
+    return repeats
+
+
 def _fetch_browser(spec):
     from playwright.sync_api import sync_playwright
 
@@ -235,7 +278,7 @@ def _fetch_browser(spec):
             views = []
             for name, role, control in spec.get("views") or [(None, None, None)]:
                 if role:
-                    page.get_by_role(role, name=re.compile(control, re.I)).first.click()
+                    _choose_view(page, role, control, name)
                     page.wait_for_timeout(1000)
                 html = page.content()  # before any dropdown is opened, so its options aren't in the text
                 dropdowns = _open_dropdowns(page) if spec.get("dropdowns") else []
@@ -245,6 +288,18 @@ def _fetch_browser(spec):
             return {"status": response.status if response else 0, "opens_on": opens_on, "views": views}
         finally:
             browser.close()
+
+
+def _reason(exc):
+    """An error's first line, plus the last line of Playwright's call log when there is one,
+    which says what it was waiting for ("<div …> intercepts pointer events")."""
+    lines = [line.strip() for line in str(exc).splitlines() if line.strip()]
+    if not lines:
+        return ""
+    reason = lines[0][:200]
+    if len(lines) > 1 and any(line.startswith("Call log") for line in lines):
+        reason += f" ({lines[-1].lstrip('- ')[:200]})"
+    return reason
 
 
 def fetch_page(competitor):
@@ -264,14 +319,17 @@ def fetch_page(competitor):
     try:
         fetched = (_fetch_browser if spec["method"] == "browser" else _fetch_http)(spec)
     except Exception as exc:  # network errors, timeouts, browser failures, a toggle that's gone
-        error = f"{exc.__class__.__name__}: {str(exc).splitlines()[0][:200] if str(exc) else ''}"
+        error = f"{exc.__class__.__name__}: {_reason(exc)}"
         return [dict(base, view=name, view_index=i, error=error, html="", text="", dropdowns=[]) for i, name in enumerate(names)]
 
+    repeats = _same_prices(fetched["views"]) if len(fetched["views"]) > 1 else set()
     records = []
     for index, view in enumerate(fetched["views"]):
         record = dict(base, view=view["view"], view_index=index, status=fetched["status"], opens_on=fetched["opens_on"],
                       html=view["html"], text=visible_text(view["html"]), dropdowns=view["dropdowns"])
         record["error"] = check_page(record["status"], record["text"])
+        if not record["error"] and view["view"] in repeats:
+            record["error"] = f"the {view['view']} view shows the same prices as another view (the toggle didn't switch)"
         record["ok"] = record["error"] is None
         records.append(record)
     return records
