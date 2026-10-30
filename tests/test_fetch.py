@@ -102,6 +102,25 @@ def test_a_failing_page_is_reported_and_does_not_stop_the_others(monkeypatch):
     assert pages["v0"]["ok"]
 
 
+def test_a_toggle_that_did_not_switch_fails_that_view_instead_of_mislabelling_it(monkeypatch):
+    # 2026-10-30: Bolt's Yearly click was lost, and the "Yearly" view held the monthly prices.
+    monkeypatch.setattr(fetch, "_fetch_browser", browser(PRICING_HTML.replace("$30", "$25")))
+    monthly, yearly = fetch.fetch_page("Bolt")
+    assert monthly["ok"] and "$25" in monthly["text"]
+    assert yearly["ok"] is False and yearly["error"] == (
+        "the Yearly view shows the same prices as another view (the toggle didn't switch)")
+
+
+def test_a_browser_error_keeps_what_playwright_was_waiting_for(monkeypatch):
+    def stuck(spec):
+        raise TimeoutError("Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"tab\")\n"
+                           "  - <div class=\"scrim\"></div> intercepts pointer events\n")
+
+    monkeypatch.setattr(fetch, "_fetch_browser", stuck)
+    assert fetch.fetch_page("Bolt")[1]["error"] == (
+        'TimeoutError: Locator.click: Timeout 30000ms exceeded. (<div class="scrim"></div> intercepts pointer events)')
+
+
 def test_blocked_page_is_a_failure(monkeypatch):
     monkeypatch.setattr(fetch, "_fetch_http", http("<p>Sorry, you have been blocked</p>"))
     [page] = fetch.fetch_page("Replit")
