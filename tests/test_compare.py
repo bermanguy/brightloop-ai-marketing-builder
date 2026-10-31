@@ -168,6 +168,28 @@ def test_a_price_replaced_by_words_is_a_price_change():
     assert 'now shows Contact sales' in signal["text"] and "showed $50" in signal["text"]
 
 
+def test_a_worded_price_read_as_no_price_on_the_same_card_is_no_change():
+    # Lovable's Enterprise card shows "Platform fee" where other cards show an amount. The AI read it as the
+    # price in some runs and as no price in others, on an unchanged page (Yearly view, 2026-10-30 and 31).
+    for flip in (False, True):
+        before, after = reading("lovable"), reading("lovable", "2026-10-25T12:00:00Z")
+        plan(before, "Enterprise")["price"], plan(after, "Enterprise")["price"] = "Platform fee", None
+        if flip:
+            before, after = after, before
+            before["fetched_at"], after["fetched_at"] = after["fetched_at"], before["fetched_at"]
+        assert "Platform fee" in plan(before, "Enterprise")["quotes"] and "Platform fee" in plan(after, "Enterprise")["quotes"]
+        assert compare.compare_page(before, after) == []
+
+
+def test_a_worded_price_that_leaves_the_card_is_still_a_change():
+    before, after = reading("lovable"), reading("lovable", "2026-10-25T12:00:00Z")
+    plan(before, "Enterprise")["price"] = "Platform fee"
+    enterprise = plan(after, "Enterprise")
+    enterprise["price"], enterprise["quotes"] = None, [q for q in enterprise["quotes"] if q != "Platform fee"]
+    [signal] = compare.compare_page(before, after)
+    assert "-enterprise-price-" in signal["id"] and "showed Platform fee" in signal["text"]
+
+
 def test_only_the_list_price_changing_is_a_price_change():
     before = reading("replit")
     after = reading("replit", "2026-10-25T12:00:00Z", changes=[("~~$20~~", "~~$22~~")])

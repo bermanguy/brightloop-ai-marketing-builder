@@ -24,6 +24,9 @@ Rules, not AI (D13):
   Yearly with Yearly). If it now opens on the other view, that's one signal.
 - A change seen the same way in every billing view (Lovable raising Pro on
   both its Monthly and Yearly prices) is one signal quoting each view.
+- A plan whose price is read as a worded line ("Platform fee") in one run and as
+  no price in another, with that line on the card both times, is no change: the
+  page is the same, only the reading differs (Lovable's Enterprise, 2026-10-30).
 - A table of limits or prices (e.g. Bolt's plan comparison, v0's model rates)
   gives one signal per table, listing the rows whose values changed.
 - Only pages read successfully in both snapshots are compared. A failed page
@@ -107,6 +110,19 @@ def _direction(was, plan):
     return "price_up" if new > old else "price_down" if new < old else "price"
 
 
+def _same_label(was, plan):
+    """True when one reading has no price and the other files a worded line as the price, and that line is on
+    the card in both readings: the same page read two ways. Lovable's Enterprise card shows "Platform fee"
+    where other cards show an amount; the AI calls it the price in some runs and not in others, so its Yearly
+    view flipped between "Platform fee" and no price on 2026-10-30 15:57, 21:55 and 2026-10-31 19:22 while the
+    page didn't change. A price that becomes or stops being an amount ("$50" to "Contact sales") still counts."""
+    words = [price for price in (was["price"], plan["price"]) if price]
+    if len(words) != 1 or AMOUNT.search(words[0]):
+        return False
+    line = " ".join(words[0].split())
+    return all(line in (" ".join(quote.split()) for quote in side["quotes"]) for side in (was, plan))
+
+
 def _row(columns, values):
     return "; ".join(f"{column}: {value}" for column, value in zip(columns, values))
 
@@ -148,7 +164,7 @@ def compare_page(before, after, seen=frozenset()):
         was = old[name]
         old_list, new_list = _list(was), _list(plan)
         # A crossed-out amount newly shown beside an unchanged price: the page presents its price as a discount.
-        same_price = was["price"] == plan["price"]
+        same_price = was["price"] == plan["price"] or _same_label(was, plan)
         # The AI reader sometimes leaves a crossed-out amount out (Lovable's Yearly view, 2026-10-29: in at 03:45
         # and 08:27, out at 09:28, while the page still showed it). At an unchanged price, a list price that
         # disappears isn't reported, and one that appears is new only if no earlier run saw it for this plan.
