@@ -111,6 +111,20 @@ def test_a_toggle_that_did_not_switch_fails_that_view_instead_of_mislabelling_it
         "the Yearly view shows the same prices as another view (the toggle didn't switch)")
 
 
+def test_a_view_whose_toggle_would_not_switch_fails_alone(monkeypatch):
+    # 2026-10-31: Bolt's Yearly click kept missing on Render; Monthly is still worth keeping.
+    def half(spec):
+        result = browser(PRICING_HTML)(spec)
+        result["views"][1] = {"view": "Yearly", "html": "", "dropdowns": [],
+                              "error": "RuntimeError: the Yearly toggle didn't switch the page after 5 tries"}
+        return result
+
+    monkeypatch.setattr(fetch, "_fetch_browser", half)
+    monthly, yearly = fetch.fetch_page("Bolt")
+    assert monthly["ok"] and "$30" in monthly["text"]
+    assert yearly["ok"] is False and yearly["text"] == "" and "didn't switch" in yearly["error"]
+
+
 def test_a_browser_error_keeps_what_playwright_was_waiting_for(monkeypatch):
     def stuck(spec):
         raise TimeoutError("Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"tab\")\n"

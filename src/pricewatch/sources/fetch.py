@@ -22,6 +22,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -225,30 +226,53 @@ CHOSEN = """el => ['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el
                || !['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el.hasAttribute(a))"""
 
 
-def _choose_view(page, role, control, name):
+def _settle(page, navigations, quiet_s=1.5, cap_s=15):
+    """Wait for the page's scripts to load and its own navigations to stop.
+
+    Bolt rewrites its URL (history.replaceState) and re-renders about five seconds
+    after load, later on a slow machine. A click that lands then hangs ("waiting for
+    scheduled navigations to finish") or loses its button (2026-10-31, on Render).
+    """
+    try:
+        page.wait_for_load_state("load", timeout=cap_s * 1000)
+    except Exception:
+        pass  # Lovable never goes quiet on the network; the toggle check below still guards the click
+    start = time.monotonic()
+    while time.monotonic() - start < cap_s and navigations and time.monotonic() - navigations[-1] < quiet_s:
+        page.wait_for_timeout(250)
+
+
+def _is_chosen(toggle):
+    for _ in range(12):
+        if toggle.evaluate(f"el => ({CHOSEN})(el)", timeout=2000):
+            return True
+        toggle.page.wait_for_timeout(250)
+    return False
+
+
+def _choose_view(page, role, control, name, navigations):
     """Click one side of a billing toggle until the page marks it as chosen.
 
-    Bolt shows its prices about three seconds before its JavaScript is ready, and a
-    click in that gap is silently lost: the "Yearly" view came back with the monthly
-    prices (2026-10-30). So each click is followed by a check that it took, and
-    retried until it does. A click Playwright can't make (something over the toggle)
-    is retried with force, which skips its checks and clicks the spot anyway.
+    Bolt shows its prices seconds before its JavaScript is ready, and a click in that
+    gap is silently lost: the "Yearly" view came back with the monthly prices
+    (2026-10-30). So each click waits for the page to settle, is followed by a check
+    that it took, and is retried until it does. Later tries use force, which skips
+    Playwright's checks and clicks the spot anyway (something over the toggle).
     """
-    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    from playwright.sync_api import Error as PlaywrightError
 
     toggle = page.get_by_role(role, name=re.compile(control, re.I)).first
-    toggle.wait_for(timeout=TIMEOUT_S * 1000)
-    for _ in range(5):
+    last = None
+    for attempt in range(5):
+        _settle(page, navigations)
         try:
-            toggle.click(timeout=5000)
-        except PlaywrightTimeout:
-            toggle.click(timeout=5000, force=True)
-        try:
-            page.wait_for_function(f"el => ({CHOSEN})(el)", arg=toggle.element_handle(), timeout=3000)
-            return
-        except PlaywrightTimeout:
-            continue
-    raise RuntimeError(f"the {name} toggle didn't switch the page after 5 clicks")
+            toggle.click(timeout=5000, force=attempt >= 2, no_wait_after=True)
+            if _is_chosen(toggle):
+                return
+        except PlaywrightError as exc:  # timed out, or the button was re-rendered away mid-click
+            last = exc
+    detail = f" (last error: {last.__class__.__name__}: {_reason(last)})" if last else ""
+    raise RuntimeError(f"the {name} toggle didn't switch the page after 5 tries{detail}")
 
 
 def _same_prices(views):
@@ -270,6 +294,8 @@ def _fetch_browser(spec):
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH") or None)
         try:
             page = browser.new_page(user_agent=USER_AGENT)
+            navigations = []  # when the page last navigated, its own URL rewrites included
+            page.on("framenavigated", lambda frame: frame == page.main_frame and navigations.append(time.monotonic()))
             response = page.goto(spec["url"], wait_until="domcontentloaded", timeout=TIMEOUT_S * 1000)
             # Lovable never reaches network idle; wait for a visible price instead.
             page.locator("text=/\\$\\s?\\d/ >> visible=true").first.wait_for(timeout=TIMEOUT_S * 1000)
@@ -277,14 +303,21 @@ def _fetch_browser(spec):
             first = page.content()
             views = []
             for name, role, control in spec.get("views") or [(None, None, None)]:
-                if role:
-                    _choose_view(page, role, control, name)
-                    page.wait_for_timeout(1000)
-                html = page.content()  # before any dropdown is opened, so its options aren't in the text
-                dropdowns = _open_dropdowns(page) if spec.get("dropdowns") else []
-                views.append({"view": name, "html": html, "dropdowns": dropdowns})
+                # One view that can't be read fails alone: Monthly is kept when Yearly's toggle won't switch.
+                try:
+                    if role:
+                        _choose_view(page, role, control, name, navigations)
+                        page.wait_for_timeout(1000)
+                    html = page.content()  # before any dropdown is opened, so its options aren't in the text
+                    dropdowns = _open_dropdowns(page) if spec.get("dropdowns") else []
+                    views.append({"view": name, "html": html, "dropdowns": dropdowns})
+                except Exception as exc:
+                    if not role:
+                        raise
+                    views.append({"view": name, "html": "", "dropdowns": [], "error": f"{exc.__class__.__name__}: {_reason(exc)}"})
             # The view whose prices match the first load is the one the page opens on.
-            opens_on = next((v["view"] for v in views if v["view"] and _price_lines(v["html"]) == _price_lines(first)), None)
+            opens_on = next((v["view"] for v in views if v["view"] and v["html"]
+                             and _price_lines(v["html"]) == _price_lines(first)), None)
             return {"status": response.status if response else 0, "opens_on": opens_on, "views": views}
         finally:
             browser.close()
@@ -327,7 +360,7 @@ def fetch_page(competitor):
     for index, view in enumerate(fetched["views"]):
         record = dict(base, view=view["view"], view_index=index, status=fetched["status"], opens_on=fetched["opens_on"],
                       html=view["html"], text=visible_text(view["html"]), dropdowns=view["dropdowns"])
-        record["error"] = check_page(record["status"], record["text"])
+        record["error"] = view.get("error") or check_page(record["status"], record["text"])
         if not record["error"] and view["view"] in repeats:
             record["error"] = f"the {view['view']} view shows the same prices as another view (the toggle didn't switch)"
         record["ok"] = record["error"] is None
