@@ -39,6 +39,10 @@ PAGES = {
 
 USER_AGENT = "Mozilla/5.0 (compatible; BrightloopPricewatch/0.1)"
 TIMEOUT_S = 30
+LOADS = 3  # fresh loads of a page with a billing toggle, while a view is still unread
+TRIES = 3  # tries per load to switch the toggle
+STEP_MS = 10_000  # each find, click or check of the toggle; Render's CPU is slow
+ROLE_SELECTORS = {"tab": '[role="tab"]', "button": 'button, [role="button"]'}
 
 # Signs that we got a block or challenge page instead of the pricing page.
 BLOCKED = re.compile(r"you have been blocked|just a moment\.\.\.|verify you are human|access denied", re.I)
@@ -252,7 +256,7 @@ PAGE_CLICK = """el => { const o = {bubbles: true, cancelable: true, button: 0, p
 
 def _is_chosen(toggle, wait_s=3):
     for _ in range(max(1, int(wait_s * 4))):
-        if toggle.evaluate(f"el => ({CHOSEN})(el)", timeout=2000):
+        if toggle.evaluate(f"el => ({CHOSEN})(el)", timeout=STEP_MS):
             return True
         if wait_s:
             toggle.page.wait_for_timeout(250)
@@ -272,26 +276,41 @@ def _choose_view(page, role, control, name, navigations):
     """
     from playwright.sync_api import Error as PlaywrightError
 
-    toggle = page.get_by_role(role, name=re.compile(control, re.I)).first
+    # A CSS lookup by the role attribute, not get_by_role: working out every element's
+    # accessible name took over 2 s on a slow CPU, so the lookup itself timed out
+    # (2026-11-01 19:08, reproduced at 20x CPU throttling).
+    toggle = page.locator(ROLE_SELECTORS[role]).filter(has_text=re.compile(control, re.I)).first
     last = None
-    for _ in range(5):
+    for _ in range(TRIES):
         _settle(page, navigations)
         try:
             if _is_chosen(toggle, wait_s=0):
                 return
             try:
-                toggle.click(timeout=3000, no_wait_after=True)
+                toggle.click(timeout=STEP_MS, no_wait_after=True)
                 if _is_chosen(toggle):
                     return
             except PlaywrightError as exc:
                 last = exc
-            toggle.evaluate(PAGE_CLICK, timeout=3000)
+            toggle.evaluate(PAGE_CLICK, timeout=STEP_MS)
             if _is_chosen(toggle):
                 return
         except PlaywrightError as exc:  # timed out, or the button was re-rendered away mid-click
             last = exc
     detail = f" (last error: {last.__class__.__name__}: {_reason(last)})" if last else ""
-    raise RuntimeError(f"the {name} toggle didn't switch the page after 5 tries{detail}")
+    raise RuntimeError(f"the {name} toggle didn't switch the page after {TRIES} tries{detail}; {_controls(page)}")
+
+
+def _controls(page):
+    """What billing controls the page has, for an error when the toggle can't be found or used."""
+    try:
+        found = page.evaluate("""() => [...document.querySelectorAll('button, [role], label, input')]
+            .filter(e => /monthly|yearly|annual/i.test(e.innerText || e.value || '') && (e.innerText || '').length < 60)
+            .map(e => `${e.tagName.toLowerCase()}${e.getAttribute('role') ? '[' + e.getAttribute('role') + ']' : ''} "${(e.innerText || e.value || '').replace(/\\s+/g, ' ').trim()}"`)
+            .slice(0, 6)""")
+    except Exception as exc:
+        return f"couldn't list the page's controls ({exc.__class__.__name__})"
+    return "page has " + (", ".join(found) if found else "no Monthly/Yearly control")
 
 
 def _same_prices(views):
@@ -305,35 +324,62 @@ def _same_prices(views):
     return repeats
 
 
+def _open(browser, url):
+    """A fresh tab on the page, once a price shows: (page, response, navigations, html at first load)."""
+    page = browser.new_context(user_agent=USER_AGENT).new_page()
+    navigations = []  # when the page last navigated, its own URL rewrites included
+    page.on("framenavigated", lambda frame: frame == page.main_frame and navigations.append(time.monotonic()))
+    response = page.goto(url, wait_until="domcontentloaded", timeout=TIMEOUT_S * 1000)
+    # Lovable never reaches network idle; wait for a visible price instead.
+    page.locator("text=/\\$\\s?\\d/ >> visible=true").first.wait_for(timeout=TIMEOUT_S * 1000)
+    page.wait_for_timeout(1000)
+    return page, response, navigations, page.content()
+
+
 def _fetch_browser(spec):
+    """Each view of a page, from as many fresh loads as it takes (up to LOADS).
+
+    Bolt's toggle fails now and then on Render, in a different way each time: a
+    click that hangs, a tab that won't take a click, or (2026-11-01 19:08) no tab
+    found at all, while the next run reads fine. So a view that fails is tried
+    again on a fresh load of the page, and only the last load's error is kept.
+    """
     from playwright.sync_api import sync_playwright
 
+    toggles = spec.get("views") or [(None, None, None)]
     with sync_playwright() as p:
         # CHROMIUM_PATH lets a machine with a preinstalled Chromium use it.
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH") or None)
         try:
-            page = browser.new_page(user_agent=USER_AGENT)
-            navigations = []  # when the page last navigated, its own URL rewrites included
-            page.on("framenavigated", lambda frame: frame == page.main_frame and navigations.append(time.monotonic()))
-            response = page.goto(spec["url"], wait_until="domcontentloaded", timeout=TIMEOUT_S * 1000)
-            # Lovable never reaches network idle; wait for a visible price instead.
-            page.locator("text=/\\$\\s?\\d/ >> visible=true").first.wait_for(timeout=TIMEOUT_S * 1000)
-            page.wait_for_timeout(1000)
-            first = page.content()
-            views = []
-            for name, role, control in spec.get("views") or [(None, None, None)]:
-                # One view that can't be read fails alone: Monthly is kept when Yearly's toggle won't switch.
+            read, first_load = {}, None
+            for _ in range(LOADS):
                 try:
-                    if role:
-                        _choose_view(page, role, control, name, navigations)
-                        page.wait_for_timeout(1000)
-                    html = page.content()  # before any dropdown is opened, so its options aren't in the text
-                    dropdowns = _open_dropdowns(page) if spec.get("dropdowns") else []
-                    views.append({"view": name, "html": html, "dropdowns": dropdowns})
-                except Exception as exc:
-                    if not role:
-                        raise
-                    views.append({"view": name, "html": "", "dropdowns": [], "error": f"{exc.__class__.__name__}: {_reason(exc)}"})
+                    page, response, navigations, first = _open(browser, spec["url"])
+                except Exception:
+                    if first_load:
+                        break  # keep what the earlier load read
+                    raise
+                first_load = first_load or (response, first)
+                for name, role, control in toggles:
+                    if read.get(name, {}).get("html"):
+                        continue
+                    # One view that can't be read fails alone: Monthly is kept when Yearly's toggle won't switch.
+                    try:
+                        if role:
+                            _choose_view(page, role, control, name, navigations)
+                            page.wait_for_timeout(1000)
+                        html = page.content()  # before any dropdown is opened, so its options aren't in the text
+                        dropdowns = _open_dropdowns(page) if spec.get("dropdowns") else []
+                        read[name] = {"view": name, "html": html, "dropdowns": dropdowns}
+                    except Exception as exc:
+                        if not role:
+                            raise
+                        read[name] = {"view": name, "html": "", "dropdowns": [], "error": f"{exc.__class__.__name__}: {_reason(exc)}"}
+                page.context.close()
+                if all(view["html"] for view in read.values()):
+                    break
+            response, first = first_load
+            views = [read[name] for name, _, _ in toggles]
             # The view whose prices match the first load is the one the page opens on.
             opens_on = next((v["view"] for v in views if v["view"] and v["html"]
                              and _price_lines(v["html"]) == _price_lines(first)), None)

@@ -147,6 +147,60 @@ def test_a_browser_error_names_why_it_waited_not_just_the_button_it_found(monkey
     assert fetch.fetch_page("Bolt")[0]["error"] == "TimeoutError: Locator.click: Timeout 5000ms exceeded. (element is not stable)"
 
 
+class _FakeBrowser:
+    """Just enough of Playwright for _fetch_browser's reload loop; _open and _choose_view are faked."""
+
+    def __init__(self):
+        self.chromium = self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def launch(self, **kwargs):
+        return self
+
+    def close(self):
+        pass
+
+
+class _FakePage:
+    def __init__(self, html):
+        self.html, self.context = html, _FakeBrowser()
+
+    def content(self):
+        return self.html
+
+    def wait_for_timeout(self, ms):
+        pass
+
+
+def test_a_view_that_fails_is_read_again_on_a_fresh_load(monkeypatch):
+    # 2026-11-01: Bolt's toggle failed on one run and worked on the next.
+    import sys, types
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", types.SimpleNamespace(sync_playwright=_FakeBrowser))
+    loads = []
+
+    def fake_open(browser, url):
+        loads.append(_FakePage(PRICING_HTML))
+        return loads[-1], types.SimpleNamespace(status=200), [], PRICING_HTML
+
+    def fake_choose(page, role, control, name, navigations):
+        if name == "Yearly" and len(loads) == 1:
+            raise RuntimeError("the Yearly toggle didn't switch the page after 3 tries")
+        if name == "Yearly":
+            page.html = PRICING_HTML.replace("$30", "$25")
+
+    monkeypatch.setattr(fetch, "_open", fake_open)
+    monkeypatch.setattr(fetch, "_choose_view", fake_choose)
+    monthly, yearly = fetch.fetch_page("Bolt")
+    assert len(loads) == 2  # Monthly read on the first load; only Yearly needed the second
+    assert monthly["ok"] and "$30" in monthly["text"] and monthly["opens_on"] == "Monthly"
+    assert yearly["ok"] and "$25" in yearly["text"]
+
+
 def test_blocked_page_is_a_failure(monkeypatch):
     monkeypatch.setattr(fetch, "_fetch_http", http("<p>Sorry, you have been blocked</p>"))
     [page] = fetch.fetch_page("Replit")
