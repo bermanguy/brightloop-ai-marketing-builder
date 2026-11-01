@@ -27,7 +27,7 @@ def client(tmp_path, monkeypatch):
 
 
 def test_changes_page_shows_the_item_with_its_source(client):
-    body = client.get("/").text
+    body = client.get("/?days=all").text  # the fixture runs are dated 25 Oct, outside the default last 7 days
     assert "Lovable" in body and "$30" in body and "$25" in body
     assert '<a href="https://lovable.dev/pricing">' in body
     assert "couldn't read: Replit" in body
@@ -148,7 +148,7 @@ def test_pricing_page_shows_every_view_its_dropdown_options_and_tables(tmp_path,
 
 
 def test_the_json_api_gives_the_same_data_as_the_pages(client):
-    changes = client.get("/api/changes", headers={"Origin": "https://example.base44.app"})
+    changes = client.get("/api/changes?days=all", headers={"Origin": "https://example.base44.app"})
     assert changes.headers["access-control-allow-origin"] == "*"
     data = changes.json()
     assert data["last_check"] == "2026-10-25T12:00:00Z" and data["failed_pages"] == ["Replit"]

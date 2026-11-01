@@ -242,31 +242,50 @@ def _settle(page, navigations, quiet_s=1.5, cap_s=15):
         page.wait_for_timeout(250)
 
 
-def _is_chosen(toggle):
-    for _ in range(12):
+# A click fired from inside the page: the events a mouse click sends, with none of
+# Playwright's checks (visible, stable, not covered) that a moving page can fail.
+PAGE_CLICK = """el => { const o = {bubbles: true, cancelable: true, button: 0, pointerType: 'mouse', isPrimary: true};
+    el.focus(); el.dispatchEvent(new PointerEvent('pointerdown', o)); el.dispatchEvent(new MouseEvent('mousedown', o));
+    el.dispatchEvent(new PointerEvent('pointerup', o)); el.dispatchEvent(new MouseEvent('mouseup', o));
+    el.dispatchEvent(new MouseEvent('click', o)); }"""
+
+
+def _is_chosen(toggle, wait_s=3):
+    for _ in range(max(1, int(wait_s * 4))):
         if toggle.evaluate(f"el => ({CHOSEN})(el)", timeout=2000):
             return True
-        toggle.page.wait_for_timeout(250)
+        if wait_s:
+            toggle.page.wait_for_timeout(250)
     return False
 
 
 def _choose_view(page, role, control, name, navigations):
-    """Click one side of a billing toggle until the page marks it as chosen.
+    """Make one side of a billing toggle the chosen one, and check that it is.
 
     Bolt shows its prices seconds before its JavaScript is ready, and a click in that
     gap is silently lost: the "Yearly" view came back with the monthly prices
-    (2026-10-30). So each click waits for the page to settle, is followed by a check
-    that it took, and is retried until it does. Later tries use force, which skips
-    Playwright's checks and clicks the spot anyway (something over the toggle).
+    (2026-10-30). So each try waits for the page to settle and is followed by a check
+    that it took. A side the page already shows isn't clicked at all. Playwright's own
+    click comes first; when it can't be made or doesn't take (on Render it timed out
+    on Bolt's tab while the page moved, 2026-11-01), the click is fired from inside
+    the page instead.
     """
     from playwright.sync_api import Error as PlaywrightError
 
     toggle = page.get_by_role(role, name=re.compile(control, re.I)).first
     last = None
-    for attempt in range(5):
+    for _ in range(5):
         _settle(page, navigations)
         try:
-            toggle.click(timeout=5000, force=attempt >= 2, no_wait_after=True)
+            if _is_chosen(toggle, wait_s=0):
+                return
+            try:
+                toggle.click(timeout=3000, no_wait_after=True)
+                if _is_chosen(toggle):
+                    return
+            except PlaywrightError as exc:
+                last = exc
+            toggle.evaluate(PAGE_CLICK, timeout=3000)
             if _is_chosen(toggle):
                 return
         except PlaywrightError as exc:  # timed out, or the button was re-rendered away mid-click
@@ -329,9 +348,13 @@ def _reason(exc):
     lines = [line.strip() for line in str(exc).splitlines() if line.strip()]
     if not lines:
         return ""
-    reason = lines[0][:200]
-    if len(lines) > 1 and any(line.startswith("Call log") for line in lines):
-        reason += f" ({lines[-1].lstrip('- ')[:200]})"
+    reason = lines[0][:400]
+    calls = [i for i, line in enumerate(lines) if line.startswith("Call log")]
+    if calls:
+        # The last step that isn't just finding the element says why it waited ("element is not stable").
+        steps = [line.lstrip("- ") for line in lines[calls[0] + 1:]]
+        why = [step for step in steps if not step.startswith(("locator resolved", "waiting", "attempting", "retrying"))]
+        reason += f" ({((why or steps or [''])[-1])[:160]})"
     return reason
 
 

@@ -135,6 +135,18 @@ def test_a_browser_error_keeps_what_playwright_was_waiting_for(monkeypatch):
         'TimeoutError: Locator.click: Timeout 30000ms exceeded. (<div class="scrim"></div> intercepts pointer events)')
 
 
+def test_a_browser_error_names_why_it_waited_not_just_the_button_it_found(monkeypatch):
+    # 2026-11-01: the run log said only "locator resolved to <button role="tab" ...", cut off.
+    def stuck(spec):
+        raise TimeoutError("Locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"tab\")\n"
+                           "  - locator resolved to <button role=\"tab\" type=\"button\">Monthly</button>\n"
+                           "  - attempting click action\n  - element is not stable\n"
+                           "  - locator resolved to <button role=\"tab\" type=\"button\">Monthly</button>\n")
+
+    monkeypatch.setattr(fetch, "_fetch_browser", stuck)
+    assert fetch.fetch_page("Bolt")[0]["error"] == "TimeoutError: Locator.click: Timeout 5000ms exceeded. (element is not stable)"
+
+
 def test_blocked_page_is_a_failure(monkeypatch):
     monkeypatch.setattr(fetch, "_fetch_http", http("<p>Sorry, you have been blocked</p>"))
     [page] = fetch.fetch_page("Replit")
