@@ -41,6 +41,7 @@ USER_AGENT = "Mozilla/5.0 (compatible; BrightloopPricewatch/0.1)"
 TIMEOUT_S = 30
 LOADS = 3  # fresh loads of a page with a billing toggle, while a view is still unread
 TRIES = 3  # tries per load to switch the toggle
+PRICE_WAIT_S = 60  # first price on a fresh load; Render's CPU is slow
 STEP_MS = 10_000  # each find, click or check of the toggle; Render's CPU is slow
 ROLE_SELECTORS = {"tab": '[role="tab"]', "button": 'button, [role="button"]'}
 
@@ -224,12 +225,6 @@ def _open_dropdowns(page):
     return found
 
 
-# A toggle side counts as chosen once the page marks it so: Bolt's tabs use
-# aria-selected, Lovable's buttons aria-pressed.
-CHOSEN = """el => ['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el.getAttribute(a) === 'true')
-               || !['aria-selected', 'aria-pressed', 'aria-checked'].some(a => el.hasAttribute(a))"""
-
-
 def _settle(page, navigations, quiet_s=1.5, cap_s=15):
     """Wait for the page's scripts to load and its own navigations to stop.
 
@@ -254,12 +249,33 @@ PAGE_CLICK = """el => { const o = {bubbles: true, cancelable: true, button: 0, p
     el.dispatchEvent(new MouseEvent('click', o)); }"""
 
 
-def _is_chosen(toggle, wait_s=3):
-    for _ in range(max(1, int(wait_s * 4))):
-        if toggle.evaluate(f"el => ({CHOSEN})(el)", timeout=STEP_MS):
+# Find one side of a toggle by its role and text, report whether the page marks it as
+# chosen (Bolt's tabs use aria-selected, Lovable's buttons aria-pressed), and
+# click it if asked: all in one script run in the page. Playwright's locators did the
+# same in several round trips, each of which timed out on a slow CPU (2026-11-01/02).
+TOGGLE = f"""([selector, pattern, click]) => {{
+    const re = new RegExp(pattern, 'i');
+    const el = [...document.querySelectorAll(selector)].find(e => re.test((e.textContent || '').trim()));
+    if (!el) return 'missing';
+    const states = ['aria-selected', 'aria-pressed', 'aria-checked'];
+    if (states.some(a => el.getAttribute(a) === 'true')) return 'chosen';
+    if (!click) return states.some(a => el.hasAttribute(a)) ? 'not chosen' : 'unknown';
+    ({PAGE_CLICK})(el);
+    return 'clicked';
+}}"""
+
+
+def _toggle_state(page, role, control, click=False):
+    return page.evaluate(TOGGLE, [ROLE_SELECTORS[role], control, click])
+
+
+def _became_chosen(page, role, control, wait_s=3):
+    for _ in range(int(wait_s * 4)):
+        # A control with no chosen state to read is taken at its word once clicked; the
+        # same-prices check in fetch_page still catches a click that didn't take.
+        if _toggle_state(page, role, control) in ("chosen", "unknown"):
             return True
-        if wait_s:
-            toggle.page.wait_for_timeout(250)
+        page.wait_for_timeout(250)
     return False
 
 
@@ -269,35 +285,33 @@ def _choose_view(page, role, control, name, navigations):
     Bolt shows its prices seconds before its JavaScript is ready, and a click in that
     gap is silently lost: the "Yearly" view came back with the monthly prices
     (2026-10-30). So each try waits for the page to settle and is followed by a check
-    that it took. A side the page already shows isn't clicked at all. Playwright's own
-    click comes first; when it can't be made or doesn't take (on Render it timed out
-    on Bolt's tab while the page moved, 2026-11-01), the click is fired from inside
-    the page instead.
+    that it took. A side the page already shows isn't clicked at all. The click is
+    fired from inside the page; Playwright's own click is the fallback for a page that
+    ignores it.
     """
     from playwright.sync_api import Error as PlaywrightError
 
-    # A CSS lookup by the role attribute, not get_by_role: working out every element's
-    # accessible name took over 2 s on a slow CPU, so the lookup itself timed out
-    # (2026-11-01 19:08, reproduced at 20x CPU throttling).
-    toggle = page.locator(ROLE_SELECTORS[role]).filter(has_text=re.compile(control, re.I)).first
     last = None
     for _ in range(TRIES):
         _settle(page, navigations)
         try:
-            if _is_chosen(toggle, wait_s=0):
+            state = _toggle_state(page, role, control)
+            if state == "chosen":
                 return
-            try:
-                toggle.click(timeout=STEP_MS, no_wait_after=True)
-                if _is_chosen(toggle):
-                    return
-            except PlaywrightError as exc:
-                last = exc
-            toggle.evaluate(PAGE_CLICK, timeout=STEP_MS)
-            if _is_chosen(toggle):
+            if state == "missing":
+                last = f"no {name} control found"
+                page.wait_for_timeout(1000)
+                continue
+            _toggle_state(page, role, control, click=True)
+            if _became_chosen(page, role, control):
                 return
-        except PlaywrightError as exc:  # timed out, or the button was re-rendered away mid-click
-            last = exc
-    detail = f" (last error: {last.__class__.__name__}: {_reason(last)})" if last else ""
+            toggle = page.locator(ROLE_SELECTORS[role]).filter(has_text=re.compile(control, re.I)).first
+            toggle.click(timeout=STEP_MS, no_wait_after=True)
+            if _became_chosen(page, role, control):
+                return
+        except PlaywrightError as exc:  # timed out, or the page navigated mid-script
+            last = f"{exc.__class__.__name__}: {_reason(exc)}"
+    detail = f" (last error: {last})" if last else ""
     raise RuntimeError(f"the {name} toggle didn't switch the page after {TRIES} tries{detail}; {_controls(page)}")
 
 
@@ -330,8 +344,10 @@ def _open(browser, url):
     navigations = []  # when the page last navigated, its own URL rewrites included
     page.on("framenavigated", lambda frame: frame == page.main_frame and navigations.append(time.monotonic()))
     response = page.goto(url, wait_until="domcontentloaded", timeout=TIMEOUT_S * 1000)
-    # Lovable never reaches network idle; wait for a visible price instead.
-    page.locator("text=/\\$\\s?\\d/ >> visible=true").first.wait_for(timeout=TIMEOUT_S * 1000)
+    # Lovable never reaches network idle; wait for a visible price instead. Checked on the
+    # page's visible text in one step: a "text=… >> visible" locator timed out at 40x CPU.
+    page.wait_for_function("() => /\\$\\s?\\d/.test(document.body ? document.body.innerText : '')",
+                           timeout=PRICE_WAIT_S * 1000)
     page.wait_for_timeout(1000)
     return page, response, navigations, page.content()
 
@@ -351,14 +367,13 @@ def _fetch_browser(spec):
         # CHROMIUM_PATH lets a machine with a preinstalled Chromium use it.
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH") or None)
         try:
-            read, first_load = {}, None
+            read, first_load, load_error = {}, None, None
             for _ in range(LOADS):
                 try:
                     page, response, navigations, first = _open(browser, spec["url"])
-                except Exception:
-                    if first_load:
-                        break  # keep what the earlier load read
-                    raise
+                except Exception as exc:  # a load that never showed a price; the next one may
+                    load_error = exc
+                    continue
                 first_load = first_load or (response, first)
                 for name, role, control in toggles:
                     if read.get(name, {}).get("html"):
@@ -378,6 +393,8 @@ def _fetch_browser(spec):
                 page.context.close()
                 if all(view["html"] for view in read.values()):
                     break
+            if not first_load:
+                raise load_error
             response, first = first_load
             views = [read[name] for name, _, _ in toggles]
             # The view whose prices match the first load is the one the page opens on.
