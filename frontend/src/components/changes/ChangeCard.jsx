@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowUpRight, Check, ChevronDown, ExternalLink, History 
 import { cn } from '@/lib/utils';
 import { hostLabel, withProtocol } from '@/lib/links';
 import { isExpanded, setExpanded } from '@/lib/expanded';
+import { OPEN_EVENT, requestLatest } from '@/lib/goToLatest';
 import Markup from '@/components/Markup';
 import Collapse from '@/components/Collapse';
 import CopyButton from '@/components/CopyButton';
@@ -27,19 +28,11 @@ const CHANGE_TYPE = {
 };
 // What the source confidence score (set by rule from where the quote came from) means, by source kind.
 const SOURCE_KIND = {
-  own_pricing_page: "the competitor's own pricing page",
+  own_pricing_page: 'official competitor pricing page',
   own_site_other_page: "another page on the competitor's own site",
-  third_party: 'a third-party source',
-  sponsored_or_anonymous: 'a sponsored or anonymous source',
+  third_party: 'third-party source',
+  sponsored_or_anonymous: 'sponsored or anonymous source',
 };
-const OPEN_EVENT = 'pricewatch:open-card';
-
-// Scroll to a card in the feed and open it.
-function openCard(id) {
-  window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: id }));
-  const target = document.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
-  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 const IMPACT = {
   trial_starts: 'Trial starts',
@@ -134,7 +127,7 @@ function SourceBadge({ item }) {
   );
 }
 
-export default function ChangeCard({ item, isNew, latestInFeed = false }) {
+export default function ChangeCard({ item, isNew }) {
   const unverified = Boolean(item.unverified);
   const interpretation = !unverified && item.interpretation ? item.interpretation : null;
   // An older card a later check superseded. Cards with their own status say so in it; the rest get a tag.
@@ -260,9 +253,9 @@ export default function ChangeCard({ item, isNew, latestInFeed = false }) {
               </div>
               {item.confidence != null ? (
                 <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                  Source confidence {item.confidence}
-                  {SOURCE_KIND[item.source_kind] ? `: from ${SOURCE_KIND[item.source_kind]}` : ''}. It says how far to
-                  trust where the quote came from, not what the change means.
+                  Source confidence: {item.confidence}
+                  {SOURCE_KIND[item.source_kind] ? ` — ${SOURCE_KIND[item.source_kind]}` : ''}. This score reflects
+                  source type, not certainty about business impact.
                 </p>
               ) : null}
             </Section>
@@ -331,10 +324,10 @@ export default function ChangeCard({ item, isNew, latestInFeed = false }) {
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')} />
           {open ? 'Collapse' : 'View analysis'}
         </button>
-        {superseded && latestInFeed ? (
+        {superseded ? (
           <button
             type="button"
-            onClick={() => openCard(item.latest_item_id)}
+            onClick={() => requestLatest(item.latest_item_id)}
             className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-slate-600 transition-colors hover:text-indigo-600"
           >
             Go to latest

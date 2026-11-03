@@ -380,15 +380,18 @@ def test_display_headlines_say_what_the_page_changed():
         "item-live-replit-core-details-20261028214846":
             'Replit removed "Plan mode" from the Core plan on its pricing page, and added a new line.',
         "item-live-replit-pro-details-20261028214846":
-            'Replit removed "10 parallel agents" and other lines from the Pro plan on its pricing page, and added a new line.',
+            'Replit changed several lines on the Pro plan on its pricing page, including "10 parallel agents".',
         "item-live-lovable-yearly-enterprise-price-20261031192210":
-            "Lovable's Enterprise plan (Yearly view) no longer shows \"Platform fee\" as its price; it shows it as a line instead.",
+            "On the Enterprise plan (Yearly view), Lovable moved \"Platform fee\" from the price to a plan line.",
         "item-live-lovable-yearly-enterprise-price-20261030215502":
-            "Lovable's Enterprise plan (Yearly view) now shows \"Platform fee\" as its price instead of as a line.",
+            "On the Enterprise plan (Yearly view), Lovable moved \"Platform fee\" from a plan line to the price.",
         "item-live-replit-pro-details-20261027051056": 'Replit added "$100 credits" to the Pro plan on its pricing page.',
     }
     for item_id, text in expected.items():
         assert interpret.display_headline(_by_id(item_id)) == text
+    # "Several lines" only when the quote has at least three changed lines; Replit Core has two.
+    pro = interpret.lines_of(_by_id("item-live-replit-pro-details-20261028214846"))
+    assert len(pro["removed"]) + len(pro["added"]) >= 3
     # Discount cards already say what changed; they keep the stored headline.
     assert interpret.display_headline(_by_id("item-live-lovable-yearly-pro-discount-20261029034525")) is None
     # Nothing says the offer itself changed.

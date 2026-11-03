@@ -593,9 +593,9 @@ def display_headline(item):
     text = None
     if item.get("change") == "price":
         if match := NO_PRICE_NOW.search(quote):
-            text = f'{c}\'s {label} no longer shows "{match.group(1)}" as its price; it shows it as a line instead.'
+            text = f'On the {label}, {c} moved "{match.group(1)}" from the price to a plan line.'
         elif match := PRICE_NOW.search(quote):
-            text = f'{c}\'s {label} now shows "{match.group(1)}" as its price instead of as a line.'
+            text = f'On the {label}, {c} moved "{match.group(1)}" from a plan line to the price.'
     else:
         lines = lines_of(item)
         marks, reworded = _marks(lines), _reworded(lines)
@@ -607,6 +607,8 @@ def display_headline(item):
             text = f"{c} removed {MARK_NAMES.get(mark, f'the \"{mark}\"')} from the {label}'s displayed price."
         elif not lines["added"] and not lines["removed"] and lines["case_or_spacing_only"]:
             text = f"{c} changed only the letter case or spacing of a line on the {label}."
+        elif gone and len(gone) + len(new) + len(reworded) >= 3:
+            text = f'{c} changed several lines on the {label} on its pricing page, including "{gone[0]}".'
         elif gone:
             more = " and other lines" if len(gone) > 1 else ""
             text = f'{c} removed "{gone[0]}"{more} from the {label} on its pricing page' + (

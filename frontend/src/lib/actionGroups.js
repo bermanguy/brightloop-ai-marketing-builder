@@ -4,7 +4,11 @@
 export const ACTION_GROUPS = [
   { key: 'investigate', label: 'Needs investigation', hint: 'changes with an open question' },
   { key: 'confirmed', label: 'Change confirmed', hint: 'offer changes the source supports' },
-  { key: 'other', label: 'Other changes', hint: 'earlier, page-only or not yet read' },
+  {
+    key: 'other',
+    label: 'Other changes',
+    hint: 'earlier repeats, page-only edits, unverified claims, and cards not fully interpreted',
+  },
 ];
 
 export function actionGroup(item) {

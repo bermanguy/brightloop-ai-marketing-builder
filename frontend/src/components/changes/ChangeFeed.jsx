@@ -17,7 +17,6 @@ export default function ChangeFeed({ items = [], previousVisit }) {
   }
 
   const groups = groupByDay(items);
-  const ids = new Set(items.map((item) => item.id));
 
   return (
     <div className="space-y-8">
@@ -32,7 +31,6 @@ export default function ChangeFeed({ items = [], previousVisit }) {
                 key={item.id}
                 item={item}
                 isNew={isNewSinceVisit(item.seen_at, previousVisit)}
-                latestInFeed={Boolean(item.latest_item_id && ids.has(item.latest_item_id))}
               />
             ))}
           </div>
