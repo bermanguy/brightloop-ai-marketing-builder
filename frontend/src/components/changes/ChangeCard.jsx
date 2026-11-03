@@ -81,6 +81,13 @@ function Interpretation({ interpretation }) {
 
   return (
     <div className="mt-4 space-y-4">
+      {interpretation.observation?.text ? (
+        <div>
+          <SectionLabel>Verified observation · across checks</SectionLabel>
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{interpretation.observation.text}</p>
+        </div>
+      ) : null}
+
       <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
@@ -89,10 +96,10 @@ function Interpretation({ interpretation }) {
         <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm text-slate-700">
           {hasValues ? (
             <>
-              <dt className="text-slate-500">Was</dt>
-              <dd>{interpretation.old_value ? <Markup text={`“${interpretation.old_value}”`} /> : 'not shown'}</dd>
-              <dt className="text-slate-500">Now</dt>
-              <dd>{interpretation.new_value ? <Markup text={`“${interpretation.new_value}”`} /> : 'not shown'}</dd>
+              <dt className="text-slate-500">Line removed</dt>
+              <dd>{interpretation.old_value ? <Markup text={`“${interpretation.old_value}”`} /> : 'none'}</dd>
+              <dt className="text-slate-500">Line added</dt>
+              <dd>{interpretation.new_value ? <Markup text={`“${interpretation.new_value}”`} /> : 'none'}</dd>
             </>
           ) : null}
           <dt className="text-slate-500">Direction</dt>
