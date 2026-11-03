@@ -61,7 +61,11 @@ def test_flag_on_only_adds_three_fields_and_never_writes(client, monkeypatch):
     runs_before = json.dumps(store.runs())
     monkeypatch.setenv("PRICEWATCH_INTERPRET", "on")
     on = get_all(c)
-    assert on["runs"] == off["runs"] and on["pricing"] == off["pricing"] and on["page"] == off["page"]
+    assert on["pricing"] == off["pricing"]
+    # The run log and the admin page show the dashboard's headline and next steps (D45); nothing else changes.
+    strip = lambda runs: [dict(r, details=dict(r["details"], decided=[{k: v for k, v in d.items() if k not in ("headline", "next_step")}
+                                                                    for d in r["details"]["decided"]])) for r in runs]  # noqa: E731
+    assert strip(on["runs"]) == strip(off["runs"])
     assert on["changes"]["summary"] == off["changes"]["summary"]
     for before, after in zip(off["changes"]["items"], on["changes"]["items"]):
         assert {k: v for k, v in after.items() if k not in ADDED} == before
@@ -104,3 +108,56 @@ def test_a_missing_or_broken_replay_file_means_no_interpretations(tmp_path, monk
     (tmp_path / "bad.json").write_text("{not json")
     monkeypatch.setenv("PRICEWATCH_INTERPRET_FILE", str(tmp_path / "bad.json"))
     assert interpret.load() == {}
+
+
+# D45: the run log, alerts and admin pages show the same headline and next steps as the Changes tab.
+
+def test_run_log_alerts_and_admin_page_use_the_dashboards_next_steps(client, monkeypatch):
+    from pricewatch import notify
+    c, store = client
+    monkeypatch.setenv("PRICEWATCH_INTERPRET", "on")
+    shown = {i["id"]: i for i in c.get("/api/changes?days=all").json()["items"]}
+    decided = c.get("/api/runs").json()[-1]["details"]["decided"]
+    stored = sorted(LIVE, key=lambda i: i["seen_at"], reverse=True)
+    for item, row in zip(stored, decided):
+        card = shown[item["id"]]
+        assert row["next_step"] == interpret.next_steps(card)[0] and row["headline"] == interpret.shown_headline(card)
+    bolt = shown["item-live-bolt-pro-details-20261102185917"]
+    assert interpret.next_steps(bolt) == [a["text"] for a in bolt["interpretation"]["actions"]]
+    page = c.get("/?days=all").text
+    assert "Bolt removed an asterisk from the Pro plan&#x27;s displayed price." in page
+    keeps_its_own = [i for i in shown.values() if i["id"] in {x["id"] for x in LIVE} and not i["interpretation"] and not i["display_steps"]]
+    assert {i["change"] for i in keeps_its_own} == {"discount"}  # only discount cards keep their stored steps
+    assert page.count("<li>Stored action.</li>") == len(keeps_its_own)
+    annotated = interpret.for_display(LIVE)
+    slack, email = notify.slack_text(annotated, False), notify.email_html(annotated, False)
+    assert slack.count("Stored action.") == len(keeps_its_own)
+    assert 'the "*" next to Bolt\'s Pro price' in slack and "Bolt removed an asterisk" in email
+
+
+def test_with_the_flag_off_the_run_log_alerts_and_admin_page_keep_the_stored_text(client, monkeypatch):
+    from pricewatch import notify
+    c, _ = client
+    monkeypatch.setenv("PRICEWATCH_INTERPRET", "off")
+    decided = c.get("/api/runs").json()[-1]["details"]["decided"]
+    assert all(row["next_step"] == "Stored action." for row in decided)
+    assert interpret.for_display(LIVE) is LIVE
+    assert notify.slack_text(LIVE, False).count("Stored action.") == len(LIVE)
+
+
+def test_a_live_runs_alert_carries_the_dashboards_steps_and_the_run_is_saved_unchanged(client, monkeypatch):
+    from pricewatch import notify
+    c, store = client
+    monkeypatch.setenv("PRICEWATCH_INTERPRET", "on")
+    sent = []
+    monkeypatch.setattr(notify, "settings", lambda saved=None: {"min_confidence": 0.6, "competitors": [], "email": False,
+                                                               "slack": True, "email_on": False, "slack_on": True,
+                                                               "on_schedule": True, "on_check_now": True, "slack_channel": "C1"})
+    monkeypatch.setattr(notify, "send", lambda items, channels, **k: sent.append(items) or ["sent"])
+    result = {"items": copy.deepcopy(LIVE), "run": {"started_at": "x"}}
+    before = json.dumps(result)
+    web.alert(result, "schedule")
+    assert json.dumps(result) == before  # the run's own cards are untouched
+    by_id = {i["id"]: i for i in sent[0]}
+    replit = by_id["item-live-replit-core-details-20261028214846"]
+    assert interpret.next_steps(replit)[0].startswith("Check Replit's other plans")

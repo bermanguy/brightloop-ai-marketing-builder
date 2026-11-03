@@ -30,6 +30,8 @@ import urllib.error
 from email.message import EmailMessage
 import urllib.request
 
+from .interpret import next_steps, shown_headline
+
 RESEND_URL = "https://api.resend.com/emails"
 SLACK_URL = "https://slack.com/api/chat.postMessage"
 DEFAULT_FROM = "Brightloop Pricing Watch <onboarding@resend.dev>"
@@ -235,7 +237,7 @@ def _label(item):
 def slack_text(items, test):
     lines = [f"*{_slack(subject(items, test))}*"] + ([f"_{TEST_NOTE}_"] if test else [])
     for item in items:
-        lines.append(f"\n*{_slack(item['headline'])}* ({_label(item)})\n{_slack(item['action'])}")
+        lines.append(f"\n*{_slack(shown_headline(item))}* ({_label(item)})\n{_slack(' '.join(next_steps(item)))}")
         for source in item["sources"]:
             url = _url(source["url"])
             where = f"<{url}|{_slack(source['url'])}>" if url else _slack(source["url"])
@@ -251,8 +253,9 @@ def email_html(items, test):
             f"<li>&ldquo;{e(s['quote'])}&rdquo; &mdash; "
             + (f"<a href=\"{e(_url(s['url']))}\">{e(s['url'])}</a>" if _url(s["url"]) else e(s["url"])) + "</li>"
             for s in item["sources"])
-        parts.append(f"<h3>{e(item['headline'])}</h3><p style='color:#555'>{e(_label(item))}</p>"
-                     f"<p>{e(item['action'])}</p><ul>{sources}</ul>")
+        steps = "".join(f"<li>{e(step)}</li>" for step in next_steps(item))
+        parts.append(f"<h3>{e(shown_headline(item))}</h3><p style='color:#555'>{e(_label(item))}</p>"
+                     f"<p><b>Next steps</b></p><ol>{steps}</ol><ul>{sources}</ul>")
     return "".join(parts)
 
 

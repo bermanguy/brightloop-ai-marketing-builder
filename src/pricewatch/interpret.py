@@ -731,6 +731,27 @@ def annotate(items, stored):
     return out
 
 
+def next_steps(item):
+    """The next steps to show for a card, the same everywhere Maya reads one (the Changes tab, the run log,
+    alerts and the admin pages): the checked interpretation's actions, else the rule-written display steps,
+    else the core's own steps. Only fields already on the card are used; an unannotated card (the flag off,
+    a test file) gets exactly its stored steps."""
+    found = item.get("interpretation")
+    if found and not item.get("unverified") and found.get("actions"):
+        return [action["text"] for action in found["actions"]]
+    return item.get("display_steps") or item.get("steps") or ([item["action"]] if item.get("action") else [])
+
+
+def shown_headline(item):
+    """The display headline when the rules wrote one, else the stored headline."""
+    return item.get("display_headline") or item.get("headline")
+
+
+def for_display(items):
+    """The cards as the dashboard shows them: annotated with PRICEWATCH_INTERPRET=on, unchanged otherwise."""
+    return annotate(items, load()) if enabled() else items
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="interpret", description=__doc__.splitlines()[0])
     parser.add_argument("--input", required=True, help="a JSON file with an items list (as /api/changes returns)")

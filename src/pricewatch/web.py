@@ -90,7 +90,8 @@ def alert(result, trigger):
         return
     saved = store().alert_settings()
     shown = notify.settings(saved)
-    items = notify.pick(result["items"], shown["min_confidence"], shown["competitors"])
+    # The same headline and next steps as the Changes tab (interpret.for_display); the run is saved unchanged.
+    items = notify.pick(interpret.for_display(result["items"]), shown["min_confidence"], shown["competitors"])
     channels = [c for c in ("email", "slack") if shown[c] and shown[f"{c}_on"]]
     switch = notify.TRIGGER_SWITCH.get(trigger, "on_schedule")
     addresses = notify.recipients(saved)
@@ -180,11 +181,11 @@ def render_item(item):
     changed = "What's claimed" if item.get("unverified") else "What changed"
     return (
         f'<div class="item"><div class="meta">{esc(item.get("competitor"))} · seen {esc(item.get("seen_at"))} · '
-        f'{badge}confidence {item["confidence"]}</div><h3>{esc(item.get("headline"))}</h3>'
+        f'{badge}confidence {item["confidence"]}</div><h3>{esc(interpret.shown_headline(item))}</h3>'
         f"<p class='label'>{changed}</p><ul class='sources'>{sources}</ul>"
         f'<p class="why"><b>Why it matters:</b> {esc(item["why"])}</p>'
         f"<p class='label'>Recommended next steps</p><ul class='steps'>"
-        + "".join(f"<li>{esc(step)}</li>" for step in item.get("steps") or [item["action"]]) + "</ul></div>"
+        + "".join(f"<li>{esc(step)}</li>" for step in interpret.next_steps(item)) + "</ul></div>"
     )
 
 
@@ -303,7 +304,7 @@ def changes(days: str = "7", competitor: str = None, focus: str = None):
     if not runs:
         return page("What changed in competitors' pricing", "<p>No runs yet.</p>")
     in_filter = changes_in(runs, days, competitor)
-    items = focused(in_filter, focus)
+    items = interpret.for_display(focused(in_filter, focus))
     last = runs[0]["run"]
     failed = [label(p) for p in last.get("pages", []) if not p["ok"]]
     status = f'<span class="failed">couldn\'t read: {esc(", ".join(failed))}</span> · ' if failed else ""
@@ -355,7 +356,7 @@ READERS = {"ai": "read with AI, every price checked against the page text", "pla
 def run_summary(result):
     """What a run read, found and decided, as data: the run log's Details and /api/runs share it.
     Everything comes from the saved run; the reasons are the rules in core/trust.py, in words."""
-    run, items = result["run"], result["items"]
+    run, items = result["run"], interpret.for_display(result["items"])
     rumors = sum(1 for i in items if i.get("unverified"))
     return {
         "read": [f"{label(p)}: couldn't read (see errors); not compared." if not p["ok"] else
@@ -365,10 +366,10 @@ def run_summary(result):
         "notes": run.get("notes", []),
         "found": (f"{len(items) - rumors} change{'s' if len(items) - rumors != 1 else ''} on the pricing pages and "
                   f"{rumors} pricing rumor{'s' if rumors != 1 else ''} elsewhere."),
-        "decided": [{"headline": i.get("headline"), "competitor": i.get("competitor"), "confidence": i["confidence"],
+        "decided": [{"headline": interpret.shown_headline(i), "competitor": i.get("competitor"), "confidence": i["confidence"],
                      "unverified": bool(i.get("unverified")),
                      "rule": SOURCE_RULES.get(i.get("source_kind"), "").format(c=i.get("competitor")),
-                     "next_step": (i.get("steps") or [i["action"]])[0]} for i in items],
+                     "next_step": (interpret.next_steps(i) or [""])[0]} for i in items],
         "skipped": [f"{s['id']}: {s['reason']}" for s in result.get("skipped", [])],
         "errors": run["errors"],
     }
