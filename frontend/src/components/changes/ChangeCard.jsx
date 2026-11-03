@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Check, ChevronDown, ExternalLink, HelpCircle, Sparkles } from 'lucide-react';
+import React, { useId, useState } from 'react';
+import { AlertTriangle, Check, ChevronDown, ExternalLink, History, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hostLabel, withProtocol } from '@/lib/links';
+import { isExpanded, setExpanded } from '@/lib/expanded';
 import Markup from '@/components/Markup';
 import Collapse from '@/components/Collapse';
 import CopyButton from '@/components/CopyButton';
@@ -9,19 +10,13 @@ import ConfidenceBar from '@/components/ConfidenceBar';
 import CompetitorAvatar from '@/components/CompetitorAvatar';
 import RelativeTime from '@/components/RelativeTime';
 
-// Display names for the engine's interpretation fields. Labels only: nothing is computed here.
-const DIRECTION = {
-  more_for_customer: 'More for customers',
-  less_for_customer: 'Less for customers',
-  presentation_only: 'Presentation only',
-  unclear: 'Unclear',
-};
-const AMBIGUITY = {
-  meaning_of_mark_unknown: "what the removed mark referred to isn't known",
-  mixed_changes: 'it mixes several changes',
-  partial_quote: 'the quote shows only part of the change',
-  changed_back_and_forth: 'this line has come and gone across recent checks',
-  other: "the evidence doesn't say what it means for customers",
+// Display names and colours for the engine's fields. Labels only: every status and text comes from the engine's rules.
+const STATUS_STYLE = {
+  needs_investigation: 'border-amber-200 bg-amber-50 text-amber-800',
+  change_confirmed: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  page_change_only: 'border-slate-200 bg-slate-50 text-slate-600',
+  no_action_needed: 'border-slate-200 bg-slate-50 text-slate-600',
+  changed_again: 'border-slate-200 bg-slate-50 text-slate-600',
 };
 const IMPACT = {
   trial_starts: 'Trial starts',
@@ -29,13 +24,30 @@ const IMPACT = {
   activation: 'Activation',
   paid_conversion: 'Paid conversion',
   competitive_positioning: 'Competitive positioning',
-  unknown: 'Unknown',
 };
+
+function SectionLabel({ children, icon: Icon }) {
+  return (
+    <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+      {children}
+    </div>
+  );
+}
+
+function Section({ label, icon, children }) {
+  return (
+    <section>
+      <SectionLabel icon={icon}>{label}</SectionLabel>
+      <div className="mt-1.5">{children}</div>
+    </section>
+  );
+}
 
 function SourceBlock({ source }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <blockquote className="border-l-2 border-indigo-200 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
+      <blockquote className="break-words border-l-2 border-indigo-200 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
         <Markup text={source.quote} />
       </blockquote>
       <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-2.5 py-1">
@@ -46,177 +58,92 @@ function SourceBlock({ source }) {
           className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700 hover:underline"
         >
           <ExternalLink className="h-3 w-3 shrink-0" />
-          <span className="truncate">{hostLabel(source.url)}</span>
+          <span className="truncate">
+            <span className="hidden sm:inline">Official source · </span>
+            {hostLabel(source.url)}
+          </span>
         </a>
-        <CopyButton value={source.quote} />
+        <span className="shrink-0 whitespace-nowrap">
+          <CopyButton value={source.quote} />
+        </span>
       </div>
     </div>
   );
 }
 
-function SectionLabel({ children }) {
-  return <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{children}</div>;
-}
-
-function CategoryChip({ item }) {
-  if (!item.category_label) return null;
-  const ai = item.interpretation?.category_source === 'ai';
+function Chip({ className, children, title }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-      {item.category_label}
-      {ai ? (
-        <span className="inline-flex items-center gap-0.5 text-indigo-500" title="Category chosen by AI from five options, then checked by rules">
-          <Sparkles className="h-3 w-3" />
-          AI
-        </span>
-      ) : null}
+    <span
+      title={title}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4',
+        className
+      )}
+    >
+      {children}
     </span>
   );
 }
 
-// The engine's structured reading of a verified change, with the actions its rules chose.
-function Interpretation({ interpretation }) {
-  const ambiguous = interpretation.interpretation_status === 'ambiguous';
-  const hasValues = interpretation.old_value || interpretation.new_value;
-
+function SourceBadge({ item }) {
+  if (item.unverified) {
+    return (
+      <Chip className="border-amber-200 bg-amber-50 font-semibold text-amber-700">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Unverified: don&apos;t act yet
+      </Chip>
+    );
+  }
   return (
-    <div className="mt-4 space-y-4">
-      {interpretation.observation?.text ? (
-        <div>
-          <SectionLabel>Verified observation · across checks</SectionLabel>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{interpretation.observation.text}</p>
-        </div>
-      ) : null}
-
-      <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-          <SectionLabel>AI reading of the change</SectionLabel>
-        </div>
-        <dl className="mt-2 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-sm text-slate-700">
-          {hasValues ? (
-            <>
-              <dt className="text-slate-500">Line removed</dt>
-              <dd>{interpretation.old_value ? <Markup text={`“${interpretation.old_value}”`} /> : 'none'}</dd>
-              <dt className="text-slate-500">Line added</dt>
-              <dd>{interpretation.new_value ? <Markup text={`“${interpretation.new_value}”`} /> : 'none'}</dd>
-            </>
-          ) : null}
-          <dt className="text-slate-500">Direction</dt>
-          <dd>{DIRECTION[interpretation.direction] || interpretation.direction}</dd>
-          <dt className="text-slate-500">Meaning</dt>
-          <dd>
-            {ambiguous ? (
-              <span className="inline-flex items-start gap-1 text-amber-700">
-                <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  Ambiguous: {AMBIGUITY[interpretation.ambiguity_reason] || AMBIGUITY.other}. The source is verified;
-                  what it means isn&apos;t.
-                </span>
-              </span>
-            ) : (
-              'Supported by the verified source'
-            )}
-          </dd>
-          <dt className="text-slate-500">Possible impact area</dt>
-          <dd>
-            {IMPACT[interpretation.potential_impact_area] || interpretation.potential_impact_area}
-            <span className="text-slate-400"> · a possible area, not a prediction</span>
-          </dd>
-        </dl>
-      </div>
-
-      <div>
-        <SectionLabel>What to do next</SectionLabel>
-        {ambiguous ? (
-          <p className="mt-1 text-xs text-slate-500">The meaning isn&apos;t clear yet, so only checks are suggested.</p>
-        ) : null}
-        <ul className="mt-1.5 space-y-2">
-          {(interpretation.actions || []).map((action) => (
-            <li key={action.id} className="flex gap-2.5 text-sm leading-relaxed text-slate-800">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
-              <span>{action.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {interpretation.hypothesis?.text ? (
-        <div>
-          <SectionLabel>Hypothesis</SectionLabel>
-          <p className="mt-1.5 text-sm italic leading-relaxed text-slate-600">{interpretation.hypothesis.text}</p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// The card as it was before interpretations: used whenever a card has none.
-function Details({ item, steps }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-indigo-600"
-      >
-        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')} />
-        Details
-      </button>
-
-      <Collapse open={open}>
-        <div className="mt-3 space-y-4 border-t border-slate-100 pt-3.5">
-          {item.why ? (
-            <div>
-              <SectionLabel>Why it matters</SectionLabel>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
-                <Markup text={item.why} />
-              </p>
-            </div>
-          ) : null}
-
-          {steps.length > 0 ? (
-            <div>
-              <SectionLabel>Recommended next steps</SectionLabel>
-              <ul className="mt-1.5 space-y-2">
-                {steps.map((step, index) => (
-                  <li key={index} className="flex gap-2.5 text-sm leading-relaxed text-slate-700">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-300" />
-                    <Markup text={step} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      </Collapse>
-    </>
+    <Chip className="border-emerald-200 bg-emerald-50 font-semibold text-emerald-700" title="The quote below is on the competitor's own page">
+      <Check className="h-3.5 w-3.5" />
+      Source verified
+    </Chip>
   );
 }
 
 export default function ChangeCard({ item, isNew }) {
   const unverified = Boolean(item.unverified);
-  const steps = item.steps?.length ? item.steps : item.action ? [item.action] : [];
   const interpretation = !unverified && item.interpretation ? item.interpretation : null;
+  const steps = interpretation
+    ? (interpretation.actions || []).map((action) => action.text)
+    : item.steps?.length
+      ? item.steps
+      : item.action
+        ? [item.action]
+        : [];
+  const summary = interpretation ? interpretation.status_detail : steps[0];
+  const source = item.sources?.[0];
+  const impact = interpretation?.impact;
+  const [open, setOpen] = useState(() => isExpanded(item.id));
+  const panelId = useId();
+
+  const toggle = () => {
+    setOpen((value) => {
+      setExpanded(item.id, !value);
+      return !value;
+    });
+  };
 
   return (
     <article
+      data-card-id={item.id}
       className={cn(
         'rounded-xl border border-slate-200 p-4 transition-shadow duration-200 sm:p-5',
         unverified ? 'bg-slate-50/80 shadow-none hover:shadow-sm' : 'bg-white shadow-sm hover:shadow-md'
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5">
+      {/* Collapsed: who, when, what kind, how sure, what changed, and the one open point. */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           <CompetitorAvatar competitor={item.competitor} />
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className={cn('text-sm font-medium', unverified ? 'text-slate-600' : 'text-slate-900')}>
+              <span className={cn('truncate text-sm font-medium', unverified ? 'text-slate-600' : 'text-slate-900')}>
                 {item.competitor}
               </span>
               {isNew ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600">
                   <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                   New
                 </span>
@@ -225,54 +152,132 @@ export default function ChangeCard({ item, isNew }) {
             <RelativeTime value={item.seen_at} className="text-xs text-slate-500" />
           </div>
         </div>
-
-        <div className="flex flex-col items-end gap-1.5">
-          {unverified ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Unverified: don&apos;t act yet
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              <Check className="h-3.5 w-3.5" />
-              Verified
-            </span>
-          )}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <SourceBadge item={item} />
           <ConfidenceBar value={item.confidence} />
         </div>
       </div>
 
-      {item.category_label ? (
-        <div className="mt-3">
-          <CategoryChip item={item} />
+      {item.category_label || interpretation?.status_label ? (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {item.category_label ? (
+            <Chip
+              className="border-slate-200 bg-slate-50 text-slate-600"
+              title={interpretation ? 'Category chosen by AI from five options, then checked by rules' : 'Category set by rules'}
+            >
+              {item.category_label}
+              {interpretation?.category_source === 'ai' ? (
+                <span className="inline-flex items-center gap-0.5 text-indigo-500">
+                  <Sparkles className="h-3 w-3" />
+                  AI
+                </span>
+              ) : null}
+            </Chip>
+          ) : null}
+          {interpretation?.status_label ? (
+            <Chip className={STATUS_STYLE[interpretation.status] || STATUS_STYLE.page_change_only}>
+              {interpretation.status_label}
+            </Chip>
+          ) : null}
         </div>
       ) : null}
 
       <h3
         className={cn(
-          'mt-3 text-base font-semibold leading-snug',
+          'mt-2.5 break-words text-base font-semibold leading-snug',
           unverified ? 'text-slate-700' : 'text-slate-900'
         )}
       >
         <Markup text={item.headline} />
       </h3>
 
-      {item.sources?.length ? (
-        <div className="mt-3.5">
-          <div className="mb-2">
-            <SectionLabel>
-              {unverified ? "What's claimed" : interpretation ? 'Verified fact · from the pricing page' : 'What changed'}
-            </SectionLabel>
-          </div>
-          <div className="space-y-2">
-            {item.sources.map((source, index) => (
-              <SourceBlock key={`${source.url}-${index}`} source={source} />
-            ))}
-          </div>
-        </div>
+      {/* The one-line summary is repeated in full below, so it's shown only while collapsed. */}
+      {summary && !open ? (
+        <p className="mt-1.5 line-clamp-2 break-words text-sm leading-relaxed text-slate-600">
+          <Markup text={summary} />
+        </p>
       ) : null}
 
-      {interpretation ? <Interpretation interpretation={interpretation} /> : <Details item={item} steps={steps} />}
+      {/* Expanded: evidence, history, what's unknown, what to do, and impact only when there is one. */}
+      <Collapse open={open}>
+        <div id={panelId} className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+          {item.sources?.length ? (
+            <Section label={unverified ? "What's claimed" : 'What the page shows'}>
+              <div className="space-y-2">
+                {item.sources.map((s, index) => (
+                  <SourceBlock key={`${s.url}-${index}`} source={s} />
+                ))}
+              </div>
+            </Section>
+          ) : null}
+
+          {interpretation?.observation?.text ? (
+            <Section label="History across checks" icon={History}>
+              <p className="text-sm leading-relaxed text-slate-700">{interpretation.observation.text}</p>
+            </Section>
+          ) : null}
+
+          {interpretation?.status_detail ? (
+            <Section label={interpretation.question ? "What we don't know yet" : 'What it means'}>
+              <p className="text-sm leading-relaxed text-slate-700">{interpretation.status_detail}</p>
+            </Section>
+          ) : null}
+
+          {steps.length > 0 ? (
+            <section className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3.5 py-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">What to do next</div>
+              <ol className="mt-2 space-y-2">
+                {steps.map((step, index) => (
+                  <li key={index} className="flex gap-2.5 text-sm leading-relaxed text-slate-800">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-indigo-600 ring-1 ring-indigo-200">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 break-words">
+                      <Markup text={step} />
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
+          {impact?.text ? (
+            <Section label={`Potential impact${IMPACT[impact.area] ? ` · ${IMPACT[impact.area]}` : ''}`}>
+              <p className="text-sm leading-relaxed text-slate-700">{impact.text}</p>
+            </Section>
+          ) : !interpretation && item.why ? (
+            <Section label="Why it matters">
+              <p className="text-sm leading-relaxed text-slate-700">
+                <Markup text={item.why} />
+              </p>
+            </Section>
+          ) : null}
+        </div>
+      </Collapse>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        >
+          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')} />
+          {open ? 'Collapse' : 'View analysis'}
+        </button>
+        {source?.url && !open ? (
+          <a
+            href={withProtocol(source.url)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-w-0 items-center gap-1 text-xs text-slate-500 transition-colors hover:text-indigo-600"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0" />
+            <span className="truncate">{hostLabel(source.url)}</span>
+          </a>
+        ) : null}
+      </div>
     </article>
   );
 }
