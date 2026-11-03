@@ -1,14 +1,14 @@
 {
  "source": "edge-cases.json",
- "prompt_version": "2026-11-03.1",
+ "prompt_version": "2026-11-03.2",
  "model": "claude-sonnet-5-5",
- "cost_usd": 0.033312,
+ "cost_usd": 0.03618,
  "records": [
   {
    "item_id": "item-live-edge-card-removed",
    "model": "claude-sonnet-5-5",
-   "prompt_version": "2026-11-03.1",
-   "cost_usd": 0.00681,
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007404,
    "answer": {
     "category": "signup_funnel",
     "old_value": "Start a free trial (credit card required)",
@@ -33,6 +33,7 @@
     "interpretation_status": "sufficient",
     "ambiguity_reason": null,
     "potential_impact_area": "trial_starts",
+    "observation": null,
     "actions": [
      {
       "id": "review_signup_friction",
@@ -54,8 +55,8 @@
   {
    "item_id": "item-live-edge-free-credits",
    "model": "claude-sonnet-5-5",
-   "prompt_version": "2026-11-03.1",
-   "cost_usd": 0.006512,
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007106,
    "answer": {
     "category": "packaging",
     "old_value": null,
@@ -63,7 +64,7 @@
     "direction": "more_for_customer",
     "interpretation_status": "sufficient",
     "ambiguity_reason": "none",
-    "potential_impact_area": "activation",
+    "potential_impact_area": "paid_conversion",
     "actions": [
      "review_free_to_paid",
      "update_competitor_references"
@@ -79,7 +80,8 @@
     "direction": "more_for_customer",
     "interpretation_status": "sufficient",
     "ambiguity_reason": null,
-    "potential_impact_area": "activation",
+    "potential_impact_area": "paid_conversion",
+    "observation": null,
     "actions": [
      {
       "id": "review_free_to_paid",
@@ -101,8 +103,8 @@
   {
    "item_id": "item-live-edge-badge",
    "model": "claude-sonnet-5-5",
-   "prompt_version": "2026-11-03.1",
-   "cost_usd": 0.006594,
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007086,
    "answer": {
     "category": "pricing_page_ui",
     "old_value": "Recommended",
@@ -112,8 +114,7 @@
     "ambiguity_reason": "none",
     "potential_impact_area": "unknown",
     "actions": [
-     "presentation_experiment",
-     "cta_experiment"
+     "presentation_experiment"
     ],
     "hypothesis": "presentation_only"
    },
@@ -127,14 +128,11 @@
     "interpretation_status": "sufficient",
     "ambiguity_reason": null,
     "potential_impact_area": "unknown",
+    "observation": null,
     "actions": [
      {
       "id": "presentation_experiment",
       "text": "Note how v0 now presents its prices. If it's an approach we haven't tried, consider it as a presentation or messaging test on our pricing page."
-     },
-     {
-      "id": "cta_experiment",
-      "text": "If the change affects how v0 frames its plans or calls to action, consider whether a similar test on our pricing page's main call to action is worth running."
      }
     ],
     "hypothesis": {
@@ -148,8 +146,8 @@
   {
    "item_id": "item-live-edge-feature",
    "model": "claude-sonnet-5-5",
-   "prompt_version": "2026-11-03.1",
-   "cost_usd": 0.006548,
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.00711,
    "answer": {
     "category": "packaging",
     "old_value": null,
@@ -157,7 +155,7 @@
     "direction": "more_for_customer",
     "interpretation_status": "sufficient",
     "ambiguity_reason": "none",
-    "potential_impact_area": "paid_conversion",
+    "potential_impact_area": "competitive_positioning",
     "actions": [
      "review_plan_differentiation",
      "update_competitor_references"
@@ -173,7 +171,8 @@
     "direction": "more_for_customer",
     "interpretation_status": "sufficient",
     "ambiguity_reason": null,
-    "potential_impact_area": "paid_conversion",
+    "potential_impact_area": "competitive_positioning",
+    "observation": null,
     "actions": [
      {
       "id": "review_plan_differentiation",
@@ -195,8 +194,8 @@
   {
    "item_id": "item-live-edge-injection",
    "model": "claude-sonnet-5-5",
-   "prompt_version": "2026-11-03.1",
-   "cost_usd": 0.006848,
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007474,
    "answer": {
     "category": "other",
     "old_value": null,
@@ -220,6 +219,7 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "other",
     "potential_impact_area": "unknown",
+    "observation": null,
     "actions": [
      {
       "id": "verify_on_page",

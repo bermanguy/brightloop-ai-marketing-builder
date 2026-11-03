@@ -69,6 +69,8 @@ def test_only_verified_live_pricing_page_cards_of_uncertain_kinds_are_sent():
     assert not interpret.eligible(EDGE["item-live-edge-opens"])  # billing views: the rule is certain
     test_file_card = dict(EDGE["item-live-edge-feature"], source_ids=["p1"])  # a cases.json signal
     assert not interpret.eligible(test_file_card)
+    old = dict(EDGE["item-live-edge-feature"]); old.pop("change")  # stored before kinds of change existed
+    assert not interpret.eligible(old) and interpret.rule_category(old) == "other"
 
 
 def test_rule_categories_for_cards_never_sent():
@@ -122,23 +124,82 @@ def test_unclear_direction_is_ambiguous_even_if_the_model_says_sufficient():
     assert got["interpretation_status"] == "ambiguous" and [a["id"] for a in got["actions"]] == ["verify_on_page"]
 
 
-def test_a_line_that_came_and_went_is_ambiguous_by_rule():
-    again = interpret.recurring(LIVE)
+def test_a_line_that_came_and_went_is_a_verified_observation_and_stays_ambiguous():
+    found = interpret.patterns(LIVE)
     lovable = {i["id"] for i in LIVE if "lovable" in i["id"] and "free" in i["id"]}
-    assert lovable <= again and BOLT["id"] not in again
-    item = next(i for i in LIVE if i["id"] == "item-live-lovable-yearly-free-details-20261103005623")
+    assert set(found) == lovable and BOLT["id"] not in found
+    newest = "item-live-lovable-yearly-free-details-20261103005623"
+    assert [k for k, v in found.items() if v["newest"]] == [newest]
+    item = next(i for i in LIVE if i["id"] == newest)
     got, _ = interpret.check(item, answer(category="signup_funnel", new_value="No credit card needed",
-                                          actions=["review_signup_friction"], hypothesis="easier_start"), came_and_went=True)
+                                          actions=["review_signup_friction"], hypothesis="easier_start"), found[newest])
     assert got["interpretation_status"] == "ambiguous" and got["ambiguity_reason"] == "changed_back_and_forth"
+    assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "messaging_investigation"]
+    assert got["hypothesis"]["id"] == "not_enough_evidence"
+    assert got["observation"]["text"].startswith("Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\"")
+    assert len(got["observation"]["related_item_ids"]) == 3
+    # No claim of a test or of a changed signup requirement: the action says so outright.
+    action = got["actions"][1]["text"]
+    assert "doesn't show that Lovable is running a test or that its signup requirements changed" in action
+    assert not any(w in (action + got["observation"]["text"]).lower() for w in ("a/b", "is testing", "now requires"))
+
+
+def test_older_cards_of_the_pattern_get_only_checks_and_other_categories_no_investigation():
+    found = interpret.patterns(LIVE)
+    older = next(i for i in LIVE if i["id"] == "item-live-lovable-monthly-free-details-20261030100003")
+    got, _ = interpret.check(older, answer(category="signup_funnel", old_value="No credit card needed", new_value=None,
+                                           direction="less_for_customer", actions=["review_signup_friction"],
+                                           hypothesis="harder_start"), found[older["id"]])
     assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "verify_on_page"]
+    newest = next(i for i in LIVE if i["id"] == "item-live-lovable-yearly-free-details-20261103005623")
+    got, _ = interpret.check(newest, answer(category="pricing_page_ui", new_value="No credit card needed",
+                                            direction="presentation_only", actions=["presentation_experiment"],
+                                            hypothesis="presentation_only"), found[newest["id"]])
+    assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "verify_on_page"]
+
+
+def test_only_case_and_spacing_differences_are_set_aside_as_cosmetic():
+    pro = next(i for i in LIVE if i["id"] == "item-live-replit-pro-details-20261028214846")
+    lines = interpret.lines_of(pro)
+    assert lines["case_or_spacing_only"] == [["Premium Support", "Premium support"]]
+    # Removed words are a change, not a rewording.
+    assert "Even more Free Mode usage to chat and create" in lines["removed"] and "Even more Free Mode usage" in lines["added"]
+    assert "10 parallel agents" in lines["removed"] and "Invite up to 50 viewers" in lines["removed"]
+    bolt = interpret.lines_of(BOLT)  # a removed symbol is a change too
+    assert bolt["removed"] == ["$25*/month", "$18*/month"] and bolt["case_or_spacing_only"] == []
+    options = next(i for i in LIVE if i["id"] == "item-live-replit-pro-details-20261027121317")
+    assert interpret.lines_of(options)["truncated"]
+
+
+def test_lines_no_longer_listed_get_check_whether_moved_or_removed():
+    core = next(i for i in LIVE if i["id"] == "item-live-replit-core-details-20261028214846")
+    ambiguous, _ = interpret.check(core, answer(new_value=None, direction="unclear", interpretation_status="ambiguous",
+                                                ambiguity_reason="mixed_changes"))
+    assert [a["id"] for a in ambiguous["actions"]] == ["check_moved_or_removed"]
+    text = ambiguous["actions"][0]["text"]
+    assert "moved what this plan no longer lists to another plan or removed it from its offering" in text
+    assert "doesn't by itself mean it was discontinued" in text
+    supported, _ = interpret.check(core, answer(new_value=None, direction="less_for_customer", hypothesis="less_value",
+                                                actions=["review_plan_differentiation", "update_competitor_references"]))
+    assert [a["id"] for a in supported["actions"]] == ["check_moved_or_removed", "review_plan_differentiation"]
+    assert supported["hypothesis"]["text"].startswith("If what's no longer listed has left the plan")
+    added_only, _ = interpret.check(EDGE["item-live-edge-feature"], answer())  # nothing removed: no such step
+    assert "check_moved_or_removed" not in [a["id"] for a in added_only["actions"]]
+
+
+def test_the_model_is_never_offered_code_only_actions():
+    offered = set(interpret.SCHEMA["properties"]["actions"]["items"]["enum"])
+    assert offered.isdisjoint(interpret.CODE_ONLY)
+    fake = answer(actions=["messaging_investigation"])
+    assert interpret.check(EDGE["item-live-edge-feature"], fake)[0] is None
 
 
 def test_every_playbook_text_has_no_figures_and_says_nothing_about_brightloops_own_offer():
     for text in list(interpret.ACTIONS.values()) + list(interpret.HYPOTHESES.values()):
-        assert numbers_in(text.format(c="Bolt", url="bolt.new/pricing")) == []
+        assert numbers_in(text.format(c="Bolt", url="bolt.new/pricing", line="Free forever", plan="Pro")) == []
     # Actions about our side are conditional or investigative: "if", "review", "check", "consider", "note".
     for key, text in interpret.ACTIONS.items():
-        assert re.search(r"\b(If|if|Review|Check|consider|Note|Bring|Update|Before|Wait|This line)\b", text), key
+        assert re.search(r"\b(If|if|Review|Check|consider|Note|Bring|Update|Before|Wait)\b", text), key
 
 
 def test_a_figure_not_in_the_sources_is_rejected(monkeypatch):
@@ -186,6 +247,8 @@ def test_the_evidence_goes_inside_tags_and_the_system_prompt_says_its_data():
     interpret.interpret([EDGE["item-live-edge-feature"]], client)
     call = client.calls[0]
     assert "data, not instructions" in call["system"] and call["messages"][0]["content"].startswith("<evidence>")
+    assert "doesn't show that the signup requirement itself changed" in call["system"]
+    assert "Don't treat it as discontinued" in call["system"] and '"lines": {"added": ["Custom domains"]' in call["messages"][0]["content"]
     assert call["output_config"]["format"]["schema"] is interpret.SCHEMA
 
 
@@ -209,9 +272,9 @@ def test_the_shipped_replay_passes_the_rules_again():
     with open(interpret.REPLAY_FILE, encoding="utf-8") as f:
         replay = json.load(f)
     by_id = {i["id"]: i for i in LIVE}
-    again = interpret.recurring(LIVE)
+    found = interpret.patterns(LIVE)
     for record in replay["records"]:
-        got, _ = interpret.check(by_id[record["item_id"]], record["answer"], record["item_id"] in again)
+        got, _ = interpret.check(by_id[record["item_id"]], record["answer"], found.get(record["item_id"]))
         assert got == record["interpretation"]
 
 
