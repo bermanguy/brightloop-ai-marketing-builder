@@ -27,6 +27,7 @@ TEST:  cases.json ────────────────────�
 | Reading plans and prices from a pricing page | **AI** | Every value must come with a quote from the page; a value whose quote isn't found word for word in the page is rejected |
 | Deciding whether a page change matters | **Rule** (D38): runs are compared by the page lines a plan was read from (D18–D20) | No AI, so nothing on the page can change it |
 | Writing the headline, `action` and `why` | **Rule** (D38): one template per kind of change (D26) | Numbers come only from the item's sources |
+| Interpreting a verified change in plan contents (D40): category, direction, whether its meaning is supported, possible impact area, playbook ids | **AI**, behind `PRICEWATCH_INTERPRET`, replayed (not on live runs) | Writes no text; values must be whole quoted page lines; ambiguous meaning gets verification-only actions chosen by code; failure leaves the card as before |
 | Answering questions about the data (MCP, D37) | **AI**: any MCP client, such as Claude, Claude Code or Cursor | Read-only tools that return items with their links and quotes |
 | Confidence | **Rule**, from where the claim came from | No signal text is read, so hidden instructions can't move it |
 | "Unverified" label | **Rule** (not the competitor's own site) | Same |

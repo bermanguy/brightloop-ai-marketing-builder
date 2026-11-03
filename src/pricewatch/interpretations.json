@@ -1,0 +1,420 @@
+{
+ "source": "live-items-2026-11-03.json",
+ "prompt_version": "2026-11-03.2",
+ "model": "claude-sonnet-5-5",
+ "cost_usd": 0.057852,
+ "records": [
+  {
+   "item_id": "item-live-lovable-yearly-free-details-20261103005623",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.00705,
+   "answer": {
+    "category": "signup_funnel",
+    "old_value": null,
+    "new_value": "No credit card needed",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "other",
+    "potential_impact_area": "signup_conversion",
+    "actions": [
+     "review_signup_friction"
+    ],
+    "hypothesis": "easier_start"
+   },
+   "interpretation": {
+    "category": "signup_funnel",
+    "category_label": "Signup Funnel",
+    "category_source": "ai",
+    "old_value": null,
+    "new_value": "No credit card needed",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "changed_back_and_forth",
+    "potential_impact_area": "signup_conversion",
+    "observation": {
+     "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
+     "related_item_ids": [
+      "item-live-lovable-yearly-free-details-20261102185856",
+      "item-live-lovable-monthly-free-details-20261030155726",
+      "item-live-lovable-monthly-free-details-20261030100003"
+     ]
+    },
+    "actions": [
+     {
+      "id": "confirm_next_check",
+      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
+     },
+     {
+      "id": "messaging_investigation",
+      "text": "If what \"No credit card needed\" says is also true of our offer, consider whether saying it near our signup call to action is worth testing, measured on trial starts. This doesn't show that Lovable is running a test or that its signup requirements changed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "newest card of a line that came and went: a conditional messaging investigation, chosen by rule",
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-bolt-pro-details-20261102185917",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007446,
+   "answer": {
+    "category": "pricing",
+    "old_value": "$25*/month",
+    "new_value": "$25/month",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "meaning_of_mark_unknown",
+    "potential_impact_area": "competitive_positioning",
+    "actions": [
+     "review_competitive_positioning",
+     "update_competitor_references"
+    ],
+    "hypothesis": "price_comparison"
+   },
+   "interpretation": {
+    "category": "pricing",
+    "category_label": "Pricing",
+    "category_source": "ai",
+    "old_value": "$25*/month",
+    "new_value": "$25/month",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "meaning_of_mark_unknown",
+    "potential_impact_area": "competitive_positioning",
+    "observation": null,
+    "actions": [
+     {
+      "id": "check_removed_mark",
+      "text": "Before acting, open https://bolt.new/pricing and check what the removed mark referred to (usually a footnote). Until then, treat this as unconfirmed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_competitive_positioning, update_competitor_references)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-bolt-teams-details-20261102185917",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007446,
+   "answer": {
+    "category": "pricing",
+    "old_value": "$30*/month",
+    "new_value": "$30/month",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "meaning_of_mark_unknown",
+    "potential_impact_area": "competitive_positioning",
+    "actions": [
+     "review_competitive_positioning",
+     "update_competitor_references"
+    ],
+    "hypothesis": "price_comparison"
+   },
+   "interpretation": {
+    "category": "pricing",
+    "category_label": "Pricing",
+    "category_source": "ai",
+    "old_value": "$30*/month",
+    "new_value": "$30/month",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "meaning_of_mark_unknown",
+    "potential_impact_area": "competitive_positioning",
+    "observation": null,
+    "actions": [
+     {
+      "id": "check_removed_mark",
+      "text": "Before acting, open https://bolt.new/pricing and check what the removed mark referred to (usually a footnote). Until then, treat this as unconfirmed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_competitive_positioning, update_competitor_references)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-lovable-yearly-free-details-20261102185856",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007054,
+   "answer": {
+    "category": "signup_funnel",
+    "old_value": "No credit card needed",
+    "new_value": null,
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "other",
+    "potential_impact_area": "signup_conversion",
+    "actions": [
+     "review_signup_friction"
+    ],
+    "hypothesis": "harder_start"
+   },
+   "interpretation": {
+    "category": "signup_funnel",
+    "category_label": "Signup Funnel",
+    "category_source": "ai",
+    "old_value": "No credit card needed",
+    "new_value": null,
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "changed_back_and_forth",
+    "potential_impact_area": "signup_conversion",
+    "observation": {
+     "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
+     "related_item_ids": [
+      "item-live-lovable-yearly-free-details-20261103005623",
+      "item-live-lovable-monthly-free-details-20261030155726",
+      "item-live-lovable-monthly-free-details-20261030100003"
+     ]
+    },
+    "actions": [
+     {
+      "id": "confirm_next_check",
+      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
+     },
+     {
+      "id": "verify_on_page",
+      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-lovable-monthly-free-details-20261030155726",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.00705,
+   "answer": {
+    "category": "signup_funnel",
+    "old_value": null,
+    "new_value": "No credit card needed",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "other",
+    "potential_impact_area": "signup_conversion",
+    "actions": [
+     "review_signup_friction"
+    ],
+    "hypothesis": "easier_start"
+   },
+   "interpretation": {
+    "category": "signup_funnel",
+    "category_label": "Signup Funnel",
+    "category_source": "ai",
+    "old_value": null,
+    "new_value": "No credit card needed",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "changed_back_and_forth",
+    "potential_impact_area": "signup_conversion",
+    "observation": {
+     "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
+     "related_item_ids": [
+      "item-live-lovable-yearly-free-details-20261103005623",
+      "item-live-lovable-yearly-free-details-20261102185856",
+      "item-live-lovable-monthly-free-details-20261030100003"
+     ]
+    },
+    "actions": [
+     {
+      "id": "confirm_next_check",
+      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
+     },
+     {
+      "id": "verify_on_page",
+      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-lovable-monthly-free-details-20261030100003",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007054,
+   "answer": {
+    "category": "signup_funnel",
+    "old_value": "No credit card needed",
+    "new_value": null,
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "other",
+    "potential_impact_area": "signup_conversion",
+    "actions": [
+     "review_signup_friction"
+    ],
+    "hypothesis": "harder_start"
+   },
+   "interpretation": {
+    "category": "signup_funnel",
+    "category_label": "Signup Funnel",
+    "category_source": "ai",
+    "old_value": "No credit card needed",
+    "new_value": null,
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "changed_back_and_forth",
+    "potential_impact_area": "signup_conversion",
+    "observation": {
+     "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
+     "related_item_ids": [
+      "item-live-lovable-yearly-free-details-20261103005623",
+      "item-live-lovable-yearly-free-details-20261102185856",
+      "item-live-lovable-monthly-free-details-20261030155726"
+     ]
+    },
+    "actions": [
+     {
+      "id": "confirm_next_check",
+      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
+     },
+     {
+      "id": "verify_on_page",
+      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-replit-core-details-20261028214846",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007186,
+   "answer": {
+    "category": "packaging",
+    "old_value": "Plan mode",
+    "new_value": "For personal projects and simple apps.",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "mixed_changes",
+    "potential_impact_area": "unknown",
+    "actions": [
+     "review_plan_differentiation"
+    ],
+    "hypothesis": "less_value"
+   },
+   "interpretation": {
+    "category": "packaging",
+    "category_label": "Packaging / Plan Contents",
+    "category_source": "ai",
+    "old_value": "Plan mode",
+    "new_value": "For personal projects and simple apps.",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "mixed_changes",
+    "potential_impact_area": "unknown",
+    "observation": null,
+    "actions": [
+     {
+      "id": "check_moved_or_removed",
+      "text": "Check whether Replit moved what this plan no longer lists to another plan or removed it from its offering, before updating anything we publish that lists what the plan includes. A line missing from one pricing card doesn't by itself mean it was discontinued."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_plan_differentiation)"
+    ]
+   },
+   "fallback_reason": null
+  },
+  {
+   "item_id": "item-live-replit-pro-details-20261028214846",
+   "model": "claude-sonnet-5-5",
+   "prompt_version": "2026-11-03.2",
+   "cost_usd": 0.007566,
+   "answer": {
+    "category": "packaging",
+    "old_value": "10 parallel agents",
+    "new_value": "For commercial and professional builds.",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "mixed_changes",
+    "potential_impact_area": "paid_conversion",
+    "actions": [
+     "review_plan_differentiation",
+     "update_competitor_references"
+    ],
+    "hypothesis": "less_value"
+   },
+   "interpretation": {
+    "category": "packaging",
+    "category_label": "Packaging / Plan Contents",
+    "category_source": "ai",
+    "old_value": "10 parallel agents",
+    "new_value": "For commercial and professional builds.",
+    "direction": "unclear",
+    "interpretation_status": "ambiguous",
+    "ambiguity_reason": "mixed_changes",
+    "potential_impact_area": "paid_conversion",
+    "observation": null,
+    "actions": [
+     {
+      "id": "check_moved_or_removed",
+      "text": "Check whether Replit moved what this plan no longer lists to another plan or removed it from its offering, before updating anything we publish that lists what the plan includes. A line missing from one pricing card doesn't by itself mean it was discontinued."
+     }
+    ],
+    "hypothesis": {
+     "id": "not_enough_evidence",
+     "text": "There isn't enough evidence yet to say what this means for trial starts."
+    },
+    "policy": [
+     "ambiguous meaning: verification-only actions chosen by rule (the model picked review_plan_differentiation, update_competitor_references)"
+    ]
+   },
+   "fallback_reason": null
+  }
+ ]
+}
