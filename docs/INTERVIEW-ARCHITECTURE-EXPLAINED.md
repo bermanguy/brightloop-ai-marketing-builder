@@ -67,9 +67,8 @@ Everything else is plain code: whether something changed, the confidence and unv
 1. Only 8 cards have an AI interpretation. New changes get rule-written next steps, not an AI reading.
 2. Since D45 every screen and alert shows the same next steps, but each card's stored `action` (in `result.json` and the raw API) is still the core's broader text.
 3. `./proof` replays recorded runs from 25–26 October, which had no changes. Real changes are covered by tests on their stored cards.
-4. The Test upload wording fix is in the repo's copy of the Base44 app, but not yet published to Base44. The row fix is in the engine, but not yet deployed to Render.
-5. Anyone with the link can change alert settings and press Check now (rate-limited).
-6. Test upload has no file-size limit (a 5,000-signal file answers in under a second).
+4. Anyone with the link can change alert settings and press Check now (rate-limited).
+5. Test upload has no file-size limit (a 5,000-signal file answers in under a second).
 
 ## The next engineering step
 
