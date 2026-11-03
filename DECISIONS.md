@@ -307,6 +307,8 @@ Price and billing-view changes keep their category by rule and aren't sent; rumo
 
 **Alternatives.** A: rules only, with more templates (no meaning or direction). C: AI-written recommendations with validation (free text can't be fully checked).
 
+**Updated 2026-11-03 (Claude → Guy, Option B from the analysis of the 10 real cards, with Guy's refinements).** Code gives the model each card's added and removed page lines, setting aside only pairs that differ in letter case or spacing; removed words, numbers, symbols, limits and conditions stay changes, and the verified quote is still sent. A line that came and went on the same plan across checks is shown as a verified observation; its meaning stays ambiguous, and the newest such card may carry a conditional messaging investigation that says it doesn't show a test or a changed signup requirement. A plan's lines no longer listed get "check whether it moved to another plan or left the offering", never "discontinued". Old cards stored before kinds of change existed aren't sent. All earlier checks stay.
+
 ---
 
 ## Open questions
