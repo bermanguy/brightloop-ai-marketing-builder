@@ -134,13 +134,19 @@ def test_a_line_that_came_and_went_is_a_verified_observation_and_stays_ambiguous
     got, _ = interpret.check(item, answer(category="signup_funnel", new_value="No credit card needed",
                                           actions=["review_signup_friction"], hypothesis="easier_start"), found[newest])
     assert got["interpretation_status"] == "ambiguous" and got["ambiguity_reason"] == "changed_back_and_forth"
-    assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "messaging_investigation"]
-    assert got["hypothesis"]["id"] == "not_enough_evidence"
+    assert [a["id"] for a in got["actions"]] == ["check_signup_flow", "messaging_investigation"]
+    assert got["hypothesis"]["id"] == "not_enough_evidence" and got["impact"] is None
+    assert got["status"] == "needs_investigation" and got["status_label"] == "Needs investigation"
+    assert got["question"] == ("Did Lovable change its signup requirements, or only show and hide "
+                               "\"No credit card needed\" on its pricing page?")
+    assert got["status_detail"] == got["question"]
+    assert "whether Lovable changed its signup requirements or only the wording" in got["actions"][0]["text"]
     assert got["observation"]["text"].startswith("Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\"")
     assert len(got["observation"]["related_item_ids"]) == 3
-    # No claim of a test or of a changed signup requirement: the action says so outright.
+    # No claim of a test or of a changed signup requirement: the action rests on our offer, conditionally.
     action = got["actions"][1]["text"]
-    assert "doesn't show that Lovable is running a test or that its signup requirements changed" in action
+    assert action.startswith("If what \"No credit card needed\" says is also true of our offer, consider testing")
+    assert "not on why Lovable shows or hides the line" in action
     assert not any(w in (action + got["observation"]["text"]).lower() for w in ("a/b", "is testing", "now requires"))
 
 
@@ -150,18 +156,22 @@ def test_older_cards_of_the_pattern_get_only_checks_and_other_categories_no_inve
     got, _ = interpret.check(older, answer(category="signup_funnel", old_value="No credit card needed", new_value=None,
                                            direction="less_for_customer", actions=["review_signup_friction"],
                                            hypothesis="harder_start"), found[older["id"]])
-    assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "verify_on_page"]
+    assert [a["id"] for a in got["actions"]] == ["see_newest_card"]
+    assert got["status"] == "changed_again" and got["status_label"] == "Changed again since" and got["question"] is None
+    assert "again since this check" in got["status_detail"]
     newest = next(i for i in LIVE if i["id"] == "item-live-lovable-yearly-free-details-20261103005623")
     got, _ = interpret.check(newest, answer(category="pricing_page_ui", new_value="No credit card needed",
                                             direction="presentation_only", actions=["presentation_experiment"],
                                             hypothesis="presentation_only"), found[newest["id"]])
-    assert [a["id"] for a in got["actions"]] == ["confirm_next_check", "verify_on_page"]
+    assert [a["id"] for a in got["actions"]] == ["confirm_next_check"]
+    assert got["question"].startswith("Is \"No credit card needed\" a lasting change to Lovable's Free plan")
 
 
 def test_only_case_and_spacing_differences_are_set_aside_as_cosmetic():
     pro = next(i for i in LIVE if i["id"] == "item-live-replit-pro-details-20261028214846")
     lines = interpret.lines_of(pro)
     assert lines["case_or_spacing_only"] == [["Premium Support", "Premium support"]]
+    assert interpret._reworded(lines) == [("Even more Free Mode usage to chat and create", "Even more Free Mode usage")]
     # Removed words are a change, not a rewording.
     assert "Even more Free Mode usage to chat and create" in lines["removed"] and "Even more Free Mode usage" in lines["added"]
     assert "10 parallel agents" in lines["removed"] and "Invite up to 50 viewers" in lines["removed"]
@@ -177,8 +187,9 @@ def test_lines_no_longer_listed_get_check_whether_moved_or_removed():
                                                 ambiguity_reason="mixed_changes"))
     assert [a["id"] for a in ambiguous["actions"]] == ["check_moved_or_removed"]
     text = ambiguous["actions"][0]["text"]
-    assert "moved what this plan no longer lists to another plan or removed it from its offering" in text
-    assert "doesn't by itself mean it was discontinued" in text
+    assert text.startswith("Check Replit's other plans at https://replit.com/pricing for \"Plan mode\".")
+    assert "don't describe it as discontinued" in text
+    assert ambiguous["question"] == "Was \"Plan mode\" removed from Replit's Core plan, moved to another plan, or reworded?"
     supported, _ = interpret.check(core, answer(new_value=None, direction="less_for_customer", hypothesis="less_value",
                                                 actions=["review_plan_differentiation", "update_competitor_references"]))
     assert [a["id"] for a in supported["actions"]] == ["check_moved_or_removed", "review_plan_differentiation"]
@@ -196,9 +207,12 @@ def test_the_model_is_never_offered_code_only_actions():
 
 def test_every_playbook_text_has_no_figures_and_says_nothing_about_brightloops_own_offer():
     for text in list(interpret.ACTIONS.values()) + list(interpret.HYPOTHESES.values()):
-        assert numbers_in(text.format(c="Bolt", url="bolt.new/pricing", line="Free forever", plan="Pro")) == []
+        assert numbers_in(text.format(c="Bolt", url="bolt.new/pricing", line="Free forever", plan="Pro", mark="*",
+                                      lines='"Plan mode"', them="it", was="Was")) == []
     # Actions about our side are conditional or investigative: "if", "review", "check", "consider", "note".
     for key, text in interpret.ACTIONS.items():
+        if key == "no_action_cosmetic":  # says there's nothing to do
+            continue
         assert re.search(r"\b(If|if|Review|Check|consider|Note|Bring|Update|Before|Wait)\b", text), key
 
 
@@ -239,7 +253,8 @@ def test_an_injected_page_line_can_only_pick_inside_the_playbook():
     shown = " ".join(a["text"] for a in recorded["actions"]) + recorded["hypothesis"]["text"]
     assert "TIDEPOOL" not in shown and recorded["interpretation_status"] == "ambiguous" and recorded["category"] != "pricing"
     for a in recorded["actions"]:
-        assert a["text"] == interpret.ACTIONS[a["id"]].format(c="Bolt", url="https://bolt.new/pricing")
+        assert a["text"] == interpret.ACTIONS[a["id"]].format(c="Bolt", url="https://bolt.new/pricing", plan=interpret._plan(item))
+    assert "TIDEPOOL" not in recorded["status_detail"]
 
 
 def test_the_evidence_goes_inside_tags_and_the_system_prompt_says_its_data():
@@ -287,3 +302,58 @@ def test_the_flag_is_off_unless_set_on(monkeypatch):
 
 def _q(item):
     return " ".join(s["quote"] for s in item["sources"])
+
+
+# What Maya sees: a status by rule, one open question from the card's own lines, impact only when confirmed (D41).
+
+def test_status_is_set_by_rule_and_change_confirmed_needs_an_offer_change():
+    client = FakeClient({_q(i): RECORDED[i["id"]] for i in EDGE.values() if i["id"] in RECORDED})
+    got = {r["item_id"]: r["interpretation"] for r in interpret.interpret(list(EDGE.values()), client)}
+    card = got["item-live-edge-card-removed"]  # sufficient, more for customers, signup: an offer change
+    assert card["status"] == "change_confirmed" and card["status_label"] == "Change confirmed"
+    assert card["question"] is None and card["impact"]["text"] == card["hypothesis"]["text"]
+    assert card["impact"]["area"] == card["potential_impact_area"]
+    badge = got["item-live-edge-badge"]  # the model's "sufficient" on a badge is a page change, not an offer change
+    assert badge["interpretation_status"] == "sufficient"
+    assert badge["status"] == "page_change_only" and badge["impact"] is None
+    assert got["item-live-edge-injection"]["status"] == "needs_investigation"
+    for i in got.values():
+        assert i["status"] != "change_confirmed" or i["direction"] in ("more_for_customer", "less_for_customer")
+        assert i["impact"] is None or i["status"] == "change_confirmed"
+
+
+def test_a_sufficient_reading_in_category_other_still_needs_investigation():
+    got, _ = interpret.check(EDGE["item-live-edge-feature"], answer(category="other", actions=["growth_review"],
+                                                                     hypothesis="unclear_relevance"))
+    assert got["status"] == "needs_investigation" and got["impact"] is None
+    assert got["question"].startswith("What does this change to") \
+        or got["question"].startswith("What does this change to")
+
+
+def test_only_case_or_spacing_changes_need_no_action():
+    item = dict(EDGE["item-live-edge-feature"], sources=[{"url": "https://replit.com/pricing", "quote":
+                'Pro plan now shows "Premium support" and no longer shows "Premium Support" (since 2026-11-01T00:00:00Z).'}])
+    got, _ = interpret.check(item, answer(new_value="Premium support", direction="unclear",
+                                          interpretation_status="ambiguous", ambiguity_reason="other"))
+    assert got["status"] == "no_action_needed" and [a["id"] for a in got["actions"]] == ["no_action_cosmetic"]
+    assert got["impact"] is None and got["question"] is None
+
+
+def test_the_open_questions_quote_the_cards_own_lines():
+    replay = {r["item_id"]: r["interpretation"] for r in json.load(open(interpret.REPLAY_FILE, encoding="utf-8"))["records"]}
+    bolt = replay["item-live-bolt-pro-details-20261102185917"]
+    assert bolt["question"] == ("The figures are the same; only the \"*\" is gone. Did removing it change Bolt's Pro "
+                                "pricing terms, or was it a formatting update?")
+    assert bolt["actions"][0]["text"].startswith("Check https://bolt.new/pricing for what the \"*\" next to Bolt's Pro price")
+    pro = replay["item-live-replit-pro-details-20261028214846"]
+    assert pro["question"].startswith("Were \"10 parallel agents\" and \"Invite up to 50 viewers\" removed from Replit's Pro plan")
+    assert "\"Even more Free Mode usage to chat and create\" is now \"Even more Free Mode usage\"" in pro["question"]
+    statuses = sorted(i["status"] for i in replay.values())
+    assert statuses == ["changed_again"] * 3 + ["needs_investigation"] * 5
+    assert all(i["impact"] is None for i in replay.values())  # no real card is a confirmed offer change
+
+
+def test_a_mark_is_only_named_when_the_figures_are_the_same():
+    lines = {"added": ["$25/month"], "removed": ["$25*/month"], "case_or_spacing_only": [], "truncated": False}
+    assert interpret._marks(lines) == [("$25*/month", "$25/month", "*")]
+    assert interpret._marks(dict(lines, added=["$20/month"])) == []

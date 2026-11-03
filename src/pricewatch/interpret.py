@@ -102,24 +102,55 @@ ACTIONS = {
     # Other / Unknown
     "growth_review": "Bring this to the next growth review to decide whether it matters for trial starts. Nothing "
                      "here yet points to a specific action.",
-    # Verification only: chosen by code for an ambiguous reading, never by the model.
-    "check_removed_mark": "Before acting, open {url} and check what the removed mark referred to (usually a "
-                          "footnote). Until then, treat this as unconfirmed.",
-    "confirm_next_check": "Wait for the next scheduled check to see whether the line is still there before drawing "
-                          "conclusions.",
-    "check_moved_or_removed": "Check whether {c} moved what this plan no longer lists to another plan or removed it "
-                              "from its offering, before updating anything we publish that lists what the plan "
-                              "includes. A line missing from one pricing card doesn't by itself mean it was "
-                              "discontinued.",
-    # Chosen by code only for the newest card of a line that came and went on a Signup Funnel reading.
-    "messaging_investigation": "If what \"{line}\" says is also true of our offer, consider whether saying it near "
-                               "our signup call to action is worth testing, measured on trial starts. This doesn't "
-                               "show that {c} is running a test or that its signup requirements changed.",
-    "verify_on_page": "Before acting, open {url} and confirm what this change means for customers. Until then, treat "
-                      "its business meaning as unconfirmed.",
+    # Chosen by code only, never by the model, and filled in from the card's own lines ({line}, {lines}, {mark},
+    # {plan}). Their wording isn't in the model's prompt, so it can change without re-recording any answer.
+    "check_removed_mark": "Check {url} for what the \"{mark}\" next to {c}'s {plan} price pointed to (usually a "
+                          "footnote). If it set terms on that price, check whether they still apply before changing "
+                          "anything we publish that quotes it.",
+    "confirm_next_check": "Wait for the next scheduled check to see whether {c}'s {plan} plan still shows \"{line}\" "
+                          "before acting on it.",
+    "check_signup_flow": "Check whether what \"{line}\" says still holds by starting a signup on {c} from {url}. "
+                         "That tells us whether {c} changed its signup requirements or only the wording on its pricing page.",
+    "see_newest_card": "No action on this card. Check the newest {c} card about \"{line}\" instead.",
+    "check_moved_or_removed": "Check {c}'s other plans at {url} for {lines}. Listed elsewhere means moved; not "
+                              "listed anywhere means possibly removed, which {c}'s own announcements could confirm. "
+                              "Until then, don't describe {them} as discontinued.",
+    "messaging_investigation": "If what \"{line}\" says is also true of our offer, consider testing that line near "
+                               "our signup call to action, measured on trial starts. This rests on our own offer, not "
+                               "on why {c} shows or hides the line.",
+    "verify_on_page": "Check {url} for what this change to {c}'s {plan} plan means for customers before acting on "
+                      "it.",
+    "no_action_cosmetic": "Nothing to do: on {c}'s {plan} plan only letter case or spacing changed.",
 }
 VERIFY_ONLY = ("check_removed_mark", "confirm_next_check", "verify_on_page")
-CODE_ONLY = VERIFY_ONLY + ("check_moved_or_removed", "messaging_investigation")  # never offered to the model
+CODE_ONLY = VERIFY_ONLY + ("check_moved_or_removed", "messaging_investigation", "check_signup_flow", "see_newest_card",
+                           "no_action_cosmetic")  # never offered to the model
+
+# What Maya sees as the card's status: rules over the checked reading, not the model's own status (D41).
+# "Change confirmed" means the evidence alone supports a change to the offer itself, not just to the page.
+STATUS_LABELS = {
+    "needs_investigation": "Needs investigation",
+    "change_confirmed": "Change confirmed",
+    "page_change_only": "Page change only",
+    "no_action_needed": "No action needed",
+    "changed_again": "Changed again since",
+}
+OFFER_CATEGORIES = ("pricing", "packaging", "signup_funnel")
+# The one open question per ambiguous reading, filled in from the card's own lines.
+QUESTIONS = {
+    "pattern_signup": "Did {c} change its signup requirements, or only show and hide \"{line}\" on its pricing page?",
+    "pattern": "Is \"{line}\" a lasting change to {c}'s {plan} plan, or is the page still changing?",
+    "mark": "The figures are the same; only the \"{mark}\" is gone. Did removing it change {c}'s {plan} pricing terms, "
+            "or was it a formatting update?",
+    "moved": "{was} {lines} removed from {c}'s {plan} plan, moved to another plan, or reworded?",
+    "other": "What does this change to {c}'s {plan} plan mean for customers? The page alone doesn't say.",
+}
+DETAILS = {
+    "change_confirmed": "The source supports this as a change to {c}'s offer, not only to its pricing page.",
+    "page_change_only": "{c} changed how its pricing page presents this; nothing here shows the offer itself changed.",
+    "no_action_needed": "Only letter case or spacing changed on {c}'s {plan} plan.",
+    "changed_again": "{c}'s {plan} plan has changed \"{line}\" again since this check, so this card is history.",
+}
 ALLOWED_ACTIONS = {
     "signup_funnel": ("review_signup_friction", "trial_start_experiment", "position_easier_start"),
     "packaging": ("review_free_to_paid", "review_plan_differentiation", "update_competitor_references"),
@@ -300,9 +331,46 @@ OBSERVATION = ('Across recent checks, {c}\'s {plan} plan has shown the line "{li
                "more than once. This is what the pricing page showed; it doesn't say why.")
 
 
-def _render(template, item, line=""):
+def _render(template, item, line="", **more):
     return template.format(c=item.get("competitor") or "The competitor", url=(item["sources"][0].get("url") or ""),
-                           line=line, plan=_plan(item) or "this")
+                           line=line, plan=_plan(item) or "this", **more)
+
+
+def _bare(line):
+    """A line with only its letters, digits and spaces: "$25*/month" and "$25/month" differ only by a mark."""
+    return re.sub(r"[^\w\s]", "", line).casefold()
+
+
+def _marks(lines):
+    """[(old line, new line, the marks removed)] for removed lines that differ from an added line only by symbols
+    taken away, such as Bolt's "*". The figures in both lines are the same."""
+    found = []
+    for old in lines["removed"]:
+        for new in lines["added"]:
+            gone = "".join(ch for ch in old if not ch.isalnum() and not ch.isspace() and ch not in new)
+            if _bare(old) == _bare(new) and gone and numbers_in(old) == numbers_in(new):
+                found.append((old, new, gone))
+    return found
+
+
+def _reworded(lines):
+    """[(old line, new line)] where one is a shortened or lengthened version of the other ("Even more Free Mode
+    usage to chat and create" -> "Even more Free Mode usage"). Shown as possibly reworded, never set aside."""
+    pairs = []
+    for old in lines["removed"]:
+        for new in lines["added"]:
+            a, b = _key(old), _key(new)
+            if a != b and min(len(a), len(b)) >= 10 and (a.startswith(b) or b.startswith(a)):
+                pairs.append((old, new))
+    return pairs
+
+
+def _listing(lines, most=3):
+    """'"A", "B" and 1 more line', for the lines a card no longer lists."""
+    quoted = [f'"{line}"' for line in lines[:most]]
+    text = quoted[0] if len(quoted) == 1 else ", ".join(quoted[:-1]) + " and " + quoted[-1]
+    rest = len(lines) - most
+    return text + (f" and {rest} more line{'s' if rest > 1 else ''}" if rest > 0 else "")
 
 
 def _norm(value):
@@ -333,26 +401,49 @@ def check(item, answer, pattern=None):
     policy = []
     status, reason = answer["interpretation_status"], answer.get("ambiguity_reason")
     reason = None if reason == "none" else reason
-    removed = bool(lines_of(item)["removed"])  # lines no longer listed, cosmetic pairs aside
+    lines = lines_of(item)
+    removed = bool(lines["removed"])  # lines no longer listed, cosmetic pairs aside
+    marks, reworded = _marks(lines), _reworded(lines)
+    gone = [line for line in lines["removed"]
+            if line not in {old for old, _, _ in marks} and line not in {old for old, _ in reworded}] or lines["removed"]
+    cosmetic_only = (not lines["added"] and not removed and bool(lines["case_or_spacing_only"])
+                     and not lines["truncated"])
     if status == "sufficient" and direction == "unclear":
         status, reason = "ambiguous", reason or "other"
         policy.append("direction is unclear, so the meaning is treated as ambiguous")
     if pattern:
         status, reason = "ambiguous", "changed_back_and_forth"
         policy.append("a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous")
-    if status == "ambiguous":
+
+    line = (pattern["line"] if pattern else
+            answer.get("new_value") or answer.get("old_value") or next(iter(lines["added"] + lines["removed"]), "this change"))
+    fill = {"mark": marks[0][2] if marks else "", "lines": _listing(gone) if gone else "",
+            "them": "it" if len(gone) == 1 else "them", "was": "Was" if len(gone) == 1 else "Were"}
+    question = None
+    if cosmetic_only:
+        status, reason, ui = "sufficient", None, "no_action_needed"
+        actions, hypothesis = ["no_action_cosmetic"], "not_enough_evidence"
+        policy.append("only letter case or spacing changed: no action needed, by rule")
+    elif status == "ambiguous":
         reason = reason or "other"
+        ui = "needs_investigation"
         if reason == "changed_back_and_forth":
-            investigate = pattern["newest"] and category == "signup_funnel"
-            chosen = ["confirm_next_check", "messaging_investigation" if investigate else "verify_on_page"]
-            if investigate:
-                policy.append("newest card of a line that came and went: a conditional messaging investigation, chosen by rule")
-        elif reason == "meaning_of_mark_unknown":
-            chosen = ["check_removed_mark"]
+            signup = category == "signup_funnel"
+            if not pattern["newest"]:
+                chosen, ui = ["see_newest_card"], "changed_again"
+                policy.append("an older card of a line that came and went: pointed to the newest card, by rule")
+            elif signup:
+                chosen, question = ["check_signup_flow", "messaging_investigation"], QUESTIONS["pattern_signup"]
+                policy.append("newest card of a line that came and went: check the signup, then a conditional "
+                              "messaging investigation, chosen by rule")
+            else:
+                chosen, question = ["confirm_next_check"], QUESTIONS["pattern"]
+        elif reason == "meaning_of_mark_unknown" and marks:
+            chosen, question = ["check_removed_mark"], QUESTIONS["mark"]
         elif category == "packaging" and removed:
-            chosen = ["check_moved_or_removed"]
+            chosen, question = ["check_moved_or_removed"], QUESTIONS["moved"]
         else:
-            chosen = ["verify_on_page"]
+            chosen, question = ["verify_on_page"], QUESTIONS["other"]
         if chosen != actions:
             policy.append(f"ambiguous meaning: verification-only actions chosen by rule (the model picked {', '.join(actions)})")
         actions, hypothesis = chosen, "not_enough_evidence"
@@ -368,15 +459,27 @@ def check(item, answer, pattern=None):
         if category == "packaging" and removed:
             actions = ["check_moved_or_removed"] + [a for a in actions if a != "update_competitor_references"][:1]
             policy.append("lines are no longer listed on this plan: 'check whether it moved or was removed' added by rule")
+        if direction in ("more_for_customer", "less_for_customer") and category in OFFER_CATEGORIES:
+            ui = "change_confirmed"
+        elif direction == "presentation_only" or category == "pricing_page_ui":
+            ui = "page_change_only"
+        else:
+            ui, question = "needs_investigation", QUESTIONS["other"]
+    if question and reworded:
+        old, new = reworded[0]
+        question += f' One line may only have been shortened: "{old}" is now "{new}".'
 
-    line = pattern["line"] if pattern else ""
-    rendered = [{"id": a, "text": _render(ACTIONS[a], item, line)} for a in actions]
+    rendered = [{"id": a, "text": _render(ACTIONS[a], item, line, **fill)} for a in actions]
     said = {"id": hypothesis, "text": _render(HYPOTHESES[hypothesis], item, line)}
+    asked = _render(question, item, line, **fill) if question else None
+    detail = asked or _render(DETAILS[ui], item, line)
+    impact = ({"area": answer["potential_impact_area"], "text": said["text"]}
+              if ui == "change_confirmed" and hypothesis not in ("unclear_relevance", "not_enough_evidence") else None)
     observation = ({"text": _render(OBSERVATION, item, line), "related_item_ids": pattern["related_item_ids"]}
                    if pattern else None)
     sources = " ".join(f"{s.get('quote', '')} {s.get('url', '')}" for s in item["sources"])
-    shown = " ".join([r["text"] for r in rendered] + [said["text"], answer.get("old_value") or "", answer.get("new_value") or "",
-                      observation["text"] if observation else ""])
+    shown = " ".join([r["text"] for r in rendered] + [said["text"], detail, answer.get("old_value") or "",
+                      answer.get("new_value") or "", observation["text"] if observation else ""])
     missing = [n for n in numbers_in(shown) if n not in set(numbers_in(sources))]
     if missing:
         return None, f"numbers {missing} aren't in the card's sources"
@@ -391,9 +494,14 @@ def check(item, answer, pattern=None):
         "interpretation_status": status,
         "ambiguity_reason": reason,
         "potential_impact_area": answer["potential_impact_area"],
+        "status": ui,
+        "status_label": STATUS_LABELS[ui],
+        "status_detail": detail,
+        "question": asked,
         "observation": observation,
         "actions": rendered,
         "hypothesis": said,
+        "impact": impact,
         "policy": policy,
     }, None
 
