@@ -37,7 +37,7 @@ Run on 3 November 2026 in a fresh clone of this branch, in a new virtual environ
 | `./run` on the sample and the 4 case files | Counts match `tests/cases/README.md`; two runs give identical output apart from `run.started_at` |
 | CLI vs Test upload API vs MCP `run_test` | Identical `result.json` for every case file, interpretation flag on or off |
 | Frontend `npm run lint` / `npm run build` | Clean / builds (one chunk-size warning) |
-| Production MCP `run_test` on `3-malformed-input.json` | Same `result.json` as the CLI. Its rows showed the numeric-id bug fixed in D44, which isn't deployed yet |
+| Production MCP `run_test` on `3-malformed-input.json` | Same `result.json` as the CLI. Its rows showed the numeric-id bug fixed in D44, deployed on 3 Nov: a recheck gives `42` an item row |
 
 The 4 skipped tests call the real Anthropic API and only run with `PRICEWATCH_LIVE_AI=1` and a key.
 
@@ -345,7 +345,7 @@ Setup: Neon project → Render Blueprint from this repo, with the variables abov
 1. **New changes aren't interpreted by AI.** Only 8 cards have a reviewed interpretation. New changes get rule-written next steps. Running the interpretation automatically is the next step (`docs/architecture.md`).
 2. **The stored `action` is still the core's broader text.** Every screen and alert now shows the dashboard's next steps instead (D45), but `result.json`, the raw API fields `action` and `steps`, and an MCP client that reads them still carry "now out of date" for plan-contents changes.
 3. **The proof's recorded runs have no changes.** Real changes since are covered by tests over their stored cards.
-4. **The `frontend/` folder is a mirror.** Base44 builds and publishes the app; a change here takes effect only when copied into Base44 and published. The Test upload wording in this branch isn't published yet.
+4. **The `frontend/` folder is a mirror.** Base44 builds and publishes the app; a change here takes effect only when copied into Base44 and published. The D44 Test upload wording was published on 3 November.
 5. **Test upload has no file-size limit** (MCP `run_test` has 1 MB).
 6. **Anyone with the link** can change live alert settings and press Check now (rate-limited), as decided in D29 and D34.
 7. **Bolt's page** failed on some runs on 1–2 November before the fixes in PRs #40–#44. Failed pages are reported and never compared.

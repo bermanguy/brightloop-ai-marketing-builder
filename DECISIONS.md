@@ -363,6 +363,8 @@ Recorded after an audit of the code, production (through the MCP connector) and 
 
 **Why (Guy).** He saw the older generic actions still appearing for new changes outside the Changes tab, and chose this option of three: run log, alerts and admin pages; run log only; or leave it and document the gap.
 
+**Status, 3 Nov 21:58Z.** Guy merged PRs #49 (D44) and #50 (D45), and Render deployed both: production MCP `run_test` now gives the numeric id `42` an item row, and the run log's next steps are the change-specific ones. With Guy's go-ahead, the four Test upload files from `frontend/` were published to Base44 (checkpoint "D44: Test upload explains its cards, shows why, no Hide"; a restore point was saved just before it).
+
 ---
 
 ## Open questions
