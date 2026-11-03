@@ -41,7 +41,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 
 from .core import process
 from .core.text import hides_text
-from . import mcp_server, notify
+from . import interpret, mcp_server, notify
 from .live import run_live
 from .sources.fetch import label
 from .store import Store
@@ -765,8 +765,14 @@ def api_changes(days: str = "7", competitor: str = None, focus: str = None):
         "failed_pages": [label(p) for p in last.get("pages", []) if not p["ok"]] if last else [],
         "competitors": competitors_in(runs, (store().snapshots(1) or [None])[0]),
         "summary": summary_of(changes_in(runs, days, competitor)),
-        "items": focused(changes_in(runs, days, competitor), focus),
+        "items": with_interpretations(focused(changes_in(runs, days, competitor), focus)),
     }
+
+
+def with_interpretations(items):
+    """With PRICEWATCH_INTERPRET=on, each card also gets `category`, `category_label` and `interpretation`
+    (interpret.py; None when it has none). Off (the default), the cards are returned exactly as stored."""
+    return interpret.annotate(items, interpret.load()) if interpret.enabled() else items
 
 
 @app.get("/api/pricing")
