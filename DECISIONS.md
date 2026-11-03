@@ -317,6 +317,14 @@ Price and billing-view changes keep their category by rule and aren't sent; rumo
 
 **Unchanged.** The model's prompt and recorded answers; the replay's interpretations were re-run through the rules without a model call. Detection, verification, confidence, alerts, runs, the flag and its fallback.
 
+### D42 — Headlines that say what the page changed, action counters, and links to the latest card · 2026-11-03 · [Guy, implemented by Claude]
+
+**Decision.** With `PRICEWATCH_INTERPRET=on`, the API adds two display fields by rule, and the stored cards stay as they are. `display_headline` says what the page itself changed, built from the verified quote ("Bolt removed an asterisk from the Pro plan's displayed price."); every figure in it must be in the sources, and when no rule fits, the stored headline is shown. `latest_item_id` links an older card to the latest card on the same competitor's plan, of the same kind of change, that quotes the same page line ("No credit card needed", "Platform fee"); different lines never link. On the card, "Change type" and "Status" are labelled and kept apart from "Source verified"; the AI marker on the category is gone. The confidence bar left the collapsed card; the evidence says what the score is (source confidence, set by rule from where the quote came from, not what the change means). The counters become Needs investigation, Change confirmed and Other changes, counted in the browser from the cards in the current date and company filter, and clicking one filters the feed. An older card a later check superseded counts under Other, so one line that came and went is one investigation. With the flag off, the original counters and headlines are shown. Rule-written actions are shorter.
+
+**Why (Guy).** Maya should find the important changes in seconds, see what actually changed on the website, tell verified evidence from uncertain meaning, and know what to look into next, without technical AI terms.
+
+**Unchanged.** Detection, verification, confidence, alerts, runs, MCP fields already present, the model's prompt and recorded answers.
+
 ---
 
 ## Open questions
