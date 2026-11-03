@@ -288,6 +288,25 @@ Everything else is rules: comparing runs (D18–D20), confidence, the unverified
 
 **Decision.** The Base44 front end's source is copied into `frontend/` in this repo, as it stood on 2026-10-28. Base44 stays where the app is edited and published. Base44's GitHub sync was the other option; it would have created a separate repo.
 
+### D40 — AI interprets verified changes; rules choose what's shown from an approved playbook · 2026-11-03 · [Claude → Guy, approach B chosen by Guy from three, with Guy's refinements]
+
+**Decision.** A third, narrow use of AI beside D38's two (`src/pricewatch/interpret.py`). Change detection, quote checks, confidence, the unverified label, alerts and monitoring are unchanged. For a verified card from a live run on a competitor's own pricing page whose kind of change the rules can't place for certain (plan contents, limits, plans added or removed), Claude returns a structured reading and writes no text: category (Pricing, Packaging / Plan Contents, Signup Funnel, Pricing Page UI / Layout, Other / Unknown), the old and new page lines, direction, whether the business meaning is sufficient or ambiguous, a possible impact area, and 1–2 action ids plus a hypothesis id from an approved playbook. Rules then decide:
+- Old and new values must each be one whole page line from the card's verified quote.
+- Ambiguous meaning (the model says so, the direction is unclear, or a line has come and gone on the same plan) gets verification-only actions and "not enough evidence", chosen by code.
+- Sufficient meaning: actions and hypothesis must fit the category and direction.
+- Every figure shown must be in the sources (R4).
+- Anything that fails, a failed call or no key: the card stays exactly as before.
+
+Price and billing-view changes keep their category by rule and aren't sent; rumors and test files are never sent. A verified source can still have an ambiguous interpretation, and the card says so.
+
+**Rollout (Guy).** For the 4 Nov demo, no live run calls the model. The interpretations are a reviewed replay over the existing verified cards, shipped as a file with the app (`src/pricewatch/interpretations.json`); no run document or database row is written or changed. Shown only with `PRICEWATCH_INTERPRET=on`; off (the default), every endpoint is byte for byte as before.
+
+**Why (Guy).** Categorization and recommendations written entirely by rule risk repeating themselves and missing the business meaning of a change. Recommendations should help Maya, as Head of Growth, find a next investigation, marketing decision or experiment, never assume Brightloop's own pricing, packaging or signup flow, and keep verified facts, hypotheses and recommendations apart.
+
+**How it fits D13 and D38 (Claude → Guy).** Their reasons hold and are met: the model's answer is enums, ids and copied page lines, so text in a page can only move it to another option within the rules; without a key nothing changes (`./proof` and CI stay keyless); no figure can appear that isn't in a source.
+
+**Alternatives.** A: rules only, with more templates (no meaning or direction). C: AI-written recommendations with validation (free text can't be fully checked).
+
 ---
 
 ## Open questions
