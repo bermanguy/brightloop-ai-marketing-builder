@@ -32,11 +32,12 @@ Run on 3 November 2026 in a fresh clone of this branch, in a new virtual environ
 
 | Check | Result |
 | --- | --- |
-| `./proof` | PROOF PASSED, exit 0: the brief's 8 sample ids and 3 recorded real runs |
-| `pytest` | RESULT_PYTEST |
+| `./proof` | PROOF PASSED, exit 0: the brief's 8 sample ids and 3 recorded real runs. With one recorded price altered, it fails with exit 1 |
+| `pytest` | 295 passed, 4 skipped, 0 failed |
 | `./run` on the sample and the 4 case files | Counts match `tests/cases/README.md`; two runs give identical output apart from `run.started_at` |
 | CLI vs Test upload API vs MCP `run_test` | Identical `result.json` for every case file, interpretation flag on or off |
 | Frontend `npm run lint` / `npm run build` | Clean / builds (one chunk-size warning) |
+| Production MCP `run_test` on `3-malformed-input.json` | Same `result.json` as the CLI. Its rows showed the numeric-id bug fixed in D44, which isn't deployed yet |
 
 The 4 skipped tests call the real Anthropic API and only run with `PRICEWATCH_LIVE_AI=1` and a key.
 
