@@ -181,6 +181,50 @@ Two different uses of AI, with different guardrails and different automation:
 - **Missing text isn't a removed feature.** A line that's no longer on the page gets "check whether it moved or went; don't describe it as removed". A removed asterisk or a reformatted price is never called a price change. A plan description that disappears gets "check whether it was reworded or moved".
 - **Source verified isn't the same as understood.** "Source verified" means the quote is on the competitor's own page. Whether the change matters is a separate status (Needs investigation, Change confirmed, Page change only…), set by rule, and only on cards with a checked interpretation.
 
+## Confidence and recommendations: the rules
+
+### Confidence
+
+Confidence says **how far to trust the source**, not how important the change is or what it means. It's set by rule (`core/trust.py`) from the signal's `source` field and competitor only, never from its text, so an instruction hidden in the text can't move it.
+
+| Where the claim came from | Confidence | Label | What the card tells Maya to do |
+| --- | --- | --- | --- |
+| The competitor's own pricing page | 0.9 | Source verified | Act on it (see the steps below) |
+| The competitor's own site, another page | 0.6 | Source verified | Confirm it on the pricing page before acting |
+| Any other site (news, blogs, social) | 0.4 | Unverified | Don't act yet; check the competitor's own pricing page |
+| Sponsored, ad, Reddit, Hacker News, anonymous, no source | 0.2 | Unverified | Don't act yet; a Hacker News claim is shown next to what the competitor's own page showed in the same run |
+
+Sponsored and anonymous markers are checked first, so "sponsored post on lovable.dev" is still 0.2. Alerts use confidence as a filter (default: 0.6 and up). On the card it reads "Source confidence: 0.9, official competitor pricing page. This reflects source type, not certainty about business impact."
+
+### Recommendations
+
+Every recommendation is written by code. A live card can carry up to three layers, and the dashboard shows the most specific one:
+
+1. **The core's `action` and `why`** (every card; the only layer in `result.json`, Test upload, alerts and the run log). One template per kind of change the comparison names: price up, price down, price wording, plan contents, discount framing, credit options, limits, plan added, plan removed, which view the page opens on. It names what we publish that is now out of date (comparison pages, ads, sales material) and what to decide with whoever owns our pricing. It never says which product is cheaper or what Brightloop should charge, because we don't hold Brightloop's prices (D26). Unverified claims always get "Don't act yet".
+2. **`display_steps`** (dashboard and MCP, every live card without an interpretation, D43). Written from what the page itself changed, naming the competitor, plan and line:
+
+    | What the page changed | Next step |
+    | --- | --- |
+    | A plan description is gone | Check whether it was reworded or moved; only if positioning really changed, review our messaging |
+    | A line is gone | Check the other plans for it; don't describe it as removed until it's clear whether it moved or went |
+    | Several lines changed | Review whether limits changed or only the presentation; update comparisons only after confirming |
+    | A line was added | Check what it means for customers before quoting it |
+    | A mark next to a price is gone (e.g. `$25*` → `$25`) | Check what the mark referred to; confirm whether the pricing terms changed |
+    | A price moved to or from a plan line (Lovable's "Platform fee") | Check how it's now presented before quoting that plan's price |
+    | Only letter case or spacing changed | Nothing to do |
+
+3. **`interpretation`** (dashboard and MCP, the 8 replayed cards, D40–D41). Claude picked a category, direction and action ids from an approved playbook; code checked them. If the meaning is unclear (the model says so, the direction is unclear, or a line came and went), code replaces the actions with verification-only ones. Only these cards show a status:
+
+    | Status | When |
+    | --- | --- |
+    | Needs investigation | The meaning is ambiguous |
+    | Change confirmed | The reading is clear **and** shows more or less for customers on pricing, packaging or signup (the model's "clear" alone isn't enough) |
+    | Page change only | The reading is clear and only the presentation changed (direction "presentation only", or category Pricing Page UI) |
+    | No action needed | Only letter case or spacing changed |
+    | Changed again since | An older card about a line a later check changed again |
+
+**Always:** every figure in any of these texts must be in the card's sources (no link, no number); a missing line is never called a removed feature; a mark or layout change is never called a price or signup change; and a card without an interpretation never shows a status, so it's never presented as analysed.
+
 ## Precomputed interpretation: what it covers, and what it doesn't
 
 - `interpretations.json` holds 8 readings, made on 3 November from the cards then in production (`fixtures/interpret/live-items-2026-11-03.json`). They are matched by card id, so a later change never inherits an old reading.
