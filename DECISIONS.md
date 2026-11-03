@@ -325,6 +325,14 @@ Price and billing-view changes keep their category by rule and aren't sent; rumo
 
 **Unchanged.** Detection, verification, confidence, alerts, runs, MCP fields already present, the model's prompt and recorded answers.
 
+### D43 — Change-specific next steps, simpler cards and counters, and a Focused view · 2026-11-03 · [Guy, implemented by Claude]
+
+**Decision.** With `PRICEWATCH_INTERPRET=on`, cards without a replayed interpretation get `display_steps`: next steps written by rule from what the page itself changed, naming the competitor, the plan and the line (a removed plan description, a removed line, several changed lines, an added line, a removed price mark, a price moved to or from a plan line). They ask Maya to check before anyone acts: a missing line is never called a removed feature, and a mark or layout change never a pricing or signup change. A second step appears only for a plan description, and only as a condition. Every figure in a step must be in the sources; discount cards keep their own steps. The counters become Total changes, Source verified and Unverified, from the engine's summary for the date and company filter, compact and not clickable. The card shows the change type as a chip near the headline (no "Change type" label), a status only while it still holds (not on a card a later check superseded), what remains uncertain, what to do next, then source confidence and the official link, with the quote and Copy quote under "View evidence", collapsed by default. Every card can be hidden from Focused view; All changes (the default) still shows it, marked Hidden. "Show hidden (N)" restores cards one by one, and "Restore all hidden" asks first. Hidden cards and the chosen view are kept in this browser's localStorage only: they don't reach the API, MCP, scans, alerts or counters, and another browser starts with nothing hidden.
+
+**Why (Guy).** Maya can scan recent competitor changes, understand the evidence, see a useful next step, and maintain a focused view of relevant changes without losing the full monitoring history.
+
+**Unchanged.** Detection, verification, confidence, alerts, runs, the test upload, the model's prompt and recorded answers, and MCP fields already present.
+
 ---
 
 ## Open questions

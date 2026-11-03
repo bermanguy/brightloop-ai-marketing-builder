@@ -1,9 +1,10 @@
 import React, { useEffect, useId, useState } from 'react';
-import { AlertTriangle, ArrowUpRight, Check, ChevronDown, ExternalLink, History } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Check, ChevronDown, EyeOff, ExternalLink, History, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hostLabel, withProtocol } from '@/lib/links';
 import { isExpanded, setExpanded } from '@/lib/expanded';
 import { OPEN_EVENT, requestLatest } from '@/lib/goToLatest';
+import { setHidden, useHiddenIds } from '@/lib/hidden';
 import Markup from '@/components/Markup';
 import Collapse from '@/components/Collapse';
 import CopyButton from '@/components/CopyButton';
@@ -60,7 +61,7 @@ function Section({ label, icon, children }) {
   );
 }
 
-function SourceBlock({ source }) {
+function SourceBlock({ source, unverified }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <blockquote className="break-words border-l-2 border-indigo-200 px-3 py-2.5 text-sm leading-relaxed text-slate-700">
@@ -74,24 +75,13 @@ function SourceBlock({ source }) {
           className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-indigo-600 transition-colors hover:text-indigo-700 hover:underline"
         >
           <ExternalLink className="h-3 w-3 shrink-0" />
-          <span className="truncate">
-            <span className="hidden sm:inline">Official source · </span>
-            {hostLabel(source.url)}
-          </span>
+          <span className="truncate">{withProtocol(source.url)}</span>
+          {unverified ? null : <span className="sr-only"> (official source)</span>}
         </a>
         <span className="shrink-0 whitespace-nowrap">
           <CopyButton value={source.quote} />
         </span>
       </div>
-    </div>
-  );
-}
-
-function Labeled({ label, children }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
-      <div className="mt-1">{children}</div>
     </div>
   );
 }
@@ -127,29 +117,71 @@ function SourceBadge({ item }) {
   );
 }
 
+// The evidence, one click away: the exact quote with Copy quote, its link, and the history across checks.
+function Evidence({ item, unverified, observation }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 transition-colors hover:text-indigo-600"
+      >
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')} />
+        {open ? 'Hide evidence' : 'View evidence'}
+      </button>
+      <Collapse open={open}>
+        <div id={panelId} className="mt-2 space-y-3">
+          <Section label={unverified ? "What's claimed" : 'What the page shows'}>
+            <div className="space-y-2">
+              {item.sources.map((s, index) => (
+                <SourceBlock key={`${s.url}-${index}`} source={s} unverified={unverified} />
+              ))}
+            </div>
+          </Section>
+          {observation ? (
+            <Section label="History across checks" icon={History}>
+              <p className="text-sm leading-relaxed text-slate-700">{observation}</p>
+            </Section>
+          ) : null}
+        </div>
+      </Collapse>
+    </div>
+  );
+}
+
 export default function ChangeCard({ item, isNew }) {
   const unverified = Boolean(item.unverified);
   const interpretation = !unverified && item.interpretation ? item.interpretation : null;
   // An older card a later check superseded. Cards with their own status say so in it; the rest get a tag.
   const superseded = Boolean(item.latest_item_id);
   const legacySuperseded = superseded && !interpretation;
+  // Next steps: the checked interpretation's, else the engine's change-specific rules (D43), else the card's own.
   const steps = legacySuperseded
     ? []
     : interpretation
     ? (interpretation.actions || []).map((action) => action.text)
-    : item.steps?.length
-      ? item.steps
-      : item.action
-        ? [item.action]
-        : [];
+    : item.display_steps?.length
+      ? item.display_steps
+      : item.steps?.length
+        ? item.steps
+        : item.action
+          ? [item.action]
+          : [];
   const summary = interpretation
     ? interpretation.status_detail
     : legacySuperseded
       ? 'A later check changed this again, so this card is history.'
       : steps[0];
   const changeType = CHANGE_TYPE[item.category] || item.category_label;
+  // A status is shown only while it still holds: once a later check changed the same line, the card is history.
+  const statusLabel = superseded && interpretation?.status !== 'changed_again' ? null : interpretation?.status_label;
   const source = item.sources?.[0];
   const impact = interpretation?.impact;
+  const hidden = useHiddenIds().has(item.id);
   const [open, setOpen] = useState(() => isExpanded(item.id));
   const panelId = useId();
 
@@ -175,22 +207,29 @@ export default function ChangeCard({ item, isNew }) {
     <article
       data-card-id={item.id}
       className={cn(
-        'rounded-xl border border-slate-200 p-4 transition-shadow duration-200 sm:p-5',
-        unverified ? 'bg-slate-50/80 shadow-none hover:shadow-sm' : 'bg-white shadow-sm hover:shadow-md'
+        'rounded-xl border p-4 transition-shadow duration-200 sm:p-5',
+        hidden ? 'border-dashed border-slate-300' : 'border-slate-200',
+        unverified || hidden ? 'bg-slate-50/80 shadow-none hover:shadow-sm' : 'bg-white shadow-sm hover:shadow-md'
       )}
     >
-      {/* Collapsed: who, when, what kind, how sure, what changed, and the one open point. */}
+      {/* Who, when, and whether the source is verified. */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <CompetitorAvatar competitor={item.competitor} />
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <span className={cn('truncate text-sm font-medium', unverified ? 'text-slate-600' : 'text-slate-900')}>
                 {item.competitor}
               </span>
-              {legacySuperseded ? (
+              {superseded ? (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
                   Earlier change
+                </span>
+              ) : null}
+              {hidden ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                  <EyeOff className="h-3 w-3" />
+                  Hidden
                 </span>
               ) : null}
               {isNew ? (
@@ -208,26 +247,19 @@ export default function ChangeCard({ item, isNew }) {
         </div>
       </div>
 
-      {changeType || interpretation?.status_label ? (
-        <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-2">
-          {changeType ? (
-            <Labeled label="Change type">
-              <Chip className="border-slate-200 bg-slate-50 text-slate-600">{changeType}</Chip>
-            </Labeled>
-          ) : null}
-          {interpretation?.status_label ? (
-            <Labeled label="Status">
-              <Chip className={STATUS_STYLE[interpretation.status] || STATUS_STYLE.page_change_only}>
-                {interpretation.status_label}
-              </Chip>
-            </Labeled>
+      {/* The kind of change, and the status only where the checked interpretation supports one. */}
+      {changeType || statusLabel ? (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {changeType ? <Chip className="border-slate-200 bg-slate-50 text-slate-600">{changeType}</Chip> : null}
+          {statusLabel ? (
+            <Chip className={STATUS_STYLE[interpretation.status] || STATUS_STYLE.page_change_only}>{statusLabel}</Chip>
           ) : null}
         </div>
       ) : null}
 
       <h3
         className={cn(
-          'mt-2.5 break-words text-base font-semibold leading-snug',
+          'mt-2 break-words text-base font-semibold leading-snug',
           unverified ? 'text-slate-700' : 'text-slate-900'
         )}
       >
@@ -241,32 +273,9 @@ export default function ChangeCard({ item, isNew }) {
         </p>
       ) : null}
 
-      {/* Expanded: evidence, history, what's unknown, what to do, and impact only when there is one. */}
+      {/* Expanded: what's uncertain, what to do next, then the source, with the quote one click away. */}
       <Collapse open={open}>
         <div id={panelId} className="mt-4 space-y-4 border-t border-slate-100 pt-4">
-          {item.sources?.length ? (
-            <Section label={unverified ? "What's claimed" : 'What the page shows'}>
-              <div className="space-y-2">
-                {item.sources.map((s, index) => (
-                  <SourceBlock key={`${s.url}-${index}`} source={s} />
-                ))}
-              </div>
-              {item.confidence != null ? (
-                <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                  Source confidence: {item.confidence}
-                  {SOURCE_KIND[item.source_kind] ? ` — ${SOURCE_KIND[item.source_kind]}` : ''}. This score reflects
-                  source type, not certainty about business impact.
-                </p>
-              ) : null}
-            </Section>
-          ) : null}
-
-          {interpretation?.observation?.text ? (
-            <Section label="History across checks" icon={History}>
-              <p className="text-sm leading-relaxed text-slate-700">{interpretation.observation.text}</p>
-            </Section>
-          ) : null}
-
           {interpretation?.status_detail ? (
             <Section label={interpretation.question ? "What we don't know yet" : 'What it means'}>
               <p className="text-sm leading-relaxed text-slate-700">{interpretation.status_detail}</p>
@@ -303,12 +312,32 @@ export default function ChangeCard({ item, isNew }) {
             <Section label={`Potential impact${IMPACT[impact.area] ? ` · ${IMPACT[impact.area]}` : ''}`}>
               <p className="text-sm leading-relaxed text-slate-700">{impact.text}</p>
             </Section>
-          ) : !interpretation && !legacySuperseded && item.why ? (
-            <Section label="Why it matters">
-              <p className="text-sm leading-relaxed text-slate-700">
-                <Markup text={item.why} />
-              </p>
-            </Section>
+          ) : null}
+
+          {source ? (
+            <div className="space-y-2">
+              <div className="flex flex-col gap-1 text-xs leading-relaxed text-slate-500">
+                {item.confidence != null ? (
+                  <p>
+                    Source confidence: {item.confidence}
+                    {SOURCE_KIND[item.source_kind] ? ` — ${SOURCE_KIND[item.source_kind]}` : ''}. This reflects source
+                    type, not certainty about business impact.
+                  </p>
+                ) : null}
+                <a
+                  href={withProtocol(source.url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1.5 font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    {unverified ? 'Source' : 'Official source'} · {hostLabel(source.url)}
+                  </span>
+                </a>
+              </div>
+              <Evidence item={item} unverified={unverified} observation={interpretation?.observation?.text} />
+            </div>
           ) : null}
         </div>
       </Collapse>
@@ -324,26 +353,27 @@ export default function ChangeCard({ item, isNew }) {
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', open && 'rotate-180')} />
           {open ? 'Collapse' : 'View analysis'}
         </button>
-        {superseded ? (
+        <div className="flex shrink-0 items-center gap-4">
+          {superseded ? (
+            <button
+              type="button"
+              onClick={() => requestLatest(item.latest_item_id)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 transition-colors hover:text-indigo-600"
+            >
+              Go to latest
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => requestLatest(item.latest_item_id)}
-            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-slate-600 transition-colors hover:text-indigo-600"
+            onClick={() => setHidden(item.id, !hidden)}
+            title={hidden ? 'Show this card in Focused view again' : 'Leave this card out of Focused view (it stays in All changes)'}
+            className="inline-flex items-center gap-1 text-xs text-slate-400 transition-colors hover:text-slate-700"
           >
-            Go to latest
-            <ArrowUpRight className="h-3.5 w-3.5" />
+            {hidden ? <Undo2 className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            {hidden ? 'Unhide' : 'Hide'}
           </button>
-        ) : source?.url && !open ? (
-          <a
-            href={withProtocol(source.url)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-w-0 items-center gap-1 text-xs text-slate-500 transition-colors hover:text-indigo-600"
-          >
-            <ExternalLink className="h-3 w-3 shrink-0" />
-            <span className="truncate">{hostLabel(source.url)}</span>
-          </a>
-        ) : null}
+        </div>
       </div>
     </article>
   );

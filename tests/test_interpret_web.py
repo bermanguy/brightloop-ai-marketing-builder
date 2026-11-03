@@ -18,7 +18,7 @@ FIX = os.path.join(os.path.dirname(__file__), "..", "fixtures", "interpret")
 with open(os.path.join(FIX, "live-items-2026-11-03.json"), encoding="utf-8") as f:
     # The replay input keeps only what the replay reads; a stored card also has its action and why.
     LIVE = [dict(i, action="Stored action.", steps=["Stored action."], why="Stored why.") for i in json.load(f)["items"]]
-ADDED = ("category", "category_label", "interpretation", "display_headline", "latest_item_id")
+ADDED = ("category", "category_label", "interpretation", "display_headline", "display_steps", "latest_item_id")
 
 
 @pytest.fixture
