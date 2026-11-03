@@ -21,9 +21,9 @@ const STEPS = [
 
 const TESTED = [
   'The same core code as the live watch: confidence by source (0.9 own pricing page, 0.6 own site, 0.4 third party, 0.2 sponsored, ad, forum or anonymous), the unverified label, skips with a reason, and every input id exactly once.',
-  'Pricing signals become cards; ads and launches are skipped with a reason.',
+  'Pricing signals become cards; ads and launches are skipped with a reason. The cards show the core\'s rule-written text; the Changes tab\'s extra display layer is for live cards only.',
   'Text inside a signal is data: instructions in it are ignored, hidden parts are dropped, and secrets like demo_key are shown as [redacted].',
-  "Nothing is saved, so the other tabs don't change, and the same file always gives the same result.",
+  "Nothing is saved, so the other tabs don't change, and the same file always gives the same items and skips (only the run's start time differs).",
   'Try the brief\'s cases.json or the case files in the repo (tests/cases), then download result.json.',
 ];
 

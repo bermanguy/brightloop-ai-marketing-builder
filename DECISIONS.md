@@ -333,6 +333,30 @@ Price and billing-view changes keep their category by rule and aren't sent; rumo
 
 **Unchanged.** Detection, verification, confidence, alerts, runs, the test upload, the model's prompt and recorded answers, and MCP fields already present.
 
+### D44 — Final audit: the test contract stays as it is, Test upload explains why it differs, and the docs describe the build · 2026-11-03 · [Guy for the scope; fixes Claude → Guy, pending Guy's review of this PR]
+
+Recorded after an audit of the code, production (through the MCP connector) and a fresh clone, before the 4 Nov interview. It adds no new feature and changes no production pipeline. It summarises the post-submission work in one place; the reasons below are the ones already recorded in D40–D43 or given by Guy for this audit, and nothing earlier is rewritten.
+
+**Decided by Guy (for this audit).**
+- The original test interface is part of the assignment contract. Its JSON input and output, "every id once", source-backed numbers, confidence and verification rules, skips, injection handling, keyless runs and reproducible results stay exactly as they are. The dashboard's newer presentation layer isn't forced into it.
+- Prefer the smallest safe change; nothing is merged, deployed or published without Guy's approval.
+
+**What the audit found and fixed (Claude → Guy, pending approval).**
+- *Test upload rows misread two kinds of id.* The per-id rows (Base44 Test upload, `/test`, MCP `run_test`) showed a numeric id such as `42` as "Skipped" with no reason, though `result.json` had it as an item, and showed an entry with an empty id as a skip carrying every error in the file. `result.json` was always right. `web.test_rows` now applies the core's own id rules. Regression tests in `tests/test_test_contract.py`.
+- *Test upload cards didn't say what they show.* They were headed "Items, as the Changes tab shows them", but the Changes tab adds a display layer for live cards. The heading now says they are `result.json`'s items, a note explains the difference, the cards show the contract's `why`, and they have no Hide button, so a test file never writes to a browser's Focused view. Frontend source only; it needs copying into Base44 and publishing.
+- *Docs out of date.* The README said 210 tests (now 295) and described the pre-interpretation app; `docs/architecture.md` was still the 25 Oct proposal (GitHub as the main scheduler, "not chosen: a Base44 front end"). Both are rewritten from the code, with two new diagrams.
+
+**The post-submission work in one place (decided in D40–D43).**
+- *AI interpretation runs offline.* For the 4 Nov demo, no live run calls the model; the readings are a reviewed replay shipped as a file, behind `PRICEWATCH_INTERPRET` (D40, Guy).
+- *Rules control the actions.* The model returns enums, ids and copied page lines and writes no text, so a page can only move it to another approved option; ambiguous meaning gets verification-only actions chosen by code (D40, Claude → Guy).
+- *New changes get safe rule-written steps.* Cards without a replayed reading get `display_steps` that name the competitor, plan and line and ask Maya to check before anyone acts; a missing line is never called a removed feature (D43, Guy).
+- *A simpler dashboard.* So Maya can scan the feed in seconds and tell a page change from an offer change and from what it could mean for Brightloop (D41–D43, Guy).
+- *Source evidence stays one click away.* The quote, its link and Copy quote sit under "View evidence" on every card (D43, Guy), keeping "no link, no number" visible.
+- *Focused view / Hide.* So Maya can keep a focused view of relevant changes without losing the full monitoring history; it lives in one browser's localStorage only (D43, Guy).
+- *Alternatives considered* (D40): rules only with more templates, and AI-written recommendations with validation.
+
+**Future work (Claude → Guy, not decided).** Run the interpretation automatically on new cards, stored by card id in its own table, with the same rule checks and fallback, in shadow mode first (`docs/architecture.md`, "Next engineering step"). Decide whether alerts should use the dashboard's display steps. Add a file-size limit to Test upload.
+
 ---
 
 ## Open questions

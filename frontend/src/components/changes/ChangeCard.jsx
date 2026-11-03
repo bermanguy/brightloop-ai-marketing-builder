@@ -153,7 +153,9 @@ function Evidence({ item, unverified, observation }) {
   );
 }
 
-export default function ChangeCard({ item, isNew }) {
+// testMode (Test upload): the card shows result.json's own fields, including `why`, and can't be hidden, so a test
+// file never touches this browser's Focused view.
+export default function ChangeCard({ item, isNew, testMode = false }) {
   const unverified = Boolean(item.unverified);
   const interpretation = !unverified && item.interpretation ? item.interpretation : null;
   // An older card a later check superseded. Cards with their own status say so in it; the rest get a tag.
@@ -181,7 +183,8 @@ export default function ChangeCard({ item, isNew }) {
   const statusLabel = superseded && interpretation?.status !== 'changed_again' ? null : interpretation?.status_label;
   const source = item.sources?.[0];
   const impact = interpretation?.impact;
-  const hidden = useHiddenIds().has(item.id);
+  const hiddenIds = useHiddenIds();
+  const hidden = !testMode && hiddenIds.has(item.id);
   const [open, setOpen] = useState(() => isExpanded(item.id));
   const panelId = useId();
 
@@ -308,6 +311,14 @@ export default function ChangeCard({ item, isNew }) {
             </section>
           ) : null}
 
+          {testMode && item.why ? (
+            <Section label="Why it matters">
+              <p className="text-sm leading-relaxed text-slate-700">
+                <Markup text={item.why} />
+              </p>
+            </Section>
+          ) : null}
+
           {impact?.text ? (
             <Section label={`Potential impact${IMPACT[impact.area] ? ` · ${IMPACT[impact.area]}` : ''}`}>
               <p className="text-sm leading-relaxed text-slate-700">{impact.text}</p>
@@ -364,6 +375,7 @@ export default function ChangeCard({ item, isNew }) {
               <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
           ) : null}
+          {testMode ? null : (
           <button
             type="button"
             onClick={() => setHidden(item.id, !hidden)}
@@ -373,6 +385,7 @@ export default function ChangeCard({ item, isNew }) {
             {hidden ? <Undo2 className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
             {hidden ? 'Unhide' : 'Hide'}
           </button>
+          )}
         </div>
       </div>
     </article>
