@@ -56,7 +56,7 @@ export default function TestUpload() {
 
           <div className="mt-3 flex items-center justify-between gap-3">
             <p className="text-xs text-slate-500">
-              One JSON file, nothing stored: the other tabs don&apos;t change.
+              One JSON file. Nothing is stored and the other tabs don&apos;t change, unless you send a TEST alert, which goes in the alert log.
             </p>
             <button
               type="submit"

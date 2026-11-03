@@ -626,8 +626,13 @@ def test_rows(data, result):
     skip_of = {s["id"]: s["reason"] for s in result["skipped"]}
     rows, seen = [], set()
     for signal in signals:
-        sid = signal.get("id") if isinstance(signal, dict) else None
-        if sid is None or sid in seen:
+        # The same id rules as the core (engine.process): no id or "" can't be accounted for, and ids are
+        # compared as text, so a numeric id 42 is the item "item-42", not a skip.
+        raw = signal.get("id") if isinstance(signal, dict) else None
+        if raw in (None, ""):
+            continue  # listed under errors
+        sid = str(raw)
+        if sid in seen:
             continue  # listed under errors
         seen.add(sid)
         item = item_of.get(sid)

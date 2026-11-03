@@ -71,10 +71,17 @@ export default function TestResults({ data }) {
       {items.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Items, as the Changes tab shows them
+            Items in result.json, in the Changes card layout
           </h2>
+          <p className="text-xs leading-relaxed text-slate-500">
+            These cards show the shared core&apos;s output exactly as result.json has it: the rule-written headline,
+            next steps and why it matters. The Changes tab adds a display layer for live cards only (headlines and
+            next steps written from the page lines a check compared, and reviewed interpretations of earlier
+            changes), so the same kind of change can read differently there. Download result.json for the full
+            output.
+          </p>
           {items.map((item) => (
-            <ChangeCard key={item.id} item={item} />
+            <ChangeCard key={item.id} item={item} testMode />
           ))}
         </section>
       ) : null}

@@ -1,279 +1,363 @@
-# Brightloop AI Marketing Builder
+# Pricing Watch: competitor pricing for Brightloop's Head of Growth
 
 Home assignment for the AI Marketing Builder role at Base44.
 
-Built for Maya (Head of Growth): a watch on competitors' pricing and packaging changes (Lovable, Bolt, Replit, v0), where every number links to its source. See `docs/spec.md`.
-
-## At a glance
+**What it does for Maya.** Maya owns signups and trial starts at Brightloop. Last quarter a wrong AI summary ("a competitor cut prices 30%") reached leadership, so her rule is *no link, no number*. Pricing Watch checks the pricing pages of Lovable, Bolt, Replit and v0 every 6 hours, finds what changed since the last check, and shows each change with the exact quote, its link, how far to trust it, and what to check or do next. Claims from anywhere else (Hacker News, ads, blogs) are shown but labelled unverified. See `docs/spec.md`.
 
 | | |
 | --- | --- |
-| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44 front end; its code is in `frontend/`) |
-| Engine and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon; runs every 6 hours, keeps the run log) |
-| The proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
-| Run the test | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
-| Ask Claude (MCP) | Add `https://pricewatch-mb2k.onrender.com/mcp` as a custom connector (see "Ask Claude" below) |
-| Decision log | `DECISIONS.md` |
+| Live app (for marketers) | https://brightloop-competitors-price-pulse.base44.app (Base44; source mirrored in `frontend/`) |
+| Engine, API and admin pages | https://pricewatch-mb2k.onrender.com (Render + Neon) |
+| Proof, no keys | `./proof` on a fresh clone (Python 3.12+, standard library only) |
+| The brief's test interface | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
+| Ask Claude (MCP) | `https://pricewatch-mb2k.onrender.com/mcp` as a custom connector |
+| How it's built | `docs/architecture.md` (authoritative) |
+| Decision log | `DECISIONS.md` (D1–D44) |
+| Plain-English walkthrough | `docs/INTERVIEW-ARCHITECTURE-EXPLAINED.md` |
 
-### How we know it works
+## Quick start (no keys)
 
-- `./proof` replays the brief's sample and every recorded real run, and checks the rules: every input id once, every number in its item's quotes, every item linked, injections not followed, `demo_key` not echoed.
-- `pytest`: 210 tests, run by CI on every push. They cover the core rules, comparing runs, the readers on saved real pages, the web app and alerts.
-- `tests/cases/`: three case files for trust and scope, injections and secrets, and malformed input, with the expected result for every id in `tests/cases/README.md`.
-- The live run log: every scheduled and Check now run, with the pages read, the changes found, the errors and the cost.
+```
+git clone https://github.com/bermanguy/brightloop-ai-marketing-builder && cd brightloop-ai-marketing-builder
+./proof                                                              # ends with PROOF PASSED, exit 0
+./run --input fixtures/sample-cases.json --output result.json        # the brief's sample: 2 items, 6 skipped
+./run --input tests/cases/2-injections-and-secrets.json --output result.json
+```
 
-## The big picture
+Tests (needs pip): `python3 -m venv .venv && . .venv/bin/activate && pip install -e ".[dev,web]" && pytest`.
+
+## Current verified results
+
+Run on 3 November 2026 in a fresh clone of this branch, in a new virtual environment, with an empty environment (no API keys, no `DATABASE_URL`):
+
+| Check | Result |
+| --- | --- |
+| `./proof` | PROOF PASSED, exit 0: the brief's 8 sample ids and 3 recorded real runs. With one recorded price altered, it fails with exit 1 |
+| `pytest` | 295 passed, 4 skipped, 0 failed |
+| `./run` on the sample and the 4 case files | Counts match `tests/cases/README.md`; two runs give identical output apart from `run.started_at` |
+| CLI vs Test upload API vs MCP `run_test` | Identical `result.json` for every case file, interpretation flag on or off |
+| Frontend `npm run lint` / `npm run build` | Clean / builds (one chunk-size warning) |
+| Production MCP `run_test` on `3-malformed-input.json` | Same `result.json` as the CLI. Its rows showed the numeric-id bug fixed in D44, which isn't deployed yet |
+
+The 4 skipped tests call the real Anthropic API and only run with `PRICEWATCH_LIVE_AI=1` and a key.
+
+## Product architecture
 
 ```mermaid
 flowchart LR
-    subgraph sources["1. Sources"]
-        pages["Competitors' pricing pages<br/>Lovable · Bolt · Replit · v0"]
-        hn["Hacker News<br/>pricing rumors"]
-        test["Test file<br/>cases.json"]
-    end
+    src["Competitor pricing pages<br/>Lovable · Bolt · Replit · v0"]
+    hn["Hacker News<br/>pricing claims"]
+    ext["AI-assisted extraction<br/>Claude lists plans and prices,<br/>each with a quote"]
+    ver["Source verification<br/>every value must be on the<br/>page word for word"]
+    det["Change detection<br/>compare with the last<br/>good snapshot"]
+    core["Core rules<br/>confidence · unverified label<br/>every id once · no link, no number"]
+    db[("Storage<br/>Neon Postgres")]
+    rec["Interpretation and recommendations<br/>rule-written next steps for every change"]
+    offline["Reviewed AI readings<br/>precomputed offline, not automated"]
+    dash["Dashboard (Base44)<br/>and MCP"]
+    alerts["Email and Slack alerts"]
+    test["Test file cases.json<br/>./run · Test upload"]
 
-    subgraph engine["Engine on Render"]
-        reader["2. AI reads the page<br/>Claude lists plans and prices<br/>with a quote for each"]
-        check["3. Quote check<br/>each value must be on the<br/>page word for word"]
-        compare["4. Compare<br/>with the last snapshot"]
-        core["5. Core rules, not AI<br/>confidence · unverified label<br/>skips · every id once"]
-        db[("6. Database<br/>Neon Postgres")]
-        api["7. Engine API<br/>JSON and MCP"]
-    end
-
-    subgraph use["8. Ways to use the data"]
-        admin["Render web app<br/>admin pages"]
-        b44["Base44 web app<br/>for marketers"]
-        alerts["Email and Slack<br/>alerts"]
-        assistant["Any AI assistant over MCP<br/>Claude · Claude Code · Cursor<br/>ask in plain language"]
-    end
-
-    pages -->|"every 6 hours"| reader --> check --> compare --> core
+    src -->|"every 6 hours, automated"| ext --> ver --> det --> core
     hn -->|"always unverified"| core
-    test --> core
-    core --> db --> api
+    core --> db --> rec --> dash
     core --> alerts
-    api --> admin & b44 & assistant
+    offline -.-> rec
+    test -.->|"same core, nothing stored"| core
 
-    classDef aiStep fill:#d9c8ff,stroke:#6a3df0,stroke-width:3px,color:#1e0f4d
-    class reader,assistant aiStep
+    classDef ai fill:#e4d9ff,stroke:#6a3df0,stroke-width:2px,color:#1e0f4d
+    classDef rule fill:#e3f4ea,stroke:#2f8a57,color:#0f3b22
+    classDef offline fill:#fff4d6,stroke:#b7871b,stroke-dasharray:4 3,color:#4a3405
+    class ext ai
+    class ver,det,core,alerts,rec rule
+    class offline offline
 ```
 
-Purple boxes are where AI is used. Everything else is plain code.
+Purple is AI that runs on every live run. Green is plain code (rules). Dashed yellow is AI run offline by hand, whose reviewed output ships with the app. Everything else is automated in production.
 
-1. **Sources.** Every 6 hours the engine fetches the pricing pages of Lovable, Bolt, Replit and v0, and searches Hacker News for pricing rumors. A `cases.json` test file goes through the same core, from `./run` or the app's Test upload. Only the source of signals differs.
-2. **AI reads the page.** Claude turns each page's text into plans and prices, with a quote for each one. Pricing pages change layout often and fixed code breaks when they do, so this is where AI helps. The page text is passed as data, so instructions hidden in it are ignored.
-3. **Quote check.** Code, not AI, checks that every value Claude returned is in its quote, and that the quote is on the page word for word. Anything else is dropped, so the AI can't invent a number. Without a key, a plain reader takes over.
-4. **Compare.** Each reading is compared with the last snapshot, so only real changes become signals.
-5. **Core rules.** Plain code decides confidence, the unverified label, skips, the suggested action, and that every input is accounted for once. Text inside a signal can't change them. Hacker News claims skip steps 2 to 4 and are always labelled unverified.
-6. **Database.** Neon Postgres keeps the snapshots, the changes and the run log (pages read, errors and cost).
-7. **Engine API.** One Python server on Render serves the results as JSON for the apps and as MCP tools for AI assistants. It holds all the keys.
-8. **Ways to use the data.**
-    - **Render web app:** admin pages, including the run log and alert settings.
-    - **Base44 web app:** the marketers' front end: changes, current pricing, alerts and Test upload.
-    - **Email and Slack:** alerts when a run finds changes, filtered by confidence and company.
-    - **Any AI assistant over MCP:** connect Claude, Claude Code, Cursor or any other MCP client to `/mcp` and ask in plain language, for example "What changed at Bolt this week?". The answers come from the engine's data, with links and quotes.
+1. **Sources.** Every 6 hours the engine fetches the four pricing pages, in every billing view they offer, and searches Hacker News for pricing claims.
+2. **AI-assisted extraction.** Claude turns each page's text into plans and prices, each value with its quote. Pricing pages change layout often, which breaks hand-written parsers; this is where AI helps.
+3. **Source verification.** Code checks every value is on the page word for word. Anything else is dropped, so the AI can't invent a number. Without a key, a plain reader takes over.
+4. **Change detection.** Each reading is compared with the last good reading of the same page view, so only real page changes become signals. A page that fails is reported, never compared.
+5. **Core rules.** Confidence, the unverified label, skips, the stored headline and action, and "every input id exactly once" are rules. Text inside a signal can't change them.
+6. **Storage.** Neon Postgres keeps snapshots, runs (the run log), alert settings and the alert log.
+7. **Interpretation and recommendations.** When the dashboard reads the cards, rules write a plain headline and safe next steps from the page lines that changed. Eight earlier cards also carry a reviewed AI interpretation, computed offline.
+8. **Where Maya sees it.** The Base44 dashboard, email and Slack alerts, and any MCP client such as Claude.
 
-## How it fits together
+## Technical architecture
 
 ```mermaid
 flowchart TB
-    subgraph inputs["Where signals come from"]
-        direction LR
-        pages["Pricing pages<br/>Lovable · Bolt · Replit · v0"]
-        hn["Hacker News<br/>(Algolia search API)"]
-        cases["cases.json<br/>./run or Test upload"]
-        proof["./proof<br/>recorded real runs, no keys"]
-    end
-
-    subgraph render["Render: Python engine (Docker, always on)"]
-        sched["Scheduler: every 6 h<br/>+ Check now"]
+    subgraph LIVE["1 · Live scanning (automated)"]
+        sched["Render: scheduler thread, every 6 h<br/>+ GitHub Actions hourly backup<br/>+ Check now"]
         fetch["Fetch<br/>httpx · Playwright + Chromium"]
-        read["Read plans<br/>AI reader, quote-checked<br/>(plain reader fallback)"]
-        compare["Compare with last snapshot"]
-        core["CORE: rules, not AI<br/>confidence · unverified · skips<br/>every id once · no link, no number"]
-        notify["Alerts, filtered by rule"]
-        api["FastAPI<br/>JSON API + admin pages"]
+        reader["AI page reader<br/>claude-opus-5-5<br/>(plain reader without a key)"]
+        qc["Quote check<br/>rules"]
+        cmp["Compare with last snapshot<br/>rules"]
+        hn["Hacker News search"]
     end
 
-    claude["Anthropic API<br/>Claude"]
-    db[("Neon Postgres<br/>snapshots · runs · alerts")]
-    gh["GitHub Actions<br/>CI on every push<br/>+ hourly backup trigger"]
-
-    subgraph out["Where Maya sees it"]
-        direction LR
-        b44["Base44 app (code in frontend/)<br/>Changes · Pricing · Run log<br/>Alerts · Test upload"]
-        mail["Email<br/>Gmail SMTP / Resend"]
-        slack["Slack channel"]
-        ask["Claude (claude.ai, Claude Code)<br/>via MCP connector"]
+    subgraph TEST["3 · Test execution (no keys)"]
+        cli["./run --input cases.json"]
+        upload["Test upload from Base44<br/>POST /api/test<br/>returns result.json as is"]
+        mcptest["MCP run_test"]
+        proof["./proof<br/>recorded real runs"]
     end
 
-    sched --> fetch
-    pages --> fetch --> read --> compare -->|"pricing signals"| core
-    read <-->|"page text as data"| claude
-    hn -->|"rumors: unverified, 0.2"| core
-    cases -->|"signals"| core
-    proof -.->|"replays the same pipeline"| compare
-    core --> db
-    core --> notify --> mail & slack
-    db --> api
-    api <-->|"JSON over HTTPS"| b44
-    api <-->|"MCP at /mcp, read-only"| ask
-    gh -->|"POST /run with token"| api
+    core["CORE: rules, not AI<br/>confidence · unverified · skips<br/>every id once · R4 number check<br/>headline · action · why"]
+
+    subgraph OFFLINE["2 · Offline interpretation (manual)"]
+        export["Exported verified cards"]
+        interp["python -m pricewatch.interpret<br/>claude-sonnet-5-5<br/>returns enums and playbook ids only"]
+        check["Rule check<br/>lines quoted · ambiguity · R4"]
+        file["interpretations.json<br/>reviewed, shipped with the code"]
+    end
+
+    claude["Anthropic API"]
+    db[("Neon Postgres<br/>snapshots · runs<br/>alert settings · alert log")]
+    flag{"PRICEWATCH_INTERPRET<br/>on?"}
+    display["Display layer at read time: rules<br/>display headline · fallback next steps<br/>link to latest card · stored reading if any"]
+    api["Render engine: JSON API /api/*"]
+    mcp["Render: MCP /mcp<br/>get_changes · pricing · run log"]
+    notify["Email + Slack alerts<br/>core text"]
+    admin["Render admin pages<br/>core text"]
+    b44["Base44 app<br/>Changes · Pricing · Run log · Alerts · Test upload<br/>Focused view / Hide in this browser only"]
+
+    sched --> fetch --> reader --> qc --> cmp -->|"pricing signals"| core
+    reader <-->|"page text as data"| claude
+    hn -->|"unverified, 0.2"| core
+    cli --> core
+    upload --> core
+    mcptest --> core
+    proof -.->|"replays recorded pages"| qc
+    core -->|"live runs only"| db
+    core -->|"live runs with changes"| notify
+    db --> admin
+    db --> flag
+    flag -->|"on (production)"| display --> api
+    flag -->|"off"| api
+    file --> display
+    api --> b44
+    api --> mcp
+    db -.->|"cards exported by hand"| export --> interp --> check --> file
+    interp <--> claude
+
+    classDef ai fill:#e4d9ff,stroke:#6a3df0,stroke-width:2px,color:#1e0f4d
+    classDef rule fill:#e3f4ea,stroke:#2f8a57,color:#0f3b22
+    classDef offline fill:#fff4d6,stroke:#b7871b,stroke-dasharray:4 3,color:#4a3405
+    class reader,interp ai
+    class qc,cmp,core,check,display,notify rule
+    class export,file offline
 ```
 
-- **One core, two sources.** The live watch (pages, read, compare) and the test path (`cases.json`) feed the same core, as the brief requires. Only the source of signals differs.
-- **AI reads, rules decide.** Claude reads the pages, and every value it returns must be found word for word on the page. Confidence, the unverified label, skips and id accounting are rules, so text inside a signal can't change them (D1, D13, D16).
-- **Base44 is the marketer's front end; Render is the engine.** Base44 calls the engine's JSON API. The Render pages stay as an admin fallback (D32).
-- **Keys stay on Render** (Anthropic, Neon, Gmail, Slack). A fresh clone runs `./run` and `./proof` with none.
+Three paths, one core:
 
-## Repository layout
+- **1. Live scanning** is fully automated on Render. The only AI call is the page reader.
+- **2. Offline interpretation** is run by hand. Its output, `src/pricewatch/interpretations.json`, is reviewed, committed and deployed with the code. No live run calls a model to interpret anything.
+- **3. Test execution** (`./run`, Test upload, MCP `run_test`, `./proof`) uses the core with no keys and stores nothing.
 
-| Path | Contents |
-| --- | --- |
-| `docs/spec.md` | What we're building, its rules and acceptance criteria |
-| `docs/architecture.md` | How it is built (approved) |
-| `DECISIONS.md` | Decision log: what was decided, why, alternatives, and who decided |
-| `docs/discovery/` | Verbatim interview transcripts with the Brightloop marketers, plus the synthesis |
-| `reference/` | The original assignment brief, kept unmodified as reference |
-| `frontend/` | The Base44 app's code (React + Vite), a snapshot copied from Base44 on 2026-10-28 (D39). Base44 builds and hosts it |
+The display layer (`interpret.annotate`) runs on each `/api/changes` request when `PRICEWATCH_INTERPRET=on`, which it is in production. It is deterministic code.
 
-## Test interface
+## AI extraction vs. AI interpretation
 
-Python 3.12+, no keys, no dependencies beyond the standard library:
+Two different uses of AI, with different guardrails and different automation:
+
+| | AI extraction | AI interpretation |
+| --- | --- | --- |
+| Question it answers | What plans and prices does this page show? | What might this verified change mean for Maya? |
+| Code | `sources/ai_extract.py` | `interpret.py` |
+| Model | `claude-opus-5-5`, low effort | `claude-sonnet-5-5`, low effort |
+| When | Every live run, automatically | Offline, by hand (3 Nov, 8 cards, $0.06) |
+| Output | Plans with quotes | Enums, two page lines, playbook ids. No free text |
+| Checked by | Word-for-word quote check against the page | Rules: lines must be whole quoted page lines; unclear meaning gets verification-only actions; R4 |
+| On failure or no key | Plain reader | No interpretation: the card shows rule-written steps |
+
+## Guardrails: what rules decide
+
+- **No link, no number (R4).** Every figure in an item's headline, action and why, and in the dashboard's display headline and next steps, must appear in that item's sources. The core checks this on every item and replaces the text if it fails.
+- **Signal text is data (D1).** Confidence comes from the `source` field only. Hidden HTML (comments, `display:none`, `<script>`) is dropped from the quote. The brief's two injections (the `#kelp` span and the `sg-303` comment) have no effect, checked by `./proof` and the tests.
+- **Every input id exactly once.** In one item's `source_ids` or in `skipped` with a reason; anything that can't be accounted for (no id, duplicate) is in `run.errors`.
+- **Credentials are never echoed.** Credential-like input values (`config.demo_key`) become `[redacted]`.
+- **Missing text isn't a removed feature.** A line that's no longer on the page gets "check whether it moved or went; don't describe it as removed". A removed asterisk or a reformatted price is never called a price change. A plan description that disappears gets "check whether it was reworded or moved".
+- **Source verified isn't the same as understood.** "Source verified" means the quote is on the competitor's own page. Whether the change matters is a separate status (Needs investigation, Change confirmed, Page change only…), set by rule, and only on cards with a checked interpretation.
+
+## Confidence and recommendations: the rules
+
+### Confidence
+
+Confidence says **how far to trust the source**, not how important the change is or what it means. It's set by rule (`core/trust.py`) from the signal's `source` field and competitor only, never from its text, so an instruction hidden in the text can't move it.
+
+| Where the claim came from | Confidence | Label | What the card tells Maya to do |
+| --- | --- | --- | --- |
+| The competitor's own pricing page | 0.9 | Source verified | Act on it (see the steps below) |
+| The competitor's own site, another page | 0.6 | Source verified | Confirm it on the pricing page before acting |
+| Any other site (news, blogs, social) | 0.4 | Unverified | Don't act yet; check the competitor's own pricing page |
+| Sponsored, ad, Reddit, Hacker News, anonymous, no source | 0.2 | Unverified | Don't act yet; a Hacker News claim is shown next to what the competitor's own page showed in the same run |
+
+Sponsored and anonymous markers are checked first, so "sponsored post on lovable.dev" is still 0.2. Alerts use confidence as a filter (default: 0.6 and up). On the card it reads "Source confidence: 0.9, official competitor pricing page. This reflects source type, not certainty about business impact."
+
+### Recommendations
+
+Every recommendation is written by code. A live card can carry up to three layers, and the dashboard shows the most specific one:
+
+1. **The core's `action` and `why`** (every card; the only layer in `result.json`, Test upload, alerts and the run log). One template per kind of change the comparison names: price up, price down, price wording, plan contents, discount framing, credit options, limits, plan added, plan removed, which view the page opens on. It names what we publish that is now out of date (comparison pages, ads, sales material) and what to decide with whoever owns our pricing. It never says which product is cheaper or what Brightloop should charge, because we don't hold Brightloop's prices (D26). Unverified claims always get "Don't act yet".
+2. **`display_steps`** (dashboard and MCP, every live card without an interpretation, D43). Written from what the page itself changed, naming the competitor, plan and line:
+
+    | What the page changed | Next step |
+    | --- | --- |
+    | A plan description is gone | Check whether it was reworded or moved; only if positioning really changed, review our messaging |
+    | A line is gone | Check the other plans for it; don't describe it as removed until it's clear whether it moved or went |
+    | Several lines changed | Review whether limits changed or only the presentation; update comparisons only after confirming |
+    | A line was added | Check what it means for customers before quoting it |
+    | A mark next to a price is gone (e.g. `$25*` → `$25`) | Check what the mark referred to; confirm whether the pricing terms changed |
+    | A price moved to or from a plan line (Lovable's "Platform fee") | Check how it's now presented before quoting that plan's price |
+    | Only letter case or spacing changed | Nothing to do |
+
+3. **`interpretation`** (dashboard and MCP, the 8 replayed cards, D40–D41). Claude picked a category, direction and action ids from an approved playbook; code checked them. If the meaning is unclear (the model says so, the direction is unclear, or a line came and went), code replaces the actions with verification-only ones. Only these cards show a status:
+
+    | Status | When |
+    | --- | --- |
+    | Needs investigation | The meaning is ambiguous |
+    | Change confirmed | The reading is clear **and** shows more or less for customers on pricing, packaging or signup (the model's "clear" alone isn't enough) |
+    | Page change only | The reading is clear and only the presentation changed (direction "presentation only", or category Pricing Page UI) |
+    | No action needed | Only letter case or spacing changed |
+    | Changed again since | An older card about a line a later check changed again |
+
+**Always:** every figure in any of these texts must be in the card's sources (no link, no number); a missing line is never called a removed feature; a mark or layout change is never called a price or signup change; and a card without an interpretation never shows a status, so it's never presented as analysed.
+
+## Precomputed interpretation: what it covers, and what it doesn't
+
+- `interpretations.json` holds 8 readings, made on 3 November from the cards then in production (`fixtures/interpret/live-items-2026-11-03.json`). They are matched by card id, so a later change never inherits an old reading.
+- Every change found since (for example the six cards from the 3 November 18:46 check: Replit Core and Pro plan descriptions removed, Bolt Free, Pro, Teams and Enterprise reworked) has **no** interpretation. It gets rule-written `display_steps` instead, and the card shows no status, so it's never presented as analysed.
+- Discount cards and old cards stored before kinds of change existed keep their own steps.
+- With `PRICEWATCH_INTERPRET` off, every endpoint returns the stored cards byte for byte (tested).
+
+## Test interface (the brief's contract)
 
 ```
 ./run --input cases.json --output result.json
 ```
 
-Try it on the brief's sample: `./run --input fixtures/sample-cases.json --output result.json`. Tests: `pip install -e ".[dev]" && pytest`. CI runs both on every push.
+The same core runs behind three doors, and they return the same `result.json` (only `run.started_at` differs): `./run`, **Test upload** in the Base44 app (`POST /api/test`; the Render page `/test` too), and MCP `run_test`. `tests/test_test_contract.py` checks this for every case file, with the interpretation flag on and off.
+
+Test upload deliberately shows the **core's** rule-written text, not the dashboard's display layer: that layer works on live cards (it reads the comparison's "now shows … no longer shows …" quotes and live card ids), and the brief's contract shouldn't change to match a presentation. The page says so above the cards. Test upload stores nothing; the only exception is if you tick the TEST alert option, which sends an email or Slack message and writes one row to the alert log.
+
+**Exit codes.** `./run` exits 1 when the input file can't be read or parsed (it still writes a `result.json` with the error), and 0 otherwise, including when the file parses but has problems, which are listed in `run.errors`. `./proof` exits 1 if any check fails.
 
 ### How each signal is handled
 
 | Signal | Result |
 | --- | --- |
-| `pricing` | An item. Confidence and the unverified label come from the `source` field only (table below), never from the text. |
+| `pricing` | An item. Confidence and the unverified label come from the `source` field only (table below). |
 | `launch`, `ad` | `skipped`, with the reason. |
-| Any other type, or a pricing signal with no text | `skipped`, with the reason. |
+| Any other type, or a pricing signal with no visible text | `skipped`, with the reason. |
 | Duplicate id | Counted once (first signal); the duplicate is reported in `run.errors`. |
-| No id | Can't be accounted for, so it's reported in `run.errors`. |
+| No id, or an empty id | Can't be accounted for, so it's reported in `run.errors`. |
+| Not a JSON object, no `signals` list, unreadable file | No items; the reason is in `run.errors`. |
 
 | Source | Confidence | Unverified |
 | --- | --- | --- |
 | The competitor's own pricing page (e.g. `lovable.dev/pricing`) | 0.9 | no |
 | The competitor's own site, another page | 0.6 | no |
 | Any other site (news, blogs, social accounts) | 0.4 | yes |
-| Sponsored, ad, Reddit, anonymous, or no source | 0.2 | yes |
+| Sponsored, ad, Reddit, Hacker News, anonymous, or no source | 0.2 | yes |
 
-### Extra item fields
+### Output
+
+The brief's wrapper, `built_for`, `items[]`, `skipped[]` and `run` (`started_at`, `cost_usd`, `errors`), with these item fields:
 
 | Field | Meaning |
 | --- | --- |
-| `headline` | One line saying what happened, e.g. "Lovable raised its Pro plan from $25 to $30 / month." In a live run it's written by rule for each kind of change (price up or down, contents, limits table, plan added or removed, which prices the page shows first); numbers in it come from the quote. An unverified claim's headline says where it came from. |
-| `steps` | `action` split into its next steps, one per sentence, for showing as bullets. Same text as `action`. |
-| `change` | The kind of change, when our comparison rules named it (`price_up`, `price_down`, `details`, `limits`, `added`, `removed`, `options`, …); otherwise null. |
-| `sources` | `[{url, quote}]`: where the claim came from and its visible text (HTML comments and tags removed). Every number in `action` and `why` appears in a quote, checked on every run. |
-| `competitor` | As given in the signal. |
-| `unverified` | `true` when the claim isn't from the competitor's own website. The action is then "Don't act yet". |
-| `source_kind` | Which row of the confidence table applied. |
-| `seen_at` | The signal's time in UTC. Times without a zone are read in the input's `timezone`. Items are sorted newest first. |
-| `cta` | A short call to action, present when the input sets `output.cta_required_per_item`. |
+| `id`, `source_ids` | `item-<id>` and the one input id it came from |
+| `headline` | What happened, written by rule; numbers come from the quote |
+| `action`, `steps` | What to do, and the same text split into steps. Unverified claims get "don't act yet" |
+| `why` | Why it matters for trial starts |
+| `confidence`, `unverified`, `source_kind` | From the source rule above |
+| `change` | The kind of change, when the comparison named it (live cards); otherwise null |
+| `sources` | `[{url, quote}]`: every number in the text is in a quote |
+| `competitor`, `seen_at` | As given; time in UTC, newest first |
+| `cta` | Present when the input sets `output.cta_required_per_item` |
 
-Credential-like values in the input (e.g. `config.demo_key`) are replaced with `[redacted]` wherever they would appear in the output.
+## Proof and regression testing
 
-## Keyless proof
+- **`./proof`** (no keys, no network): the brief's sample through the test interface (pr-401 links to lovable.dev/pricing; pr-402 is unverified, 0.2, don't act yet; launches and ads skipped; sg-303 not followed; demo_key not echoed; every id once; every number sourced), then every recorded real run in `fixtures/recorded/` replayed through quote check, compare and core. The recordings are real AI runs from 25–26 October with no pricing changes between them.
+- **`pytest`**: the core rules, trust, timestamps and injections; the plain and AI readers on saved real pages; comparison (including the Bolt asterisk, Lovable's "Platform fee" and crossed-out prices); the Hacker News reader; the web API, Test upload, Check now and scheduler; alerts; MCP; the interpretation rules on real and edge-case cards; and the test contract across CLI, Test upload and MCP.
+- **`tests/cases/`**: four case files (trust and scope, injections and secrets, malformed input, tricky cases), with the expected result for every id in `tests/cases/README.md`.
+- **CI** (`.github/workflows/ci.yml`) on every push: pytest, `./run` on the sample, a keyless live run from saved pages, and `./proof`.
+- **Production**: the run log records every run with its trigger, pages read or failed, changes, errors and cost.
 
-```
-./proof
-```
+## Dashboard and Focused view
 
-No keys, no network, standard library only. It checks two things and exits 1 if any check fails:
+The Base44 app reads the Render JSON API:
 
-1. The brief's sample (`fixtures/sample-cases.json`) through the test interface: `pr-401` is an item linking to `lovable.dev/pricing`; `pr-402` is unverified, low confidence, "don't act yet"; launches and ads are skipped with a reason; `sg-303`'s injected instruction has no effect; `config.demo_key` isn't echoed; every id is accounted for once; every number is in its item's sources.
-2. Every recorded real run in `fixtures/recorded/` replayed in order through the live pipeline (compare with the previous run, then the core). Each recorded plan must still be quoted word for word from its recorded page text; failed pages must be reported; ids and numbers are checked as above.
+- **Changes**: every change card, newest first, filtered by date range and company, with three counters (total, source verified, unverified) from the engine's summary. A card starts collapsed (company, change type, status if any, headline, one-line summary) and opens to what remains uncertain, what to do next, source confidence and the official link. The exact quote and Copy quote stay one click away under "View evidence". An older card that a later check superseded links to the latest one.
+- **Focused view / Hide**: any card can be hidden from Focused view; All changes (the default) still shows it, marked Hidden. Hidden cards are kept in this browser's localStorage only. They never reach the API, MCP, scans, alerts or counters.
+- **Current pricing**: every plan from the latest check as written on the page, with its link and check time. A page that failed says so; older prices are never shown as current.
+- **Run log** and **Check now** (anyone can press it; at most one run every 30 minutes).
+- **Alerts**: the live alert settings and the alert log.
+- **Test upload**: see above.
 
-The last replayed result is written to `proof-result.json`.
+The Render engine serves the same data as plain HTML admin pages (`/`, `/pricing`, `/runs`, `/alerts`, `/test`), showing the core's text.
 
-`./record` makes those recordings: one real run (fetch, then read with the AI when a key is set) saved as `fixtures/recorded/<time>.json`, holding each page's visible text, the plans read from it and what the reading cost. The committed recordings are real AI runs: two on 2026-10-25, a minute apart ($0.12 each), and one on 2026-10-26 that also reads every billing view and the pricing tables ($0.24). No pricing changed between them, so the replay shows 0 changes. Real changes will show up as recordings accumulate; planted changes are covered by `tests/test_compare.py`.
+**API.** `GET /api/changes?days=7|30|all&competitor=…&focus=…`, `GET /api/pricing`, `GET /api/runs`, `GET|POST /api/check`, `POST /api/test`, `GET|POST /api/alerts`, `GET /api/alerts/log`, and `POST /run` (needs `RUN_TOKEN` as a Bearer token).
 
-## Live run
+## Alerts and MCP
 
-Downloads the four pricing pages, in every billing view they offer (D23), and saves the raw HTML plus the visible text:
+**Alerts.** After each live run with changes, the changes that pass the filters (minimum confidence, default 0.6; companies, default all) go out as one email (Gmail SMTP or Resend) and one Slack message. Each keeps its quote and link. Alerts use the core's headline and action, not the dashboard's display steps. The settings can be changed in the app; keys stay on Render; addresses are always masked; every alert and every settings change is in the alert log. `./run` and `./proof` never send anything.
 
-```
-pip install -e ".[live]" && playwright install chromium
-python -m pricewatch.sources.fetch            # saves to data/pages/<time>/
-```
+**MCP.** The engine is an MCP server at `/mcp` (Streamable HTTP, stateless, read-only, no key). Tools: `get_changes` (the same items as `/api/changes`, including the display fields), `get_current_pricing`, `get_run_log` and `run_test` (a cases file through the core, at most 1 MB, saves and sends nothing). Add it in claude.ai under Settings › Connectors › Add custom connector, or `claude mcp add --transport http pricewatch https://pricewatch-mb2k.onrender.com/mcp`.
 
-Replit and v0 are fetched over plain HTTP. Lovable (plans built by JavaScript) and Bolt are rendered in headless Chromium, which clicks each side of their Monthly/Yearly toggle, so each becomes two page views, read and compared separately; which view a page opens on is recorded too. On Lovable it also opens each plan's credit dropdown and keeps every option as written (11 credit amounts and prices per plan, per billing period). Replit blocks headless browsers, so it stays on HTTP; its monthly price is the struck-through one beside the yearly price. A page that's blocked, times out or shows no prices is marked failed with the reason, and never replaced by older data. Crossed-out prices (`<del>`, or a `line-through` class) are kept as `~~$90~~`.
-
-`pricewatch.sources.extract.read_page` then reads each plan's name, price, crossed-out list price, billing wording and what's included. Every value is a line of the page, so it is its own word-for-word quote; a value whose quote isn't on the page is rejected, and a page with no readable plans is marked failed. It's tested on the real pages saved in `fixtures/pages/2026-10-25/`.
-
-`pricewatch.sources.ai_extract.read_page` does the same job with Claude (`claude-opus-5-5`, low effort), returning plans in the same shape. The page text is sent as data, and every plan the AI returns must pass the same word-for-word check; a plan that fails it is dropped. With no key, or when the call fails or no plan checks out, it falls back to the plain reader. Each result says which reader ran (`reader`) and what it cost (`cost_usd`); `read_pages` returns the total for `run.cost_usd`. On the saved pages it reads the same names and prices as the hand check, for about $0.12 for all four pages.
-
-The key is read from `PRICEWATCH_ANTHROPIC_API_KEY`, or `ANTHROPIC_API_KEY` if that isn't set. `PRICEWATCH_LIVE_AI=1 pytest -k live` runs the real-call test (it spends about $0.12); plain `pytest` never calls the API.
-
-### One live run
+## Live runs in detail
 
 ```
-./run --live --output result.json                 # fetch, read, compare with the last snapshot, run the core
-./run --live --pages fixtures/pages/2026-10-25 --no-ai --db /tmp/try.db --output result.json   # from saved pages, no key
+pip install -e ".[live,web]" && playwright install chromium
+./run --live --output result.json                                     # needs ANTHROPIC_API_KEY for the AI reader
+./run --live --pages fixtures/pages/2026-10-26 --no-ai --db /tmp/try.db --output result.json   # saved pages, no key
+uvicorn pricewatch.web:app                                            # the engine and admin pages
 ```
 
-Each run saves a snapshot to the store (every page's plans, or why it couldn't be read) and logs its result. The store is Postgres when `DATABASE_URL` is set, otherwise SQLite at `data/pricewatch.db` (`--db` overrides). Each run compares each page with the last snapshot where that page was read by the same reader. Every difference becomes a `pricing` signal whose source is the competitor's pricing page and whose text quotes the page before and after; the core then turns it into an item exactly as in test mode. One signal per plan for a changed price or list price (R1), one for any other change to the plan's lines on the page (billing wording, what's included) even at the same price (R2), and one for a plan added or removed. The plan's lines are its quotes, not the reader's billing/includes fields: in two real AI readings a minute apart, the AI filed the same Lovable line under billing once and under includes once, while the lines themselves only change when the page does.
+- Replit and v0 are fetched over HTTP. Lovable and Bolt are rendered in headless Chromium, which clicks each side of the Monthly/Yearly toggle and confirms the page switched, so each is two page views. Lovable's credit dropdowns are read too.
+- One signal per plan for a changed price (R1), one for any other change to the plan's page lines at the same price (R2), one for a plan added or removed, one for a changed table. A crossed-out price beside an unchanged price is a discount signal.
+- AI and plain readings are never compared with each other.
+- Hacker News claims from the last 7 days that name a competitor and state an amount next to a pricing word become unverified items, shown next to what the competitor's own page showed in the same run.
+- `./record` saves one real run into `fixtures/recorded/` for the proof. `python -m pricewatch.reprocess <started_at>` rebuilds a logged run's cards with the current comparison rules.
 
-- A page that fails is listed in `run.errors` and not compared, so it never reads as "every plan removed". Once it's back, it's compared with its last good reading.
-- AI and plain readings aren't compared with each other: the two readers pick slightly different lines for a plan (the plain reader keeps buttons, for example), which would report 15 changes that never happened on the recorded pages.
-- Tables of limits or prices on a page (Bolt's plan comparison, v0's per-model token rates) are read by the AI too, and every row is checked against the page: its label and values must be consecutive lines of the page, in column order, or the row is dropped. A changed table is one signal listing the changed rows.
-- A live run also searches Hacker News (Algolia's public search API, no key) for pricing claims about each competitor from the last 7 days: a sentence that names the competitor and states an amount or percentage next to a pricing word, quoted as written with its link. Each becomes an item labelled **unverified**, confidence 0.2, "don't act yet" (D10, D24), and is reported once. A second source quotes what the competitor's own pricing page showed in the same run, so the claim and the page sit side by side.
-- `run` also has `notes` (e.g. a page's first reading) and `pages` (per page: read or not, which reader, how many plans), alongside `cost_usd`.
+## Deployment configuration
 
-## Web app
+Render (Docker, Playwright image, Starter plan, always on) from `Dockerfile` and `render.yaml`; Postgres on Neon; the Base44 app is built and published by Base44.
 
-The marketers' app is the Base44 front end (https://brightloop-competitors-price-pulse.base44.app): Changes, Current pricing, Run log, Alerts, Test upload and Check now, reading the JSON API below. The Render app serves the same pages as plain HTML, as an admin tool if Base44 is down (D32).
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Render | Neon connection string. Without it, SQLite at `data/pricewatch.db` |
+| `ANTHROPIC_API_KEY` (or `PRICEWATCH_ANTHROPIC_API_KEY`) | Render | The AI page reader. Without it, the plain reader |
+| `RUN_TOKEN` | Render, GitHub secret | Guards `POST /run`; without it, runs and Check now are off |
+| `SCHEDULE_EVERY_HOURS` | `Dockerfile` (6) | The in-app scheduler |
+| `PRICEWATCH_INTERPRET` | Render dashboard (**on** in production; not in `render.yaml`) | The display layer and stored interpretations. Off by default |
+| `PRICEWATCH_INTERPRET_FILE` | optional | Another replay file |
+| `PRICEWATCH_MODEL`, `PRICEWATCH_INTERPRET_MODEL` | optional | Model overrides |
+| `SMTP_USER`, `SMTP_PASSWORD` or `RESEND_API_KEY`; `ALERT_EMAIL_TO`; `SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID`; `ALERT_MIN_CONFIDENCE`, `ALERT_COMPETITORS`, `ALERT_EMAIL_FROM` | Render | Alerts; each channel stays off until set |
+| `PRICEWATCH_URL`, `RUN_TOKEN` | GitHub Actions secrets | The hourly backup schedule |
 
-```
-pip install -e ".[live,web]"
-uvicorn pricewatch.web:app        # http://localhost:8000
-```
+Setup: Neon project → Render Blueprint from this repo, with the variables above → GitHub secrets for the backup schedule. Secrets live only in Render and GitHub; `.env` is git-ignored.
 
-- **Changes** (`/`): the items from recent runs, newest first, filtered by time range (last 7 days by default, 30 days or all time) and company, with three counters on top (all, verified, rumors; D30, D33) that each show the cards they count, with action, why, confidence, the unverified label and source links.
-- **Current pricing** (`/pricing`): every plan from the latest snapshot as written on the page (filter by company), with its link and check time. A page that failed on the last run says so; older prices are never shown as current (D12).
-- **Run log** (`/runs`): start time, what started it (schedule, manual Check now, backup schedule, API or command line; blank for runs from before 27 Oct), pages read or failed, changes found, errors and cost per run, plus the **Check now** button: anyone can press it, with no token, and it starts at most one run every 30 minutes (D29).
-- **Test upload** (`/test`): upload a cases.json and see what each input id led to (item or skip reason), any errors, and the items as cards, with result.json to download. Same core as `./run`; nothing is saved, so the other tabs don't change. `POST /test?format=json` returns the file directly.
+## Known limitations
 
-The same data is available as JSON for a front end hosted elsewhere (the Base44 app): `GET /api/changes?days=7|30|all&competitor=…&focus=…` (items newest first, last 7 days by default, plus the last check, any page that failed, the list of competitors and a `summary` of counts), `GET /api/pricing?competitor=…` (every page view of the latest snapshot: plans, options, tables, or why it failed) and `GET /api/runs` (each run with `details`: what it read, found and decided, as on the run log). Two endpoints let the front end act: `POST /api/check` starts Check now in the background (202; 429 within 30 minutes of the last check; 409 while one runs), `GET /api/check` says whether a run is going now (`running`, `started_at`, `trigger`) and `POST /api/test` (a `cases` file upload) runs the file through the same core as `./run` and answers with `result`, a `summary` and one `rows` entry per input id saying what it led to and why. It saves nothing. Any site may call these, as Check now and the test need no token; `POST /run` needs the run token in an `Authorization` header, which CORS doesn't let other sites send.
+1. **New changes aren't interpreted by AI.** Only 8 cards have a reviewed interpretation. New changes get rule-written next steps. Running the interpretation automatically is the next step (`docs/architecture.md`).
+2. **Alerts, the run log and the Render pages use the core's broader text.** For a plan-contents change the alert says published comparisons are "now out of date", where the dashboard says to check first.
+3. **The proof's recorded runs have no changes.** Real changes since are covered by tests over their stored cards.
+4. **The `frontend/` folder is a mirror.** Base44 builds and publishes the app; a change here takes effect only when copied into Base44 and published. The Test upload wording in this branch isn't published yet.
+5. **Test upload has no file-size limit** (MCP `run_test` has 1 MB).
+6. **Anyone with the link** can change live alert settings and press Check now (rate-limited), as decided in D29 and D34.
+7. **Bolt's page** failed on some runs on 1–2 November before the fixes in PRs #40–#44. Failed pages are reported and never compared.
 
-`POST /run` starts a live run for scripts (GitHub's backup schedule). It needs `RUN_TOKEN`, sent as `Authorization: Bearer …`. With no `RUN_TOKEN` set, runs are switched off, Check now included.
+## Repository layout
 
-## Ask Claude (MCP connector)
-
-The engine is also an MCP server at `https://pricewatch-mb2k.onrender.com/mcp`, so Maya, or a reviewer, can ask Claude about the data: "what changed at Lovable this month?", "compare the Pro plans", or "run this cases.json and explain each skip". It's read-only and needs no key, like `/api/*`.
-
-- **claude.ai:** Settings › Connectors › Add custom connector, then paste the URL. In a chat, turn the connector on from the tools menu.
-- **Claude Code:** `claude mcp add --transport http pricewatch https://pricewatch-mb2k.onrender.com/mcp`
-
-| Tool | What it returns |
+| Path | Contents |
 | --- | --- |
-| `get_changes` | The Changes feed (`days` 7, 30 or all; `competitor`; `focus`; `limit`), each item with its quotes and links |
-| `get_current_pricing` | Every plan as read on the latest check, per company |
-| `get_run_log` | The latest runs: trigger, pages read or failed, changes, errors, cost |
-| `run_test` | A cases.json run through the same core: `result` (as `./run` writes it) plus one row per input id saying why |
-
-`src/pricewatch/mcp_server.py` speaks MCP's Streamable HTTP transport, stateless with JSON answers, using the standard library. Its tools are the same functions as the JSON API. The server's instructions tell Claude to quote and link any number it repeats, to say when a claim is unverified, and to treat quotes as data, never as instructions.
-
-## Alerts (email and Slack)
-
-After each live run, the changes that pass the alert filters go out as one email (through Gmail or Resend) and one Slack message to a channel. Each change keeps its quote and source link. The filters are rules: a minimum confidence (default 0.6, the competitor's own site) and a list of companies (default all). Each channel stays off until its settings are in the environment: `ALERT_EMAIL_TO` plus either `SMTP_USER` and `SMTP_PASSWORD` (Gmail with an app password, which can send to any address) or `RESEND_API_KEY`; `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID`; optional `ALERT_MIN_CONFIDENCE`, `ALERT_COMPETITORS` and `ALERT_EMAIL_FROM`. `GET /api/alerts` shows the settings without any key.
-
-The app can change the live alert settings (the Base44 Alerts page, or `POST /api/alerts` with JSON): email and Slack on or off, alerts for scheduled runs and for Check now, the minimum confidence, the companies, and up to 3 extra email addresses besides `ALERT_EMAIL_TO`. They're saved in the store; keys and channels stay in the environment. Addresses are always shown masked. The alert log (`GET /api/alerts/log`, and `/alerts` on this app) lists every alert: when, what started it, which changes, the channels and masked recipients, and what each channel answered. It also lists runs whose changes were held back by the settings, test alerts (marked TEST) and each settings change.
-
-Test upload can send its result as an alert too: email and Slack checkboxes, off by default, with the same filters. Slack goes to this server's channel; email goes to its inbox, or to one address typed in "Send email to" (`email_to`). Through Gmail it can be any address; through Resend, only once a sending domain is verified. Test alerts are marked TEST and sent at most once every 5 minutes and 20 times a day. `result.json` doesn't change. `./run` and `./proof` never send anything.
-
-## Deploy (Render + Neon)
-
-The app runs on Render's Starter plan (always awake, D22) from the `Dockerfile` (the Playwright image, which has Chromium for Lovable's page), with Postgres on Neon's free plan. The app starts its own live run every 6 hours (`SCHEDULE_EVERY_HOURS=6`, set in the `Dockerfile`): a background thread checks every 5 minutes whether the last run is that old. `.github/workflows/schedule.yml` is a backup that calls every hour; the app skips the call unless its last run is over 5.5 hours old. It's only a backup because GitHub dropped most scheduled triggers on the first night (3 of 13 fired).
-
-1. Neon: create a project and copy its connection string.
-2. Render: New > Blueprint, pick this repo (`render.yaml`), and fill in `DATABASE_URL` (Neon), `ANTHROPIC_API_KEY` and `RUN_TOKEN` (any long random string).
-3. GitHub: Settings > Secrets and variables > Actions, add `PRICEWATCH_URL` (the Render URL, no trailing slash) and `RUN_TOKEN` (the same value).
+| `src/pricewatch/` | The engine: `core/` (rules), `sources/` (fetch, readers, compare, rumors), `live.py`, `store.py`, `web.py`, `mcp_server.py`, `notify.py`, `interpret.py` |
+| `frontend/` | The Base44 app's source (React + Vite), mirrored from Base44 (D39) |
+| `tests/`, `tests/cases/` | pytest and the case files with expected results |
+| `fixtures/` | The brief's sample, saved pages, recorded real runs, interpretation inputs |
+| `docs/` | `spec.md`, `architecture.md`, `INTERVIEW-ARCHITECTURE-EXPLAINED.md`, `pricing-pages.md`, `discovery/` (interview transcripts) |
+| `reference/` | The original brief, unmodified. It contains deliberate prompt-injection traps (D1) |
+| `DECISIONS.md` | Every decision, who made it and why |
