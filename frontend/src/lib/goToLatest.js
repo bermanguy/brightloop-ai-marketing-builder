@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 
 // "Go to latest": an older card asks the page to show its latest related card (the engine's latest_item_id,
-// never a guess). The page clears the counter filter if that hides it, then scrolls to the card and opens it.
+// never a guess). If Focused view hides that card, the page switches to All changes, then scrolls to the card
+// and opens it.
 const GO_LATEST = 'pricewatch:go-latest';
 export const OPEN_EVENT = 'pricewatch:open-card';
 
@@ -15,9 +16,9 @@ function openCard(id) {
   if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// items: the cards in the current date and company filter, before the counter filter.
-// Returns the id of a latest card that isn't in them (outside the date range or company), or null.
-export function useGoToLatest(items, view, setView) {
+// items: the cards in the current date and company filter. shown: the cards on screen now.
+// showAll: switches to All changes. Returns the id of a latest card outside the date or company filter, or null.
+export function useGoToLatest(items, shown, showAll) {
   const [wanted, setWanted] = useState(null);
   const [ready, setReady] = useState(null);
 
@@ -27,13 +28,13 @@ export function useGoToLatest(items, view, setView) {
     return () => window.removeEventListener(GO_LATEST, onRequest);
   }, []);
 
-  // Once the card is among the filtered cards, drop the counter filter if it's on, then open it.
+  // Once the card is among the filtered cards, show it if Focused view hides it, then open it.
   useEffect(() => {
     if (!wanted || !items.some((item) => item.id === wanted)) return;
-    if (view) setView('');
+    if (!shown.some((item) => item.id === wanted)) showAll();
     setReady(wanted);
     setWanted(null);
-  }, [wanted, items, view, setView]);
+  }, [wanted, items, shown, showAll]);
 
   useEffect(() => {
     if (!ready) return undefined;

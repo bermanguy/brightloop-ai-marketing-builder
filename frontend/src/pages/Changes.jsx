@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { fetchChanges } from '@/api/pricewatch';
 import { readPreviousVisit } from '@/lib/lastVisit';
 import HowItWorks from '@/components/changes/HowItWorks';
 import FilterBar from '@/components/changes/FilterBar';
-import StatTiles from '@/components/changes/StatTiles';
-import ActionTiles from '@/components/changes/ActionTiles';
-import { actionGroup } from '@/lib/actionGroups';
+import SummaryCounters from '@/components/changes/SummaryCounters';
+import FeedViewSelector from '@/components/changes/FeedViewSelector';
+import HiddenCards from '@/components/changes/HiddenCards';
 import { useGoToLatest } from '@/lib/goToLatest';
+import { readFeedView, saveFeedView, useHiddenIds } from '@/lib/hidden';
 import ChangeFeed from '@/components/changes/ChangeFeed';
 import ChangesSkeleton from '@/components/changes/ChangesSkeleton';
 import ErrorState from '@/components/ErrorState';
@@ -20,8 +21,7 @@ const RANGE_LABELS = {
 export default function Changes() {
   const [days, setDays] = useState('7');
   const [competitor, setCompetitor] = useState('');
-  const [focus, setFocus] = useState('');
-  const [view, setView] = useState('');
+  const [feedView, setFeedViewState] = useState(() => readFeedView());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +33,7 @@ export default function Changes() {
     setLoading(true);
     setError(null);
 
-    fetchChanges({ days, competitor, focus })
+    fetchChanges({ days, competitor })
       .then((result) => {
         if (cancelled) return;
         setData(result);
@@ -48,14 +48,20 @@ export default function Changes() {
     return () => {
       cancelled = true;
     };
-  }, [days, competitor, focus, reloadKey]);
+  }, [days, competitor, reloadKey]);
 
   const summary = data?.summary;
   const items = data?.items || [];
-  // With interpretations on, the counters are about what to do; without them, the original counters are shown.
-  const interpreted = items.some((item) => item.interpretation);
-  const shown = interpreted && view ? items.filter((item) => actionGroup(item) === view) : items;
-  const { outsideFilter, dismiss } = useGoToLatest(items, view, setView);
+  // Focused view leaves out the cards hidden in this browser; All changes shows every card.
+  const hiddenIds = useHiddenIds();
+  const hiddenItems = items.filter((item) => hiddenIds.has(item.id));
+  const shown = feedView === 'focused' ? items.filter((item) => !hiddenIds.has(item.id)) : items;
+  const setFeedView = useCallback((value) => {
+    setFeedViewState(value);
+    saveFeedView(value);
+  }, []);
+  const showAll = useCallback(() => setFeedView('all'), [setFeedView]);
+  const { outsideFilter, dismiss } = useGoToLatest(items, shown, showAll);
   const companyLabel = competitor || 'all companies';
   const summaryLine = summary
     ? `${summary.total} ${summary.total === 1 ? 'change' : 'changes'} · ${
@@ -85,17 +91,8 @@ export default function Changes() {
         <ErrorState message={error} onRetry={() => setReloadKey((key) => key + 1)} />
       ) : (
         <div className="space-y-6">
-          {interpreted ? (
-            <ActionTiles items={items} view={view} onSelectView={setView} />
-          ) : (
-            <StatTiles
-              summary={data?.summary}
-              focus={focus}
-              competitor={competitor}
-              onSelectFocus={setFocus}
-              onSelectCompetitor={setCompetitor}
-            />
-          )}
+          <SummaryCounters total={summary?.total} verified={summary?.verified} unverified={summary?.unverified} />
+          <FeedViewSelector view={feedView} onChange={setFeedView} total={items.length} hiddenCount={hiddenItems.length} />
           {outsideFilter ? (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700">
               <span>The latest card about this is outside the current date range.</span>
@@ -110,6 +107,7 @@ export default function Changes() {
             </div>
           ) : null}
           <ChangeFeed items={shown} previousVisit={previousVisit} />
+          <HiddenCards items={hiddenItems} hiddenTotal={hiddenIds.size} />
         </div>
       )}
     </div>

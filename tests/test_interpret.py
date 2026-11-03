@@ -275,7 +275,7 @@ def test_a_failed_call_leaves_the_card_as_it_is():
     assert cards[0]["interpretation"] is None and cards[0]["category"] == "packaging"
 
 
-ANNOTATED = ("category", "category_label", "interpretation", "display_headline", "latest_item_id")
+ANNOTATED = ("category", "category_label", "interpretation", "display_headline", "display_steps", "latest_item_id")
 
 
 def test_annotate_adds_its_fields_and_changes_nothing_else():
@@ -423,3 +423,50 @@ def test_older_cards_link_to_the_latest_card_about_the_same_line_only():
                            "item-live-lovable-monthly-free-details-20261030100003",
                            "item-live-lovable-yearly-enterprise-price-20261030215502",
                            "item-live-lovable-yearly-enterprise-price-20261030155726"}
+
+
+# Next steps for cards without an interpretation (D43): rules over what the page changed, on the 3 Nov 18:46 check.
+
+LATE = {i["id"]: i for i in load("live-items-2026-11-03-late.json")["items"]}
+OVERSTATED = ("discontinu", "now requires", "cut", "cheaper", "removed the feature", "no longer offers", "a/b")
+
+
+def test_new_cards_get_steps_that_name_the_competitor_plan_and_line():
+    core = interpret.display_steps(LATE["item-live-replit-core-details-20261103184729"])
+    assert core[0] == ('Check whether Replit reworded or moved its Core plan description "For personal projects and simple '
+                       'apps." at https://replit.com/pricing before updating any competitor comparisons.')
+    assert core[1].startswith("If Replit's positioning of its Core plan really changed")  # conditional, second only
+    pro = interpret.display_steps(LATE["item-live-replit-pro-details-20261103184729"])
+    assert '"For commercial and professional builds."' in pro[0] and "Pro plan" in pro[0]
+    free = interpret.display_steps(LATE["item-live-bolt-free-details-20261103184717"])
+    assert free == ["Review the changed lines on Bolt's Free plan at https://bolt.new/pricing to see whether plan limits "
+                    "changed or only the presentation. Update comparisons only after confirming what the plan includes."]
+    mark = interpret.display_steps(BOLT)
+    assert mark == ["Check https://bolt.new/pricing for what the removed asterisk next to Bolt's Pro price referred to. "
+                    "Confirm whether its pricing terms changed before updating pricing comparisons."]
+    feature = interpret.display_steps(_by_id("item-live-replit-core-details-20261028214846"))
+    assert '"Plan mode"' in feature[0] and "don't describe it as removed" in feature[0]
+
+
+def test_display_steps_never_overstate_or_show_a_figure_not_in_the_sources():
+    for item in [*LATE.values(), *LIVE]:
+        steps = interpret.display_steps(item) or []
+        assert len(steps) <= 2
+        sources = " ".join(s["quote"] + " " + s["url"] for s in item["sources"])
+        for step in steps:
+            assert not any(w in step.lower() for w in OVERSTATED)
+            assert set(numbers_in(step)) <= set(numbers_in(sources))
+            assert "brightloop" not in step.lower()  # never Brightloop's own figures or data
+    assert interpret.display_steps(EDGE["item-hn-edge-rumor"]) is None
+    assert interpret.display_steps(_by_id("item-live-lovable-yearly-pro-discount-20261029034525")) is None  # keeps its own
+
+
+def test_annotate_sets_display_steps_only_without_an_interpretation_and_names_a_readable_line():
+    out = {i["id"]: i for i in interpret.annotate([*LATE.values(), *LIVE], interpret.load())}
+    for item in out.values():
+        if item["interpretation"]:
+            assert item["display_steps"] is None
+    assert out["item-live-replit-core-details-20261103184729"]["display_steps"]
+    assert out["item-live-bolt-pro-details-20261103184717"]["display_headline"] == (
+        'Bolt changed several lines on the Pro plan on its pricing page, including "Everything in Free, plus real app '
+        'capacity and your own domain."')

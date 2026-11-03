@@ -581,45 +581,117 @@ def _plan_label(item):
     return f"{plan} ({views.pop()})" if len(views) == 1 and "" not in views else plan
 
 
-def display_headline(item):
-    """What changed on the page, said plainly, or None to keep the stored headline. Never says the offer changed."""
+def _shape(item):
+    """What the page itself changed, as (kind, details), or None when the rules can't say. Rules over the verified
+    quote only: kinds are moved_to_line, moved_to_price, mark, cosmetic, several, removed and added."""
     if item.get("unverified") or item.get("source_kind") != "own_pricing_page" or not item.get("sources"):
         return None
     if item.get("change") not in (*SENT, "price", None):
         return None  # discounts, billing views and price moves already say what changed
-    c, label, quote = item.get("competitor") or "The competitor", _plan_label(item), _quote(item)
+    label, quote = _plan_label(item), _quote(item)
     if not label:
         return None
-    text = None
     if item.get("change") == "price":
         if match := NO_PRICE_NOW.search(quote):
-            text = f'On the {label}, {c} moved "{match.group(1)}" from the price to a plan line.'
-        elif match := PRICE_NOW.search(quote):
-            text = f'On the {label}, {c} moved "{match.group(1)}" from a plan line to the price.'
-    else:
-        lines = lines_of(item)
-        marks, reworded = _marks(lines), _reworded(lines)
-        marked = {old for old, _, _ in marks}
-        gone = [line for line in lines["removed"] if line not in marked and line not in {o for o, _ in reworded}]
-        new = [line for line in lines["added"] if line not in {n for _, n, _ in marks} and line not in {n for _, n in reworded}]
-        if marks and not gone and not new:
-            mark = marks[0][2]
-            text = f"{c} removed {MARK_NAMES.get(mark, f'the \"{mark}\"')} from the {label}'s displayed price."
-        elif not lines["added"] and not lines["removed"] and lines["case_or_spacing_only"]:
-            text = f"{c} changed only the letter case or spacing of a line on the {label}."
-        elif gone and len(gone) + len(new) + len(reworded) >= 3:
-            text = f'{c} changed several lines on the {label} on its pricing page, including "{gone[0]}".'
-        elif gone:
-            more = " and other lines" if len(gone) > 1 else ""
-            text = f'{c} removed "{gone[0]}"{more} from the {label} on its pricing page' + (
-                (", and added a new line." if len(new) == 1 else ", and added new lines.") if new else ".")
-        elif new:
-            more = " and other lines" if len(new) > 1 or lines["truncated"] else ""
-            text = f'{c} added "{new[0]}"{more} to the {label} on its pricing page.'
-    if not text:
+            return "moved_to_line", {"label": label, "line": match.group(1)}
+        if match := PRICE_NOW.search(quote):
+            return "moved_to_price", {"label": label, "line": match.group(1)}
         return None
+    lines = lines_of(item)
+    marks, reworded = _marks(lines), _reworded(lines)
+    marked = {old for old, _, _ in marks}
+    gone = [line for line in lines["removed"] if line not in marked and line not in {o for o, _ in reworded}]
+    new = [line for line in lines["added"] if line not in {n for _, n, _ in marks} and line not in {n for _, n in reworded}]
+    found = {"label": label, "gone": gone, "new": new, "truncated": lines["truncated"]}
+    if marks and not gone and not new:
+        return "mark", dict(found, mark=marks[0][2])
+    if not lines["added"] and not lines["removed"] and lines["case_or_spacing_only"]:
+        return "cosmetic", found
+    if gone and len(gone) + len(new) + len(reworded) >= 3:
+        return "several", found
+    if gone:
+        return "removed", found
+    if new:
+        return "added", found
+    return None
+
+
+def _grounded(text, item):
+    """The text, or None if it shows a figure that isn't in the card's sources (no link, no number)."""
     sources = " ".join(f"{s.get('quote', '')} {s.get('url', '')}" for s in item["sources"])
-    return text if set(numbers_in(text)) <= set(numbers_in(sources)) else None
+    return text if text and set(numbers_in(text)) <= set(numbers_in(sources)) else None
+
+
+def display_headline(item):
+    """What changed on the page, said plainly, or None to keep the stored headline. Never says the offer changed."""
+    shape = _shape(item)
+    if not shape:
+        return None
+    kind, d = shape
+    c, label = item.get("competitor") or "The competitor", d["label"]
+    if kind == "moved_to_line":
+        text = f'On the {label}, {c} moved "{d["line"]}" from the price to a plan line.'
+    elif kind == "moved_to_price":
+        text = f'On the {label}, {c} moved "{d["line"]}" from a plan line to the price.'
+    elif kind == "mark":
+        text = f"{c} removed {MARK_NAMES.get(d['mark'], f'the \"{d['mark']}\"')} from the {label}'s displayed price."
+    elif kind == "cosmetic":
+        text = f"{c} changed only the letter case or spacing of a line on the {label}."
+    elif kind == "several":
+        # Name a line that reads as words ("Everything in Free, plus ..."), not a badge or a split price.
+        named = next((line for line in d["gone"] if len(line.split()) >= 3), d["gone"][0])
+        text = f'{c} changed several lines on the {label} on its pricing page, including "{named}".'
+    elif kind == "removed":
+        more = " and other lines" if len(d["gone"]) > 1 else ""
+        text = f'{c} removed "{d["gone"][0]}"{more} from the {label} on its pricing page' + (
+            (", and added a new line." if len(d["new"]) == 1 else ", and added new lines.") if d["new"] else ".")
+    else:
+        more = " and other lines" if len(d["new"]) > 1 or d["truncated"] else ""
+        text = f'{c} added "{d["new"][0]}"{more} to the {label} on its pricing page.'
+    return _grounded(text.replace('.".', '."'), item)  # a quoted sentence already ends the headline
+
+
+def _is_description(line):
+    """A plan's one-sentence description ("For personal projects and simple apps."), not a feature line."""
+    return line.rstrip().endswith(".") and len(line.split()) >= 4
+
+
+def display_steps(item):
+    """Next steps for a card the replayed interpretation doesn't cover (D43): rules over what the page itself
+    changed, naming the competitor, the plan and the line. They ask Maya to check before anyone acts: a missing
+    line is never called a removed feature, and a mark or layout change never a new price or signup rule.
+    A second step is added only for a plan description, and only as a condition. None keeps the card's own steps."""
+    shape = _shape(item)
+    if not shape:
+        return None
+    kind, d = shape
+    c, label, url = item.get("competitor") or "the competitor", d["label"], item["sources"][0].get("url") or ""
+    plan = _plan(item) or "this"
+    if kind in ("moved_to_line", "moved_to_price"):
+        steps = [f'Check how {c} now presents "{d["line"]}" on its {label} at {url} before quoting that plan\'s '
+                 "price in any comparison."]
+    elif kind == "mark":
+        name = MARK_NAMES.get(d["mark"], f'the "{d["mark"]}"').removeprefix("an ").removeprefix("a ")
+        steps = [f"Check {url} for what the removed {name} next to {c}'s {plan} price referred to. Confirm whether "
+                 "its pricing terms changed before updating pricing comparisons."]
+    elif kind == "cosmetic":
+        steps = [f"Nothing to do: only letter case or spacing changed on {c}'s {plan} plan."]
+    elif kind == "several":
+        steps = [f"Review the changed lines on {c}'s {label} at {url} to see whether plan limits changed or only the "
+                 "presentation. Update comparisons only after confirming what the plan includes."]
+    elif kind == "removed" and all(_is_description(line) for line in d["gone"]):
+        steps = [f'Check whether {c} reworded or moved its {plan} plan description "{d["gone"][0]}" at {url} before '
+                 "updating any competitor comparisons.",
+                 f"If {c}'s positioning of its {plan} plan really changed, review how our messaging compares."]
+    elif kind == "removed":
+        one = len(d["gone"]) == 1
+        steps = [f"Check {c}'s other plans at {url} for {_listing(d['gone'])}. Until it's clear whether "
+                 f"{'it' if one else 'they'} moved or went, don't describe {'it' if one else 'them'} as removed."]
+    else:
+        steps = [f'Check what "{d["new"][0]}" on {c}\'s {label} means for customers at {url} before quoting it in '
+                 "comparisons."]
+    steps = [_grounded(step, item) for step in steps]
+    return steps if all(steps) else None
 
 
 def latest_of(items):
@@ -644,7 +716,8 @@ def latest_of(items):
 
 def annotate(items, stored):
     """Copies of the cards with `category`, `category_label` and `interpretation` (None when there's none:
-    the card is shown as before), plus `display_headline` and `latest_item_id` (None when there's none).
+    the card is shown as before), plus `display_headline`, `display_steps` and `latest_item_id` (None when
+    there's none). `display_steps` is only set on cards without an interpretation.
     The cards' own fields are never changed."""
     later = latest_of(items)
     out = []
@@ -652,7 +725,9 @@ def annotate(items, stored):
         found = stored.get(item.get("id")) if eligible(item) else None
         category = found["category"] if found else rule_category(item)
         out.append(dict(item, category=category, category_label=CATEGORIES[category], interpretation=found,
-                        display_headline=display_headline(item), latest_item_id=later.get(item.get("id"))))
+                        display_headline=display_headline(item),
+                        display_steps=None if found else display_steps(item),
+                        latest_item_id=later.get(item.get("id"))))
     return out
 
 

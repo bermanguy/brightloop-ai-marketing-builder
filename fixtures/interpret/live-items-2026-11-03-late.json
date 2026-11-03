@@ -1,0 +1,155 @@
+{
+ "source": "MCP get_changes, live API 3 Nov 2026 19:31 UTC (the 18:46 check); the Enterprise quote is cut as the API served it",
+ "items": [
+  {
+   "id": "item-live-replit-core-details-20261103184729",
+   "source_ids": [
+    "live-replit-core-details-20261103184729"
+   ],
+   "confidence": 0.9,
+   "headline": "Replit changed what its Core plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Replit's Core plan includes is now out of date: read the change above and update it. If Replit now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Replit's Core plan includes is now out of date: read the change above and update it.",
+    "If Replit now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Replit",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://replit.com/pricing",
+     "quote": "Core plan no longer shows \"For personal projects and simple apps.\" (since 2026-11-03T12:49:36Z)."
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:29Z"
+  },
+  {
+   "id": "item-live-replit-pro-details-20261103184729",
+   "source_ids": [
+    "live-replit-pro-details-20261103184729"
+   ],
+   "confidence": 0.9,
+   "headline": "Replit changed what its Pro plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Replit's Pro plan includes is now out of date: read the change above and update it. If Replit now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Replit's Pro plan includes is now out of date: read the change above and update it.",
+    "If Replit now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Replit",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://replit.com/pricing",
+     "quote": "Pro plan no longer shows \"For commercial and professional builds.\" (since 2026-11-03T12:49:36Z)."
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:29Z"
+  },
+  {
+   "id": "item-live-bolt-free-details-20261103184717",
+   "source_ids": [
+    "live-bolt-free-details-20261103184717"
+   ],
+   "confidence": 0.9,
+   "headline": "Bolt changed what its Free plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Bolt's Free plan includes is now out of date: read the change above and update it. If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Bolt's Free plan includes is now out of date: read the change above and update it.",
+    "If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Bolt",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://bolt.new/pricing",
+     "quote": "Free plan (Monthly view) now shows \"$0\"; \"/month\"; \"300K tokens daily limit\"; \"1M tokens per month\" and 2 more and no longer shows \"$0/month\"; \"Try Bolt with daily limits. No credit card.\"; \"1M tokens/month to try Bolt\" (since 2026-11-03T12:49:23Z). Free plan (Yearly view) now shows \"$0\"; \"/month\"; \"300K tokens daily limit\"; \"1M tokens per month\" and 2 more and no longer shows \"$0/month\"; \"Try Bolt with daily limits. No credit card.\"; \"1M tokens/month to try Bolt\" (since 2026-11-03T12:49:23Z)."
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:17Z"
+  },
+  {
+   "id": "item-live-bolt-pro-details-20261103184717",
+   "source_ids": [
+    "live-bolt-pro-details-20261103184717"
+   ],
+   "confidence": 0.9,
+   "headline": "Bolt changed what its Pro plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Bolt's Pro plan includes is now out of date: read the change above and update it. If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Bolt's Pro plan includes is now out of date: read the change above and update it.",
+    "If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Bolt",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://bolt.new/pricing",
+     "quote": "Pro plan (Monthly view) now shows \"Pro\"; \"$25\"; \"/month\"; \"Public and private projects\" and 11 more and no longer shows \"MOST POPULARPro\"; \"$25/month\"; \"Everything in Free, plus real app capacity and your own domain.\"; \"Your own domain, no Bolt branding\" and 3 more (since 2026-11-03T12:49:23Z). Pro plan (Yearly view) now shows \"Pro\"; \"$18\"; \"/month\"; \"Public and private projects\" and 11 more and no longer shows \"MOST POPULARPro\"; \"$18/month\"; \"Everything in Free, plus real app capacity and your own domain.\"; \"Your own domain, no Bolt branding\" and 3 more (since 2026-11-03T12:49:23Z)."
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:17Z"
+  },
+  {
+   "id": "item-live-bolt-teams-details-20261103184717",
+   "source_ids": [
+    "live-bolt-teams-details-20261103184717"
+   ],
+   "confidence": 0.9,
+   "headline": "Bolt changed what its Teams plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Bolt's Teams plan includes is now out of date: read the change above and update it. If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Bolt's Teams plan includes is now out of date: read the change above and update it.",
+    "If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Bolt",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://bolt.new/pricing",
+     "quote": "Teams plan (Monthly view) now shows \"TeamsPopular\"; \"$30\"; \"/month\" and no longer shows \"Teams\"; \"$30/month\"; \"Everything in Pro, plus shared capacity and team controls for collaboration.\"; \"Best for small teams.\" and 1 more (since 2026-11-03T12:49:23Z). Teams plan (Yearly view) now shows \"TeamsPopular\"; \"$27\"; \"/month\"; \"Billed annually\" and no longer shows \"Teams\"; \"$27/month\"; \"Per member, billed annually\"; \"Everything in Pro, plus shared capacity and team controls for collaboration.\" and 2 more (since 2026-11-03T12:49:23Z)."
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:17Z"
+  },
+  {
+   "id": "item-live-bolt-enterprise-details-20261103184717",
+   "source_ids": [
+    "live-bolt-enterprise-details-20261103184717"
+   ],
+   "confidence": 0.9,
+   "headline": "Bolt changed what its Enterprise plan includes, at the same price.",
+   "action": "Anything we publish that quotes what Bolt's Enterprise plan includes is now out of date: read the change above and update it. If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign.",
+   "steps": [
+    "Anything we publish that quotes what Bolt's Enterprise plan includes is now out of date: read the change above and update it.",
+    "If Bolt now gives less for the same price, decide with whoever owns our pricing whether to point that out in this week's trial-start campaign."
+   ],
+   "why": "Prospects compare what each plan includes, not only the price.",
+   "competitor": "Bolt",
+   "unverified": false,
+   "source_kind": "own_pricing_page",
+   "change": "details",
+   "sources": [
+    {
+     "url": "https://bolt.new/pricing",
+     "quote": "Enterprise plan (Monthly view) now shows \"Advanced security (SSO, audit logs, compliance support)\"; \"Granular admin controls & user provisioning\"; \"Dedicated account manager & 24/7 priority support\"; \"Custom workflows, integrations & SLAs\" and 3 more and no longer shows \"Custom annual contract, billed by consumption\"; \"Everything in Teams, built for scale, security, and compliance.\"; \"Get advanced security, compliance, and 24/7 support. Customized to your team's exact needs.\"; \"SOC 2 Type II, SSO, and data governance\" and 3 more (since 2026-11-03T12:49:23Z). Enterprise plan (Yearly view) now …"
+    }
+   ],
+   "seen_at": "2026-11-03T18:47:17Z"
+  }
+ ]
+}
