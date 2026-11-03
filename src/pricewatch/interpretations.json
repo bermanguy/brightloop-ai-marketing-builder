@@ -32,6 +32,10 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "changed_back_and_forth",
     "potential_impact_area": "signup_conversion",
+    "status": "needs_investigation",
+    "status_label": "Needs investigation",
+    "status_detail": "Did Lovable change its signup requirements, or only show and hide \"No credit card needed\" on its pricing page?",
+    "question": "Did Lovable change its signup requirements, or only show and hide \"No credit card needed\" on its pricing page?",
     "observation": {
      "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
      "related_item_ids": [
@@ -42,21 +46,22 @@
     },
     "actions": [
      {
-      "id": "confirm_next_check",
-      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
+      "id": "check_signup_flow",
+      "text": "Check whether what \"No credit card needed\" says still holds by starting a signup on Lovable from https://lovable.dev/pricing. That tells us whether Lovable changed its signup requirements or only the wording on its pricing page."
      },
      {
       "id": "messaging_investigation",
-      "text": "If what \"No credit card needed\" says is also true of our offer, consider whether saying it near our signup call to action is worth testing, measured on trial starts. This doesn't show that Lovable is running a test or that its signup requirements changed."
+      "text": "If what \"No credit card needed\" says is also true of our offer, consider testing that line near our signup call to action, measured on trial starts. This rests on our own offer, not on why Lovable shows or hides the line."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
-     "newest card of a line that came and went: a conditional messaging investigation, chosen by rule",
+     "newest card of a line that came and went: check the signup, then a conditional messaging investigation, chosen by rule",
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
     ]
    },
@@ -91,17 +96,22 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "meaning_of_mark_unknown",
     "potential_impact_area": "competitive_positioning",
+    "status": "needs_investigation",
+    "status_label": "Needs investigation",
+    "status_detail": "The figures are the same; only the \"*\" is gone. Did removing it change Bolt's Pro pricing terms, or was it a formatting update?",
+    "question": "The figures are the same; only the \"*\" is gone. Did removing it change Bolt's Pro pricing terms, or was it a formatting update?",
     "observation": null,
     "actions": [
      {
       "id": "check_removed_mark",
-      "text": "Before acting, open https://bolt.new/pricing and check what the removed mark referred to (usually a footnote). Until then, treat this as unconfirmed."
+      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Pro price pointed to (usually a footnote). If it set terms on that price, check whether they still apply before changing anything we publish that quotes it."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_competitive_positioning, update_competitor_references)"
     ]
@@ -137,17 +147,22 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "meaning_of_mark_unknown",
     "potential_impact_area": "competitive_positioning",
+    "status": "needs_investigation",
+    "status_label": "Needs investigation",
+    "status_detail": "The figures are the same; only the \"*\" is gone. Did removing it change Bolt's Teams pricing terms, or was it a formatting update?",
+    "question": "The figures are the same; only the \"*\" is gone. Did removing it change Bolt's Teams pricing terms, or was it a formatting update?",
     "observation": null,
     "actions": [
      {
       "id": "check_removed_mark",
-      "text": "Before acting, open https://bolt.new/pricing and check what the removed mark referred to (usually a footnote). Until then, treat this as unconfirmed."
+      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Teams price pointed to (usually a footnote). If it set terms on that price, check whether they still apply before changing anything we publish that quotes it."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_competitive_positioning, update_competitor_references)"
     ]
@@ -182,6 +197,10 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "changed_back_and_forth",
     "potential_impact_area": "signup_conversion",
+    "status": "changed_again",
+    "status_label": "Changed again since",
+    "status_detail": "Lovable's Free plan has changed \"No credit card needed\" again since this check, so this card is history.",
+    "question": null,
     "observation": {
      "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
      "related_item_ids": [
@@ -192,20 +211,18 @@
     },
     "actions": [
      {
-      "id": "confirm_next_check",
-      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
-     },
-     {
-      "id": "verify_on_page",
-      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+      "id": "see_newest_card",
+      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "an older card of a line that came and went: pointed to the newest card, by rule",
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
     ]
    },
@@ -239,6 +256,10 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "changed_back_and_forth",
     "potential_impact_area": "signup_conversion",
+    "status": "changed_again",
+    "status_label": "Changed again since",
+    "status_detail": "Lovable's Free plan has changed \"No credit card needed\" again since this check, so this card is history.",
+    "question": null,
     "observation": {
      "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
      "related_item_ids": [
@@ -249,20 +270,18 @@
     },
     "actions": [
      {
-      "id": "confirm_next_check",
-      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
-     },
-     {
-      "id": "verify_on_page",
-      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+      "id": "see_newest_card",
+      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "an older card of a line that came and went: pointed to the newest card, by rule",
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
     ]
    },
@@ -296,6 +315,10 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "changed_back_and_forth",
     "potential_impact_area": "signup_conversion",
+    "status": "changed_again",
+    "status_label": "Changed again since",
+    "status_detail": "Lovable's Free plan has changed \"No credit card needed\" again since this check, so this card is history.",
+    "question": null,
     "observation": {
      "text": "Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\" and then stopped showing it, more than once. This is what the pricing page showed; it doesn't say why.",
      "related_item_ids": [
@@ -306,20 +329,18 @@
     },
     "actions": [
      {
-      "id": "confirm_next_check",
-      "text": "Wait for the next scheduled check to see whether the line is still there before drawing conclusions."
-     },
-     {
-      "id": "verify_on_page",
-      "text": "Before acting, open https://lovable.dev/pricing and confirm what this change means for customers. Until then, treat its business meaning as unconfirmed."
+      "id": "see_newest_card",
+      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "a quoted line has come and gone on this plan across checks, so the meaning is treated as ambiguous",
+     "an older card of a line that came and went: pointed to the newest card, by rule",
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_signup_friction)"
     ]
    },
@@ -353,17 +374,22 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "mixed_changes",
     "potential_impact_area": "unknown",
+    "status": "needs_investigation",
+    "status_label": "Needs investigation",
+    "status_detail": "Was \"Plan mode\" removed from Replit's Core plan, moved to another plan, or reworded?",
+    "question": "Was \"Plan mode\" removed from Replit's Core plan, moved to another plan, or reworded?",
     "observation": null,
     "actions": [
      {
       "id": "check_moved_or_removed",
-      "text": "Check whether Replit moved what this plan no longer lists to another plan or removed it from its offering, before updating anything we publish that lists what the plan includes. A line missing from one pricing card doesn't by itself mean it was discontinued."
+      "text": "Check Replit's other plans at https://replit.com/pricing for \"Plan mode\". Listed elsewhere means moved; not listed anywhere means possibly removed, which Replit's own announcements could confirm. Until then, don't describe it as discontinued."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_plan_differentiation)"
     ]
@@ -399,17 +425,22 @@
     "interpretation_status": "ambiguous",
     "ambiguity_reason": "mixed_changes",
     "potential_impact_area": "paid_conversion",
+    "status": "needs_investigation",
+    "status_label": "Needs investigation",
+    "status_detail": "Were \"10 parallel agents\" and \"Invite up to 50 viewers\" removed from Replit's Pro plan, moved to another plan, or reworded? One line may only have been shortened: \"Even more Free Mode usage to chat and create\" is now \"Even more Free Mode usage\".",
+    "question": "Were \"10 parallel agents\" and \"Invite up to 50 viewers\" removed from Replit's Pro plan, moved to another plan, or reworded? One line may only have been shortened: \"Even more Free Mode usage to chat and create\" is now \"Even more Free Mode usage\".",
     "observation": null,
     "actions": [
      {
       "id": "check_moved_or_removed",
-      "text": "Check whether Replit moved what this plan no longer lists to another plan or removed it from its offering, before updating anything we publish that lists what the plan includes. A line missing from one pricing card doesn't by itself mean it was discontinued."
+      "text": "Check Replit's other plans at https://replit.com/pricing for \"10 parallel agents\" and \"Invite up to 50 viewers\". Listed elsewhere means moved; not listed anywhere means possibly removed, which Replit's own announcements could confirm. Until then, don't describe them as discontinued."
      }
     ],
     "hypothesis": {
      "id": "not_enough_evidence",
      "text": "There isn't enough evidence yet to say what this means for trial starts."
     },
+    "impact": null,
     "policy": [
      "ambiguous meaning: verification-only actions chosen by rule (the model picked review_plan_differentiation, update_competitor_references)"
     ]

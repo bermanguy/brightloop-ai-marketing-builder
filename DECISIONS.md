@@ -309,6 +309,14 @@ Price and billing-view changes keep their category by rule and aren't sent; rumo
 
 **Updated 2026-11-03 (Claude → Guy, Option B from the analysis of the 10 real cards, with Guy's refinements).** Code gives the model each card's added and removed page lines, setting aside only pairs that differ in letter case or spacing; removed words, numbers, symbols, limits and conditions stay changes, and the verified quote is still sent. A line that came and went on the same plan across checks is shown as a verified observation; its meaning stays ambiguous, and the newest such card may carry a conditional messaging investigation that says it doesn't show a test or a changed signup requirement. A plan's lines no longer listed get "check whether it moved to another plan or left the offering", never "discontinued". Old cards stored before kinds of change existed aren't sent. All earlier checks stay.
 
+### D41 — One card for every change, and statuses Maya can read · 2026-11-03 · [Guy, implemented by Claude]
+
+**Decision.** Every change card uses one component. It starts collapsed (headline, category, source status, one-line summary) and opens with "View analysis", in this order: what the page shows with the official link, history across checks, what we don't know yet, what to do next, and impact only when there is one. Cards without an interpretation keep their rule-written steps and "why it matters". "Verified" reads "Source verified". The interpretation's status is set by rules: Needs investigation, Change confirmed (only when the reading is sufficient and shows more or less for customers on pricing, packaging or signup, so the model's own "sufficient" alone isn't enough), Page change only, No action needed (only letter case or spacing changed), and Changed again since (older cards of a line that came and went). Each ambiguous reading gets one open question, filled in from the card's own lines. Rule-chosen actions now name the plan and the lines, and generic "not enough evidence" hypotheses are no longer shown.
+
+**Why (Guy).** Maya should be able to scan the feed in seconds and tell what changed on the page (level 1) from whether the offer changed (level 2) and what that could mean for Brightloop (level 3), with the uncertainty stated once and "What to do next" as the main section.
+
+**Unchanged.** The model's prompt and recorded answers; the replay's interpretations were re-run through the rules without a model call. Detection, verification, confidence, alerts, runs, the flag and its fallback.
+
 ---
 
 ## Open questions

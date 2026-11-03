@@ -73,7 +73,7 @@ def test_flag_on_only_adds_three_fields_and_never_writes(client, monkeypatch):
     assert bolt["interpretation_status"] == "ambiguous" and bolt["actions"][0]["id"] == "check_removed_mark"
     lovable = by_id["item-live-lovable-yearly-free-details-20261103005623"]["interpretation"]
     assert lovable["observation"]["text"].startswith("Across recent checks") and lovable["interpretation_status"] == "ambiguous"
-    assert [a["id"] for a in lovable["actions"]] == ["confirm_next_check", "messaging_investigation"]
+    assert [a["id"] for a in lovable["actions"]] == ["check_signup_flow", "messaging_investigation"]
     old_card = by_id["item-live-replit-pro-details-20261027051056"]  # stored before kinds of change: not sent
     assert old_card["interpretation"] is None and old_card["category"] == "other"
     discount = by_id["item-live-lovable-yearly-pro-discount-20261029034525"]
