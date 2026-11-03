@@ -47,11 +47,11 @@
     "actions": [
      {
       "id": "check_signup_flow",
-      "text": "Check whether what \"No credit card needed\" says still holds by starting a signup on Lovable from https://lovable.dev/pricing. That tells us whether Lovable changed its signup requirements or only the wording on its pricing page."
+      "text": "Check whether \"No credit card needed\" is true today by starting a signup on Lovable from https://lovable.dev/pricing."
      },
      {
       "id": "messaging_investigation",
-      "text": "If what \"No credit card needed\" says is also true of our offer, consider testing that line near our signup call to action, measured on trial starts. This rests on our own offer, not on why Lovable shows or hides the line."
+      "text": "If \"No credit card needed\" is also true of our signup, consider testing that message near our signup button and measure trial starts."
      }
     ],
     "hypothesis": {
@@ -104,7 +104,7 @@
     "actions": [
      {
       "id": "check_removed_mark",
-      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Pro price pointed to (usually a footnote). If it set terms on that price, check whether they still apply before changing anything we publish that quotes it."
+      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Pro price referred to. If it set terms, check they still apply before we quote that price."
      }
     ],
     "hypothesis": {
@@ -155,7 +155,7 @@
     "actions": [
      {
       "id": "check_removed_mark",
-      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Teams price pointed to (usually a footnote). If it set terms on that price, check whether they still apply before changing anything we publish that quotes it."
+      "text": "Check https://bolt.new/pricing for what the \"*\" next to Bolt's Teams price referred to. If it set terms, check they still apply before we quote that price."
      }
     ],
     "hypothesis": {
@@ -212,7 +212,7 @@
     "actions": [
      {
       "id": "see_newest_card",
-      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
+      "text": "No action here. Check the latest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
@@ -271,7 +271,7 @@
     "actions": [
      {
       "id": "see_newest_card",
-      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
+      "text": "No action here. Check the latest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
@@ -330,7 +330,7 @@
     "actions": [
      {
       "id": "see_newest_card",
-      "text": "No action on this card. Check the newest Lovable card about \"No credit card needed\" instead."
+      "text": "No action here. Check the latest Lovable card about \"No credit card needed\" instead."
      }
     ],
     "hypothesis": {
@@ -382,7 +382,7 @@
     "actions": [
      {
       "id": "check_moved_or_removed",
-      "text": "Check Replit's other plans at https://replit.com/pricing for \"Plan mode\". Listed elsewhere means moved; not listed anywhere means possibly removed, which Replit's own announcements could confirm. Until then, don't describe it as discontinued."
+      "text": "Check Replit's other plans at https://replit.com/pricing for \"Plan mode\". Until it's clear whether it moved or went, don't call it discontinued."
      }
     ],
     "hypothesis": {
@@ -433,7 +433,7 @@
     "actions": [
      {
       "id": "check_moved_or_removed",
-      "text": "Check Replit's other plans at https://replit.com/pricing for \"10 parallel agents\" and \"Invite up to 50 viewers\". Listed elsewhere means moved; not listed anywhere means possibly removed, which Replit's own announcements could confirm. Until then, don't describe them as discontinued."
+      "text": "Check Replit's other plans at https://replit.com/pricing for \"10 parallel agents\" and \"Invite up to 50 viewers\". Until it's clear whether they moved or went, don't call them discontinued."
      }
     ],
     "hypothesis": {

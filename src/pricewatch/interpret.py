@@ -104,23 +104,17 @@ ACTIONS = {
                      "here yet points to a specific action.",
     # Chosen by code only, never by the model, and filled in from the card's own lines ({line}, {lines}, {mark},
     # {plan}). Their wording isn't in the model's prompt, so it can change without re-recording any answer.
-    "check_removed_mark": "Check {url} for what the \"{mark}\" next to {c}'s {plan} price pointed to (usually a "
-                          "footnote). If it set terms on that price, check whether they still apply before changing "
-                          "anything we publish that quotes it.",
-    "confirm_next_check": "Wait for the next scheduled check to see whether {c}'s {plan} plan still shows \"{line}\" "
-                          "before acting on it.",
-    "check_signup_flow": "Check whether what \"{line}\" says still holds by starting a signup on {c} from {url}. "
-                         "That tells us whether {c} changed its signup requirements or only the wording on its pricing page.",
-    "see_newest_card": "No action on this card. Check the newest {c} card about \"{line}\" instead.",
-    "check_moved_or_removed": "Check {c}'s other plans at {url} for {lines}. Listed elsewhere means moved; not "
-                              "listed anywhere means possibly removed, which {c}'s own announcements could confirm. "
-                              "Until then, don't describe {them} as discontinued.",
-    "messaging_investigation": "If what \"{line}\" says is also true of our offer, consider testing that line near "
-                               "our signup call to action, measured on trial starts. This rests on our own offer, not "
-                               "on why {c} shows or hides the line.",
-    "verify_on_page": "Check {url} for what this change to {c}'s {plan} plan means for customers before acting on "
-                      "it.",
-    "no_action_cosmetic": "Nothing to do: on {c}'s {plan} plan only letter case or spacing changed.",
+    "check_removed_mark": "Check {url} for what the \"{mark}\" next to {c}'s {plan} price referred to. If it set "
+                          "terms, check they still apply before we quote that price.",
+    "confirm_next_check": "Wait for the next check to see whether {c}'s {plan} plan still shows \"{line}\".",
+    "check_signup_flow": "Check whether \"{line}\" is true today by starting a signup on {c} from {url}.",
+    "see_newest_card": "No action here. Check the latest {c} card about \"{line}\" instead.",
+    "check_moved_or_removed": "Check {c}'s other plans at {url} for {lines}. Until it's clear whether {they} moved or "
+                              "went, don't call {them} discontinued.",
+    "messaging_investigation": "If \"{line}\" is also true of our signup, consider testing that message near our "
+                               "signup button and measure trial starts.",
+    "verify_on_page": "Check {url} for what this change to {c}'s {plan} plan means for customers.",
+    "no_action_cosmetic": "Nothing to do: only letter case or spacing changed on {c}'s {plan} plan.",
 }
 VERIFY_ONLY = ("check_removed_mark", "confirm_next_check", "verify_on_page")
 CODE_ONLY = VERIFY_ONLY + ("check_moved_or_removed", "messaging_investigation", "check_signup_flow", "see_newest_card",
@@ -418,7 +412,7 @@ def check(item, answer, pattern=None):
     line = (pattern["line"] if pattern else
             answer.get("new_value") or answer.get("old_value") or next(iter(lines["added"] + lines["removed"]), "this change"))
     fill = {"mark": marks[0][2] if marks else "", "lines": _listing(gone) if gone else "",
-            "them": "it" if len(gone) == 1 else "them", "was": "Was" if len(gone) == 1 else "Were"}
+            "them": "it" if len(gone) == 1 else "them", "they": "it" if len(gone) == 1 else "they", "was": "Was" if len(gone) == 1 else "Were"}
     question = None
     if cosmetic_only:
         status, reason, ui = "sufficient", None, "no_action_needed"
@@ -566,14 +560,97 @@ def load(path=None):
     return {r["item_id"]: r["interpretation"] for r in records if isinstance(r, dict) and r.get("interpretation")}
 
 
+# Display only (D42): a headline that says what the page itself changed, and a link from an older card to the
+# latest one about the same line. Both are rules over the verified quote; the stored headline is never changed.
+
+PLAN_LABEL = re.compile(r"(?:^|\. )([A-Z][\w ]*? plan)(?: \(([^)]*view)\))?")
+MARK_NAMES = {"*": "an asterisk", "†": "a dagger", "‡": "a double dagger"}
+NO_PRICE_NOW = re.compile(r'now shows no price; it showed (.+?) and now shows "\1"')
+PRICE_NOW = re.compile(r'now shows (.+?); it showed no price and no longer shows "\1"')
+
+
+def _plan_label(item):
+    """'Free plan (Yearly view)' when the quote is about one view, 'Pro plan' when it covers several."""
+    found = PLAN_LABEL.findall(_quote(item))
+    if not found:
+        return None
+    plans, views = {p for p, _ in found}, {v for _, v in found}
+    if len(plans) != 1:
+        return None
+    plan = plans.pop()
+    return f"{plan} ({views.pop()})" if len(views) == 1 and "" not in views else plan
+
+
+def display_headline(item):
+    """What changed on the page, said plainly, or None to keep the stored headline. Never says the offer changed."""
+    if item.get("unverified") or item.get("source_kind") != "own_pricing_page" or not item.get("sources"):
+        return None
+    if item.get("change") not in (*SENT, "price", None):
+        return None  # discounts, billing views and price moves already say what changed
+    c, label, quote = item.get("competitor") or "The competitor", _plan_label(item), _quote(item)
+    if not label:
+        return None
+    text = None
+    if item.get("change") == "price":
+        if match := NO_PRICE_NOW.search(quote):
+            text = f'{c}\'s {label} no longer shows "{match.group(1)}" as its price; it shows it as a line instead.'
+        elif match := PRICE_NOW.search(quote):
+            text = f'{c}\'s {label} now shows "{match.group(1)}" as its price instead of as a line.'
+    else:
+        lines = lines_of(item)
+        marks, reworded = _marks(lines), _reworded(lines)
+        marked = {old for old, _, _ in marks}
+        gone = [line for line in lines["removed"] if line not in marked and line not in {o for o, _ in reworded}]
+        new = [line for line in lines["added"] if line not in {n for _, n, _ in marks} and line not in {n for _, n in reworded}]
+        if marks and not gone and not new:
+            mark = marks[0][2]
+            text = f"{c} removed {MARK_NAMES.get(mark, f'the \"{mark}\"')} from the {label}'s displayed price."
+        elif not lines["added"] and not lines["removed"] and lines["case_or_spacing_only"]:
+            text = f"{c} changed only the letter case or spacing of a line on the {label}."
+        elif gone:
+            more = " and other lines" if len(gone) > 1 else ""
+            text = f'{c} removed "{gone[0]}"{more} from the {label} on its pricing page' + (
+                (", and added a new line." if len(new) == 1 else ", and added new lines.") if new else ".")
+        elif new:
+            more = " and other lines" if len(new) > 1 or lines["truncated"] else ""
+            text = f'{c} added "{new[0]}"{more} to the {label} on its pricing page.'
+    if not text:
+        return None
+    sources = " ".join(f"{s.get('quote', '')} {s.get('url', '')}" for s in item["sources"])
+    return text if set(numbers_in(text)) <= set(numbers_in(sources)) else None
+
+
+def latest_of(items):
+    """{older card id: latest card id} for verified cards on the same competitor's plan, of the same kind of
+    change, that quote the same page line: the line changed again later. Different lines never link."""
+    groups = {}
+    for item in items:
+        if item.get("unverified") or item.get("source_kind") != "own_pricing_page" or not item.get("sources"):
+            continue
+        for line in {_key(line) for line in QUOTED.findall(_quote(item))}:
+            groups.setdefault((item.get("competitor"), _plan(item), item.get("change"), line), []).append(item)
+    latest = {}
+    for group in groups.values():
+        newest = max(group, key=lambda i: i.get("seen_at") or "")
+        for item in group:
+            if item["id"] != newest["id"] and (item.get("seen_at") or "") < (newest.get("seen_at") or ""):
+                current = latest.get(item["id"])
+                if current is None or (newest.get("seen_at") or "") > current[1]:
+                    latest[item["id"]] = (newest["id"], newest.get("seen_at") or "")
+    return {k: v[0] for k, v in latest.items()}
+
+
 def annotate(items, stored):
     """Copies of the cards with `category`, `category_label` and `interpretation` (None when there's none:
-    the card is shown as before). The cards' own fields are never changed."""
+    the card is shown as before), plus `display_headline` and `latest_item_id` (None when there's none).
+    The cards' own fields are never changed."""
+    later = latest_of(items)
     out = []
     for item in items:
         found = stored.get(item.get("id")) if eligible(item) else None
         category = found["category"] if found else rule_category(item)
-        out.append(dict(item, category=category, category_label=CATEGORIES[category], interpretation=found))
+        out.append(dict(item, category=category, category_label=CATEGORIES[category], interpretation=found,
+                        display_headline=display_headline(item), latest_item_id=later.get(item.get("id"))))
     return out
 
 
