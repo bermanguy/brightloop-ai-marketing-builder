@@ -65,7 +65,7 @@ Everything else is plain code: whether something changed, the confidence and unv
 ## Known limitations
 
 1. Only 8 cards have an AI interpretation. New changes get rule-written next steps, not an AI reading.
-2. Alerts, the run log and the Render admin pages still use the core's broader action text.
+2. Since D45 every screen and alert shows the same next steps, but each card's stored `action` (in `result.json` and the raw API) is still the core's broader text.
 3. `./proof` replays recorded runs from 25–26 October, which had no changes. Real changes are covered by tests on their stored cards.
 4. The Test upload wording fix is in the repo's copy of the Base44 app, but not yet published to Base44. The row fix is in the engine, but not yet deployed to Render.
 5. Anyone with the link can change alert settings and press Check now (rate-limited).
@@ -101,7 +101,7 @@ The AI never gets to state a fact on its own. In extraction, every value needs a
 Page and signal text is always data: it goes to the model inside tags, with a system prompt saying instructions in it are content. Hidden HTML is stripped before anything is quoted. The decisions that matter (confidence, labels, skips, actions) never read the text. The brief's two planted injections are checked in `./proof` and the tests, and at worst a crafted page could move the interpretation to another approved option, never outside the rules.
 
 **How do you know the system works?**
-`./proof` on a fresh clone with no keys: the brief's sample and three recorded real runs, every rule checked. 295 tests in CI on every push, including the test contract across the command line, Test upload and MCP. Four case files with the expected result for every id. And in production, the run log shows a run about every 6 hours, with the pages read, the changes, the errors and the cost.
+`./proof` on a fresh clone with no keys: the brief's sample and three recorded real runs, every rule checked. 298 tests in CI on every push, including the test contract across the command line, Test upload and MCP. Four case files with the expected result for every id. And in production, the run log shows a run about every 6 hours, with the pages read, the changes, the errors and the cost.
 
 **What would you build next?**
-Automatic interpretation of new changes, stored separately and in shadow mode first, with the same checks. Then I'd validate the cards with Maya on real changes, and decide with her whether alerts should use the more careful next steps.
+Automatic interpretation of new changes, stored separately and in shadow mode first, with the same checks. Then I'd validate the cards with Maya on real changes, and see whether the next steps lead to the decisions she actually makes.

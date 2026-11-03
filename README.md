@@ -12,7 +12,7 @@ Home assignment for the AI Marketing Builder role at Base44.
 | The brief's test interface | `./run --input cases.json --output result.json`, or **Test upload** in the live app |
 | Ask Claude (MCP) | `https://pricewatch-mb2k.onrender.com/mcp` as a custom connector |
 | How it's built | `docs/architecture.md` (authoritative) |
-| Decision log | `DECISIONS.md` (D1–D44) |
+| Decision log | `DECISIONS.md` (D1–D45) |
 | Plain-English walkthrough | `docs/INTERVIEW-ARCHITECTURE-EXPLAINED.md` |
 
 ## Quick start (no keys)
@@ -33,7 +33,7 @@ Run on 3 November 2026 in a fresh clone of this branch, in a new virtual environ
 | Check | Result |
 | --- | --- |
 | `./proof` | PROOF PASSED, exit 0: the brief's 8 sample ids and 3 recorded real runs. With one recorded price altered, it fails with exit 1 |
-| `pytest` | 295 passed, 4 skipped, 0 failed |
+| `pytest` | 298 passed, 4 skipped, 0 failed |
 | `./run` on the sample and the 4 case files | Counts match `tests/cases/README.md`; two runs give identical output apart from `run.started_at` |
 | CLI vs Test upload API vs MCP `run_test` | Identical `result.json` for every case file, interpretation flag on or off |
 | Frontend `npm run lint` / `npm run build` | Clean / builds (one chunk-size warning) |
@@ -119,8 +119,8 @@ flowchart TB
     display["Display layer at read time: rules<br/>display headline · fallback next steps<br/>link to latest card · stored reading if any"]
     api["Render engine: JSON API /api/*"]
     mcp["Render: MCP /mcp<br/>get_changes · pricing · run log"]
-    notify["Email + Slack alerts<br/>core text"]
-    admin["Render admin pages<br/>core text"]
+    notify["Email + Slack alerts<br/>same headline and next steps<br/>as the dashboard"]
+    admin["Render admin pages<br/>same next steps as the dashboard"]
     b44["Base44 app<br/>Changes · Pricing · Run log · Alerts · Test upload<br/>Focused view / Hide in this browser only"]
 
     sched --> fetch --> reader --> qc --> cmp -->|"pricing signals"| core
@@ -131,7 +131,7 @@ flowchart TB
     mcptest --> core
     proof -.->|"replays recorded pages"| qc
     core -->|"live runs only"| db
-    core -->|"live runs with changes"| notify
+    core -->|"live runs with changes,<br/>through the display rules"| notify
     db --> admin
     db --> flag
     flag -->|"on (production)"| display --> api
@@ -200,8 +200,8 @@ Sponsored and anonymous markers are checked first, so "sponsored post on lovable
 
 Every recommendation is written by code. A live card can carry up to three layers, and the dashboard shows the most specific one:
 
-1. **The core's `action` and `why`** (every card; the only layer in `result.json`, Test upload, alerts and the run log). One template per kind of change the comparison names: price up, price down, price wording, plan contents, discount framing, credit options, limits, plan added, plan removed, which view the page opens on. It names what we publish that is now out of date (comparison pages, ads, sales material) and what to decide with whoever owns our pricing. It never says which product is cheaper or what Brightloop should charge, because we don't hold Brightloop's prices (D26). Unverified claims always get "Don't act yet".
-2. **`display_steps`** (dashboard and MCP, every live card without an interpretation, D43). Written from what the page itself changed, naming the competitor, plan and line:
+1. **The core's `action` and `why`** (every card, stored with it; the only layer in `result.json` and Test upload). One template per kind of change the comparison names: price up, price down, price wording, plan contents, discount framing, credit options, limits, plan added, plan removed, which view the page opens on. It names what we publish that is now out of date (comparison pages, ads, sales material) and what to decide with whoever owns our pricing. It never says which product is cheaper or what Brightloop should charge, because we don't hold Brightloop's prices (D26). Unverified claims always get "Don't act yet".
+2. **`display_steps`** (dashboard and MCP, every live card without an interpretation, D43). Written from what the page itself changed, naming the competitor, plan and line. Since D45 the run log, alerts and admin pages show the same steps:
 
     | What the page changed | Next step |
     | --- | --- |
@@ -297,13 +297,13 @@ The Base44 app reads the Render JSON API:
 - **Alerts**: the live alert settings and the alert log.
 - **Test upload**: see above.
 
-The Render engine serves the same data as plain HTML admin pages (`/`, `/pricing`, `/runs`, `/alerts`, `/test`), showing the core's text.
+The Render engine serves the same data as plain HTML admin pages (`/`, `/pricing`, `/runs`, `/alerts`, `/test`), with the same headlines and next steps as the dashboard (Test upload excepted).
 
 **API.** `GET /api/changes?days=7|30|all&competitor=…&focus=…`, `GET /api/pricing`, `GET /api/runs`, `GET|POST /api/check`, `POST /api/test`, `GET|POST /api/alerts`, `GET /api/alerts/log`, and `POST /run` (needs `RUN_TOKEN` as a Bearer token).
 
 ## Alerts and MCP
 
-**Alerts.** After each live run with changes, the changes that pass the filters (minimum confidence, default 0.6; companies, default all) go out as one email (Gmail SMTP or Resend) and one Slack message. Each keeps its quote and link. Alerts use the core's headline and action, not the dashboard's display steps. The settings can be changed in the app; keys stay on Render; addresses are always masked; every alert and every settings change is in the alert log. `./run` and `./proof` never send anything.
+**Alerts.** After each live run with changes, the changes that pass the filters (minimum confidence, default 0.6; companies, default all) go out as one email (Gmail SMTP or Resend) and one Slack message. Each keeps its quote and link. With `PRICEWATCH_INTERPRET=on`, alerts carry the same headline and next steps as the Changes tab (D45); the run itself is saved unchanged. Test alerts carry the test file's core text. The settings can be changed in the app; keys stay on Render; addresses are always masked; every alert and every settings change is in the alert log. `./run` and `./proof` never send anything.
 
 **MCP.** The engine is an MCP server at `/mcp` (Streamable HTTP, stateless, read-only, no key). Tools: `get_changes` (the same items as `/api/changes`, including the display fields), `get_current_pricing`, `get_run_log` and `run_test` (a cases file through the core, at most 1 MB, saves and sends nothing). Add it in claude.ai under Settings › Connectors › Add custom connector, or `claude mcp add --transport http pricewatch https://pricewatch-mb2k.onrender.com/mcp`.
 
@@ -343,7 +343,7 @@ Setup: Neon project → Render Blueprint from this repo, with the variables abov
 ## Known limitations
 
 1. **New changes aren't interpreted by AI.** Only 8 cards have a reviewed interpretation. New changes get rule-written next steps. Running the interpretation automatically is the next step (`docs/architecture.md`).
-2. **Alerts, the run log and the Render pages use the core's broader text.** For a plan-contents change the alert says published comparisons are "now out of date", where the dashboard says to check first.
+2. **The stored `action` is still the core's broader text.** Every screen and alert now shows the dashboard's next steps instead (D45), but `result.json`, the raw API fields `action` and `steps`, and an MCP client that reads them still carry "now out of date" for plan-contents changes.
 3. **The proof's recorded runs have no changes.** Real changes since are covered by tests over their stored cards.
 4. **The `frontend/` folder is a mirror.** Base44 builds and publishes the app; a change here takes effect only when copied into Base44 and published. The Test upload wording in this branch isn't published yet.
 5. **Test upload has no file-size limit** (MCP `run_test` has 1 MB).

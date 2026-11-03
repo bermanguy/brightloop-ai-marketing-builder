@@ -357,6 +357,12 @@ Recorded after an audit of the code, production (through the MCP connector) and 
 
 **Future work (Claude → Guy, not decided).** Run the interpretation automatically on new cards, stored by card id in its own table, with the same rule checks and fallback, in shadow mode first (`docs/architecture.md`, "Next engineering step"). Decide whether alerts should use the dashboard's display steps. Add a file-size limit to Test upload.
 
+### D45 — The run log, alerts and admin pages show the same next steps as the Changes tab · 2026-11-03 · [Guy, from Claude's proposal]
+
+**Decision.** With `PRICEWATCH_INTERPRET=on`, every place Maya reads a next step uses one rule: the checked interpretation's actions, else the rule-written `display_steps`, else the core's own steps (`interpret.next_steps`), with the display headline where there is one. That covers the run log's "Next step", email and Slack alerts, and the Render admin pages. The stored cards, `result.json`, Test upload and test alerts keep the core's text; with the flag off, everything is as before. Answers D44's open question on alerts.
+
+**Why (Guy).** He saw the older generic actions still appearing for new changes outside the Changes tab, and chose this option of three: run log, alerts and admin pages; run log only; or leave it and document the gap.
+
 ---
 
 ## Open questions

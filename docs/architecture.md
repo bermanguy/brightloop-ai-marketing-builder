@@ -102,8 +102,8 @@ flowchart TB
     display["Display layer at read time: rules<br/>display headline · fallback next steps<br/>link to latest card · stored reading if any"]
     api["Render engine: JSON API /api/*"]
     mcp["Render: MCP /mcp<br/>get_changes · pricing · run log"]
-    notify["Email + Slack alerts<br/>core text"]
-    admin["Render admin pages<br/>core text"]
+    notify["Email + Slack alerts<br/>same headline and next steps<br/>as the dashboard"]
+    admin["Render admin pages<br/>same next steps as the dashboard"]
     b44["Base44 app<br/>Changes · Pricing · Run log · Alerts · Test upload<br/>Focused view / Hide in this browser only"]
 
     sched --> fetch --> reader --> qc --> cmp -->|"pricing signals"| core
@@ -114,7 +114,7 @@ flowchart TB
     mcptest --> core
     proof -.->|"replays recorded pages"| qc
     core -->|"live runs only"| db
-    core -->|"live runs with changes"| notify
+    core -->|"live runs with changes,<br/>through the display rules"| notify
     db --> admin
     db --> flag
     flag -->|"on (production)"| display --> api
@@ -155,9 +155,9 @@ What each part is and how it runs today. "Production" means the Render service a
 | Test upload | `web.run_upload`, `web.test_rows`; Base44 `TestUpload.jsx` | Deterministic | Live. Core only; no interpretation layer |
 | CLI | `./run`, `cli.py` | Deterministic | Standard library only, no keys |
 | `./proof` | `proof.py` | Deterministic | CI and any fresh clone. Not part of the live service |
-| Alerts (email, Slack) | `notify.py`, `web.alert` | Deterministic | Automated after each live run that finds changes, when the channels are configured. Send the core's headline, action and source, **not** the display layer |
+| Alerts (email, Slack) | `notify.py`, `web.alert` | Deterministic | Automated after each live run that finds changes, when the channels are configured. Since D45, the same headline and next steps as the Changes tab (`interpret.next_steps`), with quote and link |
 | MCP server | `mcp_server.py`, `/mcp` | Deterministic server; the AI is the client | Live, read-only. `get_changes` returns the same annotated items as `/api/changes` |
-| Render admin pages | `web.py` HTML routes | Deterministic | Live, as an admin fallback. Show the core's text only |
+| Render admin pages | `web.py` HTML routes | Deterministic | Live, as an admin fallback. Same headlines and next steps as the dashboard (D45) |
 | Base44 front end | `frontend/` (snapshot of the Base44 app) | Frontend only | Published at brightloop-competitors-price-pulse.base44.app; calls the Render JSON API |
 | Focused view / Hide | `frontend/src/lib/hidden.js` | **Frontend only** | Live. localStorage in one browser; never reaches the API, MCP, scans, alerts or counters |
 
@@ -193,11 +193,11 @@ What each part is and how it runs today. "Production" means the Render service a
 
 A live card can carry three layers of "what to do". Only the first is part of the contract.
 
-1. **The core's `action`, `steps` and `why`** (stored with the card, in `result.json`, alerts, the run log and the Render pages). Written by rule from the kind of change. For plan-contents changes it says "anything we publish that quotes what X's plan includes is now out of date: read the change above and update it", which is broad. The test contract and alerts use this layer.
+1. **The core's `action`, `steps` and `why`** (stored with the card, and in `result.json`). Written by rule from the kind of change. For plan-contents changes it says "anything we publish that quotes what X's plan includes is now out of date: read the change above and update it", which is broad. The test contract and alerts use this layer.
 2. **`display_steps`** (dashboard and MCP, flag on, cards without an interpretation). Written by rule from what the page itself changed: a removed plan description, a removed line, several changed lines, an added line, a removed price mark, a price moved to or from a plan line. They ask Maya to check before anyone acts. This is the safe fallback every new change gets.
 3. **`interpretation`** (dashboard and MCP, flag on, the 8 replayed cards). The checked AI reading with its status, open question, observation across checks and rule-chosen actions.
 
-The Base44 card picks the interpretation's actions, else `display_steps`, else the core's `steps`. A card without an interpretation never shows a status, question or impact, so it's never presented as analysed.
+The Base44 card picks the interpretation's actions, else `display_steps`, else the core's `steps`. Since D45 the run log, alerts and admin pages make the same choice through one helper, `interpret.next_steps` (with `shown_headline` for the headline); Test upload and `result.json` keep the core's text. A card without an interpretation never shows a status, question or impact, so it's never presented as analysed.
 
 ## Live data and test inputs: shared core, different presentation
 
@@ -274,7 +274,7 @@ None of them changed the core, the test contract, the confidence rules, the quot
 ## Known limitations
 
 1. **Enhanced interpretation isn't automatic.** Only the 8 cards in the replay have one. New changes get the deterministic display steps. The next step is below.
-2. **Alerts, the run log and the Render pages use the core's broader text**, not the dashboard's display steps. For a plan-contents change an alert says the published comparison "is now out of date", where the dashboard says to check first.
+2. **The stored `action` is still the core's broader text.** Every screen and alert shows the dashboard's next steps (D45), but `result.json`, the raw `action`/`steps` fields and MCP clients that read them still say "now out of date" for plan-contents changes.
 3. **`./proof` replays recorded runs from 25–26 October, which had no changes.** Real changes since then are covered by unit tests on their stored cards (`fixtures/interpret/`), not by a recorded replay.
 4. **Test upload has no size limit** (MCP's `run_test` caps at 1 MB). A 5,000-signal file answers in under a second.
 5. **The `frontend/` snapshot isn't built or deployed from this repo.** Base44 builds and publishes it; changes here must be copied into Base44 and published.
@@ -289,4 +289,3 @@ The pieces exist; what's missing is running them on new cards and storing the re
 2. Store each record (model, prompt version, answer, interpretation or fallback reason) in a new `interpretations` table keyed by card id, never in the run document. The card stays as the core wrote it.
 3. `interpret.load` reads the table as well as the file. Everything else stays: `check` still accepts or rejects each reading, playbook text is still chosen by code, R4 still applies, and a failure still leaves the card with its display steps.
 4. Keep it behind a second flag, run it in shadow mode for a week (store but don't show), and review the readings against Maya's feedback before showing them.
-5. Alerts could then use the same display steps, once Guy decides the alert text should change.
