@@ -4,6 +4,9 @@ import { readPreviousVisit } from '@/lib/lastVisit';
 import HowItWorks from '@/components/changes/HowItWorks';
 import FilterBar from '@/components/changes/FilterBar';
 import StatTiles from '@/components/changes/StatTiles';
+import ActionTiles from '@/components/changes/ActionTiles';
+import { actionGroup } from '@/lib/actionGroups';
+import { useGoToLatest } from '@/lib/goToLatest';
 import ChangeFeed from '@/components/changes/ChangeFeed';
 import ChangesSkeleton from '@/components/changes/ChangesSkeleton';
 import ErrorState from '@/components/ErrorState';
@@ -18,6 +21,7 @@ export default function Changes() {
   const [days, setDays] = useState('7');
   const [competitor, setCompetitor] = useState('');
   const [focus, setFocus] = useState('');
+  const [view, setView] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,6 +51,11 @@ export default function Changes() {
   }, [days, competitor, focus, reloadKey]);
 
   const summary = data?.summary;
+  const items = data?.items || [];
+  // With interpretations on, the counters are about what to do; without them, the original counters are shown.
+  const interpreted = items.some((item) => item.interpretation);
+  const shown = interpreted && view ? items.filter((item) => actionGroup(item) === view) : items;
+  const { outsideFilter, dismiss } = useGoToLatest(items, view, setView);
   const companyLabel = competitor || 'all companies';
   const summaryLine = summary
     ? `${summary.total} ${summary.total === 1 ? 'change' : 'changes'} · ${
@@ -76,14 +85,31 @@ export default function Changes() {
         <ErrorState message={error} onRetry={() => setReloadKey((key) => key + 1)} />
       ) : (
         <div className="space-y-6">
-          <StatTiles
-            summary={data?.summary}
-            focus={focus}
-            competitor={competitor}
-            onSelectFocus={setFocus}
-            onSelectCompetitor={setCompetitor}
-          />
-          <ChangeFeed items={data?.items || []} previousVisit={previousVisit} />
+          {interpreted ? (
+            <ActionTiles items={items} view={view} onSelectView={setView} />
+          ) : (
+            <StatTiles
+              summary={data?.summary}
+              focus={focus}
+              competitor={competitor}
+              onSelectFocus={setFocus}
+              onSelectCompetitor={setCompetitor}
+            />
+          )}
+          {outsideFilter ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700">
+              <span>The latest card about this is outside the current date range.</span>
+              {days !== '30' && days !== 'all' ? (
+                <button type="button" onClick={() => setDays('30')} className="font-medium text-indigo-600 hover:underline">
+                  Show last 30 days
+                </button>
+              ) : null}
+              <button type="button" onClick={dismiss} className="text-slate-500 hover:underline">
+                Dismiss
+              </button>
+            </div>
+          ) : null}
+          <ChangeFeed items={shown} previousVisit={previousVisit} />
         </div>
       )}
     </div>

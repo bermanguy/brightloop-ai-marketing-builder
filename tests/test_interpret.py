@@ -140,13 +140,14 @@ def test_a_line_that_came_and_went_is_a_verified_observation_and_stays_ambiguous
     assert got["question"] == ("Did Lovable change its signup requirements, or only show and hide "
                                "\"No credit card needed\" on its pricing page?")
     assert got["status_detail"] == got["question"]
-    assert "whether Lovable changed its signup requirements or only the wording" in got["actions"][0]["text"]
+    assert got["actions"][0]["text"] == ("Check whether \"No credit card needed\" is true today by starting a signup on "
+                                         "Lovable from https://lovable.dev/pricing.")
     assert got["observation"]["text"].startswith("Across recent checks, Lovable's Free plan has shown the line \"No credit card needed\"")
     assert len(got["observation"]["related_item_ids"]) == 3
     # No claim of a test or of a changed signup requirement: the action rests on our offer, conditionally.
     action = got["actions"][1]["text"]
-    assert action.startswith("If what \"No credit card needed\" says is also true of our offer, consider testing")
-    assert "not on why Lovable shows or hides the line" in action
+    assert action == ("If \"No credit card needed\" is also true of our signup, consider testing that message near our "
+                      "signup button and measure trial starts.")
     assert not any(w in (action + got["observation"]["text"]).lower() for w in ("a/b", "is testing", "now requires"))
 
 
@@ -188,7 +189,7 @@ def test_lines_no_longer_listed_get_check_whether_moved_or_removed():
     assert [a["id"] for a in ambiguous["actions"]] == ["check_moved_or_removed"]
     text = ambiguous["actions"][0]["text"]
     assert text.startswith("Check Replit's other plans at https://replit.com/pricing for \"Plan mode\".")
-    assert "don't describe it as discontinued" in text
+    assert "don't call it discontinued" in text
     assert ambiguous["question"] == "Was \"Plan mode\" removed from Replit's Core plan, moved to another plan, or reworded?"
     supported, _ = interpret.check(core, answer(new_value=None, direction="less_for_customer", hypothesis="less_value",
                                                 actions=["review_plan_differentiation", "update_competitor_references"]))
@@ -208,7 +209,7 @@ def test_the_model_is_never_offered_code_only_actions():
 def test_every_playbook_text_has_no_figures_and_says_nothing_about_brightloops_own_offer():
     for text in list(interpret.ACTIONS.values()) + list(interpret.HYPOTHESES.values()):
         assert numbers_in(text.format(c="Bolt", url="bolt.new/pricing", line="Free forever", plan="Pro", mark="*",
-                                      lines='"Plan mode"', them="it", was="Was")) == []
+                                      lines='"Plan mode"', them="it", they="it", was="Was")) == []
     # Actions about our side are conditional or investigative: "if", "review", "check", "consider", "note".
     for key, text in interpret.ACTIONS.items():
         if key == "no_action_cosmetic":  # says there's nothing to do
@@ -274,11 +275,14 @@ def test_a_failed_call_leaves_the_card_as_it_is():
     assert cards[0]["interpretation"] is None and cards[0]["category"] == "packaging"
 
 
-def test_annotate_adds_three_fields_and_changes_nothing_else():
+ANNOTATED = ("category", "category_label", "interpretation", "display_headline", "latest_item_id")
+
+
+def test_annotate_adds_its_fields_and_changes_nothing_else():
     stored = interpret.load()
     cards = interpret.annotate(LIVE, stored)
     for before, after in zip(LIVE, cards):
-        assert {k: v for k, v in after.items() if k not in ("category", "category_label", "interpretation")} == before
+        assert {k: v for k, v in after.items() if k not in ANNOTATED} == before
     assert sum(1 for c in cards if c["interpretation"]) == sum(1 for i in LIVE if interpret.eligible(i))
 
 
@@ -357,3 +361,65 @@ def test_a_mark_is_only_named_when_the_figures_are_the_same():
     lines = {"added": ["$25/month"], "removed": ["$25*/month"], "case_or_spacing_only": [], "truncated": False}
     assert interpret._marks(lines) == [("$25*/month", "$25/month", "*")]
     assert interpret._marks(dict(lines, added=["$20/month"])) == []
+
+
+# Display headlines and links to the latest card (D42): rules over the quote, the stored headline kept.
+
+def _by_id(item_id):
+    return next(i for i in LIVE if i["id"] == item_id)
+
+
+def test_display_headlines_say_what_the_page_changed():
+    expected = {
+        "item-live-bolt-pro-details-20261102185917": "Bolt removed an asterisk from the Pro plan's displayed price.",
+        "item-live-bolt-teams-details-20261102185917": "Bolt removed an asterisk from the Teams plan's displayed price.",
+        "item-live-lovable-yearly-free-details-20261103005623":
+            'Lovable added "No credit card needed" to the Free plan (Yearly view) on its pricing page.',
+        "item-live-lovable-monthly-free-details-20261030100003":
+            'Lovable removed "No credit card needed" from the Free plan (Monthly view) on its pricing page.',
+        "item-live-replit-core-details-20261028214846":
+            'Replit removed "Plan mode" from the Core plan on its pricing page, and added a new line.',
+        "item-live-replit-pro-details-20261028214846":
+            'Replit changed several lines on the Pro plan on its pricing page, including "10 parallel agents".',
+        "item-live-lovable-yearly-enterprise-price-20261031192210":
+            "On the Enterprise plan (Yearly view), Lovable moved \"Platform fee\" from the price to a plan line.",
+        "item-live-lovable-yearly-enterprise-price-20261030215502":
+            "On the Enterprise plan (Yearly view), Lovable moved \"Platform fee\" from a plan line to the price.",
+        "item-live-replit-pro-details-20261027051056": 'Replit added "$100 credits" to the Pro plan on its pricing page.',
+    }
+    for item_id, text in expected.items():
+        assert interpret.display_headline(_by_id(item_id)) == text
+    # "Several lines" only when the quote has at least three changed lines; Replit Core has two.
+    pro = interpret.lines_of(_by_id("item-live-replit-pro-details-20261028214846"))
+    assert len(pro["removed"]) + len(pro["added"]) >= 3
+    # Discount cards already say what changed; they keep the stored headline.
+    assert interpret.display_headline(_by_id("item-live-lovable-yearly-pro-discount-20261029034525")) is None
+    # Nothing says the offer itself changed.
+    for item in LIVE:
+        text = interpret.display_headline(item) or ""
+        assert not any(w in text.lower() for w in ("discontinu", "now requires", "cut", "cheaper", "a/b"))
+
+
+def test_display_headlines_never_show_a_figure_not_in_the_sources_and_skip_unverified():
+    for item in LIVE:
+        text = interpret.display_headline(item)
+        if text:
+            sources = " ".join(s["quote"] + " " + s["url"] for s in item["sources"])
+            assert set(numbers_in(text)) <= set(numbers_in(sources))
+    assert interpret.display_headline(EDGE["item-hn-edge-rumor"]) is None
+
+
+def test_older_cards_link_to_the_latest_card_about_the_same_line_only():
+    latest = interpret.latest_of(LIVE)
+    newest_free = "item-live-lovable-yearly-free-details-20261103005623"
+    for older in ("item-live-lovable-yearly-free-details-20261102185856", "item-live-lovable-monthly-free-details-20261030155726",
+                  "item-live-lovable-monthly-free-details-20261030100003"):
+        assert latest[older] == newest_free
+    newest_enterprise = "item-live-lovable-yearly-enterprise-price-20261031192210"
+    assert latest["item-live-lovable-yearly-enterprise-price-20261030215502"] == newest_enterprise
+    assert latest["item-live-lovable-yearly-enterprise-price-20261030155726"] == newest_enterprise
+    # Different plans or different lines never link: discounts, Bolt, Replit, and the latest cards themselves.
+    assert set(latest) == {"item-live-lovable-yearly-free-details-20261102185856", "item-live-lovable-monthly-free-details-20261030155726",
+                           "item-live-lovable-monthly-free-details-20261030100003",
+                           "item-live-lovable-yearly-enterprise-price-20261030215502",
+                           "item-live-lovable-yearly-enterprise-price-20261030155726"}
